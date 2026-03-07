@@ -1,0 +1,49 @@
+name: Compile LaTeX and Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'latexDoc/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compile main.tex
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+          working_directory: latexDoc
+
+      - name: Compile main_revised.tex
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main_revised.tex
+          working_directory: latexDoc
+
+      - name: Generate release tag
+        id: tag
+        run: echo "tag=latex-$(date +'%Y.%m.%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release with PDFs
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.tag.outputs.tag }}
+          name: "LaTeX Docs – ${{ steps.tag.outputs.tag }}"
+          body: |
+            Automated release from LaTeX compilation.
+
+            **Included files:**
+            - `main.pdf` – compiled from `latexDoc/main.tex`
+            - `main_revised.pdf` – compiled from `latexDoc/main_revised.tex`
+          artifacts: "latexDoc/main.pdf,latexDoc/main_revised.pdf"
+          token: ${{ secrets.GITHUB_TOKEN }}

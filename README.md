@@ -2,6 +2,22 @@
 
 > **Romanian Project Name:** Gestiunea Automată a Studenților Facultății (GASF)
 
+[![LaTeX](https://github.com/andreisugu/AFSMS/actions/workflows/latex-release.yml/badge.svg)](https://github.com/andreisugu/AFSMS/actions/workflows/latex-release.yml) [![Website](https://github.com/andreisugu/AFSMS/actions/workflows/deploy.yml/badge.svg)](https://github.com/andreisugu/AFSMS/actions/workflows/deploy.yml)
+
+---
+
+🌐 **[Visit the Website](https://andreisugu.github.io/AFSMS/)**
+
+### 📚 Documentation
+
+| Link | Description |
+|---|---|
+| [View Latest Releases](https://github.com/andreisugu/AFSMS/releases) | All compiled PDF versions |
+| [Download main.pdf](https://github.com/andreisugu/AFSMS/releases/latest/download/main.pdf) | Complete system specification |
+| [Download main_revised.pdf](https://github.com/andreisugu/AFSMS/releases/latest/download/main_revised.pdf) | Revised documentation |
+
+---
+
 ## 📖 Overview
 
 The **Automated Faculty Student Management System (AFSMS)** is a comprehensive, secure, web-based platform designed to digitalize and optimize the administrative and educational workflows within a university faculty.

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  base: '/AFSMS/',
+  base: '/P9-T4-SugubeteMaximilianMitrache/',
   plugins: [
     react(),
     tailwindcss(),

@@ -7,19 +7,19 @@
 > <p>Maximilian Andrei CR3.2B</p>
 > <p>Mitrache Marian Nicușor CR3.2B</p>
 
-[![LaTeX](https://github.com/andreisugu/AFSMS/actions/workflows/latex-release.yml/badge.svg)](https://github.com/andreisugu/AFSMS/actions/workflows/latex-release.yml) [![Website](https://github.com/andreisugu/AFSMS/actions/workflows/deploy.yml/badge.svg)](https://github.com/andreisugu/AFSMS/actions/workflows/deploy.yml)
+[![LaTeX](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/actions/workflows/latex-release.yml/badge.svg)](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/actions/workflows/latex-release.yml) [![Website](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/actions/workflows/deploy.yml/badge.svg)](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/actions/workflows/deploy.yml)
 
 ---
 
-🌐 **[Visit the Website](https://andreisugu.github.io/AFSMS/)**
+🌐 **[Visit the Website](https://andreisugu.github.io/P9-T4-SugubeteMaximilianMitrache/)**
 
 ### 📚 Documentation
 
 | Link | Description |
 |---|---|
-| [View Latest Releases](https://github.com/andreisugu/AFSMS/releases) | All compiled PDF versions |
-| [Download main.pdf](https://github.com/andreisugu/AFSMS/releases/latest/download/main.pdf) | Complete system specification |
-| [Download main_revised.pdf](https://github.com/andreisugu/AFSMS/releases/latest/download/main_revised.pdf) | Revised documentation |
+| [View Latest Releases](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/releases) | All compiled PDF versions |
+| [Download main.pdf](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/releases/latest/download/main.pdf) | Complete system specification |
+| [Download main_revised.pdf](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/releases/latest/download/main_revised.pdf) | Revised documentation |
 
 ---
 
@@ -112,12 +112,12 @@ AFSMS uses a scalable client-server architecture designed to handle concurrent u
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/andreisugu/AFSMS.git
+   git clone https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache.git
    ```
 
 2. Navigate to the project directory and install dependencies:
    ```bash
-   cd AFSMS
+   cd P9-T4-SugubeteMaximilianMitrache
    npm install
    ```
 
@@ -136,7 +136,7 @@ AFSMS uses a scalable client-server architecture designed to handle concurrent u
 
 The latest `main` branch is automatically deployed via GitHub Actions to GitHub Pages:
 
-🔗 **https://andreisugu.github.io/AFSMS/**
+🔗 **https://andreisugu.github.io/P9-T4-SugubeteMaximilianMitrache/**
 
 ## 📚 Documentation
 

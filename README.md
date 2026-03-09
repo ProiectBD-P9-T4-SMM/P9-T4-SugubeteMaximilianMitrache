@@ -38,7 +38,7 @@ Moving away from manual paperwork, AFSMS provides centralized management of acad
 * **Audit Logging & Point-in-Time Recovery:** Comprehensive, append-only activity logging tracking "who did what and when." Features built-in database rollback and offline backup capabilities to prevent and correct data collection errors safely.
 * **Microsoft Ecosystem Integration:** Seamless bidirectional integration with **Microsoft Excel** for bulk data operations and **Microsoft Outlook** (via Graph API/SMTP) for mass group communications.
 
-## � System Diagrams & Mockups
+## System Diagrams & Mockups
 
 
 <table>

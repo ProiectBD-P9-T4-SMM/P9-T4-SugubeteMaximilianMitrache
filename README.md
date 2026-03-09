@@ -38,7 +38,33 @@ Moving away from manual paperwork, AFSMS provides centralized management of acad
 * **Audit Logging & Point-in-Time Recovery:** Comprehensive, append-only activity logging tracking "who did what and when." Features built-in database rollback and offline backup capabilities to prevent and correct data collection errors safely.
 * **Microsoft Ecosystem Integration:** Seamless bidirectional integration with **Microsoft Excel** for bulk data operations and **Microsoft Outlook** (via Graph API/SMTP) for mass group communications.
 
-## 👥 User Roles
+## � System Diagrams & Mockups
+
+### Use Case & Architecture
+![Web Portal - System Use Case Diagram](docs/diagrame/Web%20Portal%20-%20System%20Use%20Case%20Diagram.png)
+![Web Portal - Access Management](docs/diagrame/Web%20Portal%20-%20Access%20Management.png)
+
+### Data Management & Workflows
+![Document Workflow and Search - Management Interface](docs/diagrame/Document%20Workflow%20and%20Search%20-%20Management%20Interface.png)
+![Audit Logging and Data Recovery - Rollback](docs/diagrame/Audit%20Logging%20and%20Data%20Recovery%20-%20Rollback.png)
+
+### User Interface Mockups
+![Mockup - Login Screen](docs/diagrame/Mockup%20-%20Login%20Screen.png)
+![Mockup - Dashboard](docs/diagrame/Mockup%20-%20Dashboard.png)
+![Mockup - Students and Curiccula](docs/diagrame/Mockup%20-%20Students%20and%20Curiccula.png)
+![Mockup - Documents and Workflow](docs/diagrame/Mockup%20-%20Documents%20and%20Workflow.png)
+![Mockup - Egrade centralizer](docs/diagrame/Mockup%20-%20Egrade%20centralizer.png)
+
+### Administration & Audit Interface
+![Mockup - Administration and Audit - User roles](docs/diagrame/Mockup%20-%20Administration%20and%20Audit%20-%20User%20roles.png)
+![Mockup - Administration and Audit - Audit Log](docs/diagrame/Mockup%20-%20Administration%20and%20Audit%20-%20Audit%20Log.png)
+![Mockup - Administration and Audit - Query Monitor](docs/diagrame/Mockup%20-%20Administration%20and%20Audit%20-%20Query%20Monitor.png)
+![Mockup - Adminstration and Audit - Rollback](docs/diagrame/Mockup%20-%20Adminstration%20and%20Audit%20-%20Rollback.png)
+
+### Reporting & Export
+![Reporting and Export - Egrade Centralizer](docs/diagrame/Reporting%20and%20Export%20-%20Egrade%20Centralizer.png)
+
+## �👥 User Roles
 
 1. **Registrar / Secretariat Staff:** Heavy users managing academic records, generating reports, and overseeing document workflows.
 2. **Professors / Teaching Staff:** Enter grades and communicate with student groups during exam sessions.

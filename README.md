@@ -43,28 +43,28 @@ Moving away from manual paperwork, AFSMS provides centralized management of acad
 
 <table>
   <tr>
-    <td align="center"><img src="docs/diagrame/Web%20Portal%20-%20System%20Use%20Case%20Diagram.png" alt="Web Portal - System Use Case Diagram" width="300"/><br/><sub>Use Case Diagram</sub></td>
-    <td align="center"><img src="docs/diagrame/Web%20Portal%20-%20Access%20Management.png" alt="Web Portal - Access Management" width="300"/><br/><sub>Access Management</sub></td>
-    <td align="center"><img src="docs/diagrame/Document%20Workflow%20and%20Search%20-%20Management%20Interface.png" alt="Document Workflow and Search" width="300"/><br/><sub>Document Workflow</sub></td>
+    <td align="center"><img src="docs/diagrams/Web%20Portal%20-%20System%20Use%20Case%20Diagram.png" alt="Web Portal - System Use Case Diagram" width="300"/><br/><sub>Use Case Diagram</sub></td>
+    <td align="center"><img src="docs/diagrams/Web%20Portal%20-%20Access%20Management.png" alt="Web Portal - Access Management" width="300"/><br/><sub>Access Management</sub></td>
+    <td align="center"><img src="docs/diagrams/Document%20Workflow%20and%20Search%20-%20Management%20Interface.png" alt="Document Workflow and Search" width="300"/><br/><sub>Document Workflow</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/diagrame/Audit%20Logging%20and%20Data%20Recovery%20-%20Rollback.png" alt="Audit Logging and Data Recovery" width="300"/><br/><sub>Audit Logging & Recovery</sub></td>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Login%20Screen.png" alt="Login Screen" width="300"/><br/><sub>Login Screen</sub></td>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Dashboard.png" alt="Dashboard" width="300"/><br/><sub>Dashboard</sub></td>
+    <td align="center"><img src="docs/diagrams/Audit%20Logging%20and%20Data%20Recovery%20-%20Rollback.png" alt="Audit Logging and Data Recovery" width="300"/><br/><sub>Audit Logging & Recovery</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Login%20Screen.png" alt="Login Screen" width="300"/><br/><sub>Login Screen</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Dashboard.png" alt="Dashboard" width="300"/><br/><sub>Dashboard</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Students%20and%20Curiccula.png" alt="Students and Curricula" width="300"/><br/><sub>Students & Curricula</sub></td>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Documents%20and%20Workflow.png" alt="Documents and Workflow" width="300"/><br/><sub>Documents & Workflow</sub></td>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Egrade%20centralizer.png" alt="E-Grade Centralizer" width="300"/><br/><sub>E-Grade Centralizer</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Students%20and%20Curiccula.png" alt="Students and Curricula" width="300"/><br/><sub>Students & Curricula</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Documents%20and%20Workflow.png" alt="Documents and Workflow" width="300"/><br/><sub>Documents & Workflow</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Egrade%20centralizer.png" alt="E-Grade Centralizer" width="300"/><br/><sub>E-Grade Centralizer</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Administration%20and%20Audit%20-%20User%20roles.png" alt="User Roles" width="300"/><br/><sub>User Roles</sub></td>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Administration%20and%20Audit%20-%20Audit%20Log.png" alt="Audit Log" width="300"/><br/><sub>Audit Log</sub></td>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Administration%20and%20Audit%20-%20Query%20Monitor.png" alt="Query Monitor" width="300"/><br/><sub>Query Monitor</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Administration%20and%20Audit%20-%20User%20roles.png" alt="User Roles" width="300"/><br/><sub>User Roles</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Administration%20and%20Audit%20-%20Audit%20Log.png" alt="Audit Log" width="300"/><br/><sub>Audit Log</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Administration%20and%20Audit%20-%20Query%20Monitor.png" alt="Query Monitor" width="300"/><br/><sub>Query Monitor</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/diagrame/Mockup%20-%20Adminstration%20and%20Audit%20-%20Rollback.png" alt="Rollback" width="300"/><br/><sub>Rollback</sub></td>
-    <td align="center"><img src="docs/diagrame/Reporting%20and%20Export%20-%20Egrade%20Centralizer.png" alt="Reporting and Export" width="300"/><br/><sub>Reporting & Export</sub></td>
+    <td align="center"><img src="docs/diagrams/Mockup%20-%20Adminstration%20and%20Audit%20-%20Rollback.png" alt="Rollback" width="300"/><br/><sub>Rollback</sub></td>
+    <td align="center"><img src="docs/diagrams/Reporting%20and%20Export%20-%20Egrade%20Centralizer.png" alt="Reporting and Export" width="300"/><br/><sub>Reporting & Export</sub></td>
     <td></td>
   </tr>
 </table>

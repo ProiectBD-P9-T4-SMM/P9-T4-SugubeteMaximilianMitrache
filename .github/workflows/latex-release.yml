@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'latexDoc/**'
+      - 'docs/latexDoc/**'
   workflow_dispatch:
 
 permissions:
@@ -22,13 +22,13 @@ jobs:
         uses: xu-cheng/latex-action@v3
         with:
           root_file: main.tex
-          working_directory: latexDoc
+          working_directory: docs/latexDoc
 
       - name: Compile main_revised.tex
         uses: xu-cheng/latex-action@v3
         with:
           root_file: main_revised.tex
-          working_directory: latexDoc
+          working_directory: docs/latexDoc
 
       - name: Generate release tag
         id: tag
@@ -43,7 +43,7 @@ jobs:
             Automated release from LaTeX compilation.
 
             **Included files:**
-            - `main.pdf` – compiled from `latexDoc/main.tex`
-            - `main_revised.pdf` – compiled from `latexDoc/main_revised.tex`
-          artifacts: "latexDoc/main.pdf,latexDoc/main_revised.pdf"
+            - `main.pdf` – compiled from `docs/latexDoc/main.tex`
+            - `main_revised.pdf` – compiled from `docs/latexDoc/main_revised.tex`
+          artifacts: "docs/latexDoc/main.pdf,docs/latexDoc/main_revised.pdf"
           token: ${{ secrets.GITHUB_TOKEN }}

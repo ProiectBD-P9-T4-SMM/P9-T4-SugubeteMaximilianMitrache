@@ -2,10 +2,10 @@
 
 > **Romanian Project Name:** Gestiunea Automată a Studenților Facultății (GASF)
 
-> **Authors:**
-> Sugubete Andrei CR3.2B
-> Maximilian Andrei CR3.2B
-> Mitrache Marian Nicușor CR3.2B
+> <p>Authors:</p>
+> <p>Sugubete Andrei CR3.2B</p>
+> <p>Maximilian Andrei CR3.2B</p>
+> <p>Mitrache Marian Nicușor CR3.2B</p>
 
 [![LaTeX](https://github.com/andreisugu/AFSMS/actions/workflows/latex-release.yml/badge.svg)](https://github.com/andreisugu/AFSMS/actions/workflows/latex-release.yml) [![Website](https://github.com/andreisugu/AFSMS/actions/workflows/deploy.yml/badge.svg)](https://github.com/andreisugu/AFSMS/actions/workflows/deploy.yml)
 

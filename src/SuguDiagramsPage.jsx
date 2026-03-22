@@ -7,33 +7,33 @@ const suguDiagrams = [
   {
     category: 'Use Case',
     files: [
-      'docs/diagrams/sugu/use-case/use-case_v1.png',
-      'docs/diagrams/sugu/use-case/use-case_v2_secretariat_workflow.png',
-      'docs/diagrams/sugu/use-case/use-case_v3_secretariat_workflow.png',
+      'diagrams/sugu/use-case/use-case_v1.png',
+      'diagrams/sugu/use-case/use-case_v2_secretariat_workflow.png',
+      'diagrams/sugu/use-case/use-case_v3_secretariat_workflow.png',
     ],
   },
   {
     category: 'Activity',
     files: [
-      'docs/diagrams/sugu/activity/activity_v1.png',
-      'docs/diagrams/sugu/activity/activity_v2.png',
-      'docs/diagrams/sugu/activity/activity_v3.png',
+      'diagrams/sugu/activity/activity_v1.png',
+      'diagrams/sugu/activity/activity_v2.png',
+      'diagrams/sugu/activity/activity_v3.png',
     ],
   },
   {
     category: 'Sequence',
     files: [
-      'docs/diagrams/sugu/sequence/sequence_v1.png',
-      'docs/diagrams/sugu/sequence/sequence_v2.png',
-      'docs/diagrams/sugu/sequence/sequence_v3.png',
+      'diagrams/sugu/sequence/sequence_v1.png',
+      'diagrams/sugu/sequence/sequence_v2.png',
+      'diagrams/sugu/sequence/sequence_v3.png',
     ],
   },
   {
     category: 'Role-Based Access Control',
     files: [
-      'docs/diagrams/sugu/role-based-access-control/rbac_v1.png',
-      'docs/diagrams/sugu/role-based-access-control/rbac_v2.png',
-      'docs/diagrams/sugu/role-based-access-control/rbac_v3.png',
+      'diagrams/sugu/role-based-access-control/rbac_v1.png',
+      'diagrams/sugu/role-based-access-control/rbac_v2.png',
+      'diagrams/sugu/role-based-access-control/rbac_v3.png',
     ],
   },
 ];

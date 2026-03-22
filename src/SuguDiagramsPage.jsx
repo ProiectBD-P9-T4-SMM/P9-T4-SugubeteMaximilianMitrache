@@ -150,14 +150,16 @@ export default function SuguDiagramsPage() {
           onClick={() => setModalIdx(null)}
         >
           <button
-            className="absolute top-4 right-6 text-white text-3xl font-bold bg-black bg-opacity-40 rounded px-3 py-1 hover:bg-opacity-70"
+            className="absolute top-4 right-6 text-3xl font-bold bg-white bg-opacity-90 text-black rounded shadow-lg px-3 py-1 hover:bg-opacity-100 hover:text-blue-700 transition"
+            style={{textShadow: '0 2px 8px #0008'}}
             onClick={(e) => { e.stopPropagation(); setModalIdx(null); }}
             aria-label="Close"
           >
             ×
           </button>
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl font-bold bg-black bg-opacity-40 rounded px-3 py-1 hover:bg-opacity-70"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-4xl font-bold bg-white bg-opacity-90 text-black rounded shadow-lg px-3 py-1 hover:bg-opacity-100 hover:text-blue-700 transition"
+            style={{textShadow: '0 2px 8px #0008'}}
             onClick={(e) => { e.stopPropagation(); setModalIdx(modalIdx > 0 ? modalIdx - 1 : allImages.length - 1); }}
             aria-label="Previous"
           >
@@ -198,20 +200,25 @@ export default function SuguDiagramsPage() {
             />
           </div>
           <div className="absolute bottom-24 left-0 right-0 flex justify-center gap-2">
-            <button className="bg-white/20 text-white px-3 py-1 rounded text-lg font-bold hover:bg-white/40" onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.max(z - 0.2, 0.2)); }}>-</button>
-            <button className="bg-white/20 text-white px-3 py-1 rounded text-lg font-bold hover:bg-white/40" onClick={(e) => { e.stopPropagation(); setZoom(1); setOffset({ x: 0, y: 0 }); }}>Reset</button>
-            <button className="bg-white/20 text-white px-3 py-1 rounded text-lg font-bold hover:bg-white/40" onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(z + 0.2, 5)); }}>+</button>
+            <button className="bg-white bg-opacity-90 text-black px-3 py-1 rounded text-lg font-bold shadow hover:bg-opacity-100 hover:text-blue-700 transition" onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.max(z - 0.2, 0.2)); }}>-</button>
+            <button className="bg-white bg-opacity-90 text-black px-3 py-1 rounded text-lg font-bold shadow hover:bg-opacity-100 hover:text-blue-700 transition" onClick={(e) => { e.stopPropagation(); setZoom(1); setOffset({ x: 0, y: 0 }); }}>Reset</button>
+            <button className="bg-white bg-opacity-90 text-black px-3 py-1 rounded text-lg font-bold shadow hover:bg-opacity-100 hover:text-blue-700 transition" onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(z + 0.2, 5)); }}>+</button>
           </div>
           <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl font-bold bg-black bg-opacity-40 rounded px-3 py-1 hover:bg-opacity-70"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-4xl font-bold bg-white bg-opacity-90 text-black rounded shadow-lg px-3 py-1 hover:bg-opacity-100 hover:text-blue-700 transition"
+            style={{textShadow: '0 2px 8px #0008'}}
             onClick={(e) => { e.stopPropagation(); setModalIdx(modalIdx < allImages.length - 1 ? modalIdx + 1 : 0); }}
             aria-label="Next"
           >
             ›
           </button>
-          <div className="absolute bottom-6 left-0 right-0 text-center text-white text-sm opacity-80">
-            {allImages[modalIdx].label} ({modalIdx + 1} / {allImages.length})<br />
-            <span className="text-xs">ESC to close, ←/→ to navigate, Mouse wheel/± to zoom, drag to pan</span>
+          <div className="absolute bottom-6 left-0 right-0 text-center flex flex-col items-center">
+            <span className="inline-block bg-white bg-opacity-90 text-black rounded shadow px-3 py-1 text-sm font-medium mb-1" style={{textShadow: '0 2px 8px #0008'}}>
+              {allImages[modalIdx].label} ({modalIdx + 1} / {allImages.length})
+            </span>
+            <span className="inline-block bg-white bg-opacity-80 text-black rounded shadow px-2 py-0.5 text-xs font-normal" style={{textShadow: '0 2px 8px #0008'}}>
+              ESC to close, ←/→ to navigate, Mouse wheel/± to zoom, drag to pan
+            </span>
           </div>
         </div>
       )}

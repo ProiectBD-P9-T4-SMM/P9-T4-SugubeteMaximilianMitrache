@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 const { auditableUpdate } = require('../services/auditService');
 
-router.use(verifyToken);
+router.use(requireAuth);
 
 // GET /api/documents - Advanced Search
 router.get('/', async (req, res, next) => {
@@ -15,7 +15,7 @@ router.get('/', async (req, res, next) => {
       SELECT d.id, d.title, d.type, d.content, d.status, d.created_at,
              u.full_name as author_name
       FROM DOCUMENT d
-      LEFT JOIN USER_ACCOUNT u ON d.created_by_user_id = u.id
+      LEFT JOIN USER_ACCOUNT u ON d.author_id = u.id
       WHERE 1=1
     `;
     const params = [];
@@ -26,7 +26,7 @@ router.get('/', async (req, res, next) => {
     }
     if (author_id) {
       params.push(author_id);
-      query += ` AND d.created_by_user_id = $${params.length}`;
+      query += ` AND d.author_id = $${params.length}`;
     }
     if (startDate) {
       params.push(startDate);
@@ -52,7 +52,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // PUT /api/documents/:id/status - Update Status (Workflow)
-router.put('/:id/status', async (req, res, next) => {
+router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // e.g. APPROVED, REJECTED
@@ -63,7 +63,7 @@ router.put('/:id/status', async (req, res, next) => {
       'DOCUMENT_FLOW',
       'DOCUMENT',
       id,
-      { status, updated_at: new Date().toISOString() }
+      { status }
     );
 
     res.json(updatedDocument);

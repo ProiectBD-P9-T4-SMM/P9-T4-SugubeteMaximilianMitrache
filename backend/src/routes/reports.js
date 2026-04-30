@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 
-router.use(verifyToken);
+router.use(requireAuth);
 
 // Pillar 2: e-Grade Centralizer
-router.get('/centralizer', async (req, res, next) => {
+router.get('/centralizer', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
   try {
     const { academicYear, specializationId, studyYear } = req.query;
 

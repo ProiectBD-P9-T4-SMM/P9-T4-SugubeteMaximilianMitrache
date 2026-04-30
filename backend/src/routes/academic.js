@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 const { auditableUpdate, auditableInsert } = require('../services/auditService');
 
-router.use(verifyToken);
+router.use(requireAuth);
 
 // --- STUDENTS ---
 router.get('/students', async (req, res, next) => {
@@ -154,19 +154,10 @@ router.get('/grades', async (req, res, next) => {
 });
 
 // Example of auditable update for a grade
-router.put('/grades/:id', async (req, res, next) => {
+router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN']), async (req, res, next) => {
   try {
     const gradeId = req.params.id;
     const { value, validated } = req.body;
-    
-    // Only Professor or Admin can update grades (Basic role check simulation)
-    if (req.user.role !== 'PROFESSOR' && req.user.role !== 'ADMIN') {
-       const err = new Error('Forbidden');
-       err.status = 403;
-       err.customCode = 'FORBIDDEN';
-       err.customMessage = 'You do not have permission to modify grades.';
-       return next(err);
-    }
 
     const updateFields = { value, validated };
     
@@ -185,18 +176,9 @@ router.put('/grades/:id', async (req, res, next) => {
 });
 
 // Create a new grade (Pillar 1)
-router.post('/grades', async (req, res, next) => {
+router.post('/grades', requireRole(['PROFESSOR', 'ADMIN']), async (req, res, next) => {
   try {
     const { student_id, discipline_id, value, exam_session } = req.body;
-    
-    // Only Professor or Admin can add grades
-    if (req.user.role !== 'PROFESSOR' && req.user.role !== 'ADMIN') {
-       const err = new Error('Forbidden');
-       err.status = 403;
-       err.customCode = 'FORBIDDEN';
-       err.customMessage = 'You do not have permission to add grades.';
-       return next(err);
-    }
 
     const insertFields = { 
       student_id, 

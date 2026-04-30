@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, User, LogOut, HelpCircle, FileText, Users, 
   BookOpen, FileBarChart, Settings, Edit, Eye, Trash, 
   Download, CheckCircle, Mail, Clock, Filter, Plus, FileSignature, Database, Activity
 } from 'lucide-react';
+import { authService, academicService, lookupService } from './services/api';
 
 // --- Bază de Date Fictivă (Mock Data) ---
 const mockPublicData = [
@@ -52,6 +53,9 @@ const mockQueries = [
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
+  const [user, setUser] = useState(null);
+  const [loginError, setLoginError] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
 
   // Funcție de navigare
   const navigate = (page) => setCurrentPage(page);
@@ -86,13 +90,17 @@ export default function App() {
               <>
                 <div className="flex items-center space-x-2 text-sm">
                   <User className="h-4 w-4" />
-                  <span>logged_in_user</span>
+                  <span>{user ? user.fullName : 'logged_in_user'}</span>
                 </div>
                 <button className="text-slate-300 hover:text-white" title="Help">
                   <HelpCircle className="h-5 w-5" />
                 </button>
                 <button 
-                  onClick={() => navigate('login')} 
+                  onClick={() => {
+                    localStorage.removeItem('token');
+                    setUser(null);
+                    navigate('login');
+                  }} 
                   className="text-slate-300 hover:text-red-400 flex items-center space-x-1"
                   title="Logout"
                 >
@@ -168,8 +176,30 @@ export default function App() {
           Automated Faculty Student Management System
         </h2>
         
+        <input 
+          type="text" 
+          placeholder="SSO Username (e.g. secretariat.ace)"
+          value={usernameInput}
+          onChange={(e) => setUsernameInput(e.target.value)}
+          className="w-full border-slate-300 rounded-md shadow-sm p-3 border focus:ring-blue-500 mb-4"
+        />
+
+        {loginError && (
+          <div className="text-red-500 text-sm mb-4">{loginError}</div>
+        )}
+
         <button 
-          onClick={() => navigate('dashboard')}
+          onClick={async () => {
+            setLoginError('');
+            try {
+              const res = await authService.login(usernameInput || 'secretariat.ace');
+              localStorage.setItem('token', res.data.token);
+              setUser(res.data.user);
+              navigate('dashboard');
+            } catch (err) {
+              setLoginError(err.response?.data?.message || 'Login failed');
+            }
+          }}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 shadow-md flex justify-center items-center space-x-2"
         >
           <User className="h-5 w-5" />

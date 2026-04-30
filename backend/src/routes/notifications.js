@@ -58,9 +58,9 @@ router.post('/send', async (req, res, next) => {
 
     // 3. Log into OUTLOOK_NOTIFICATION
     await db.query(
-      `INSERT INTO OUTLOOK_NOTIFICATION (sender_user_id, target_group_id, subject, body, status)
+      `INSERT INTO OUTLOOK_NOTIFICATION (sent_by_user_id, recipients, subject, body_preview, delivery_status)
        VALUES ($1, $2, $3, $4, 'SENT')`,
-      [req.user.id, groupId, subject, body]
+      [req.user.id, emails.join(', '), subject, body.substring(0, 500)]
     );
 
     res.json({

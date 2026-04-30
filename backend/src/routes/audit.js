@@ -77,11 +77,8 @@ router.post('/rollback/:logId', async (req, res, next) => {
     const rollbackQuery = `UPDATE ${uppercaseEntityType} SET ${setClauses} WHERE id = $${params.length} RETURNING *`;
 
     // 3. Execute rollback and log it as a new audit action
-    const client = await db.getPool().connect();
     let result;
-    try {
-      await client.query('BEGIN');
-      
+    await db.transaction(async (client) => {
       // Perform the restoration
       const updateRes = await client.query(rollbackQuery, params);
       result = updateRes.rows[0];
@@ -91,14 +88,7 @@ router.post('/rollback/:logId', async (req, res, next) => {
         INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, before_snapshot_json, after_snapshot_json)
         VALUES ($1, 'ROLLBACK_UPDATE', 'AUDIT_SYSTEM', $2, $3, $4, $5)
       `, [req.user.id, uppercaseEntityType, entityId, log.after_snapshot_json, log.before_snapshot_json]);
-
-      await client.query('COMMIT');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      client.release();
-    }
+    });
 
     res.json({
       success: true,

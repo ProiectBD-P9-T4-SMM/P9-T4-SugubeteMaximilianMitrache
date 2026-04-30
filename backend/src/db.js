@@ -16,6 +16,7 @@ pool.on('error', (err, client) => {
 
 module.exports = {
   query: (text, params) => pool.query(text, params),
+  getPool: () => pool,
   
   // Transaction helper for Audit functionality
   transaction: async (callback) => {

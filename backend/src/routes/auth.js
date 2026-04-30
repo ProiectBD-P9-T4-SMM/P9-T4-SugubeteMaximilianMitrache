@@ -65,4 +65,53 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
+// POST /api/auth/register
+// Registers a new user and assigns the default STUDENT role (REQ-AFSMS-07, REQ-AFSMS-08)
+router.post('/register', async (req, res, next) => {
+  const client = await db.getPool().connect();
+  try {
+    const { username, email, fullName, ssoSubject } = req.body;
+
+    if (!username || !email || !fullName) {
+      const err = new Error('Missing required fields');
+      err.status = 400;
+      return next(err);
+    }
+
+    await client.query('BEGIN');
+
+    // Insert user
+    const insertUserQuery = `
+      INSERT INTO USER_ACCOUNT (username, email, full_name, sso_subject, account_status)
+      VALUES ($1, $2, $3, $4, 'ACTIVE')
+      RETURNING id, username, email, full_name
+    `;
+    const userRes = await client.query(insertUserQuery, [username, email, fullName, ssoSubject || username]);
+    const newUser = userRes.rows[0];
+
+    // Find STUDENT role
+    const roleRes = await client.query(`SELECT id FROM ROLE WHERE code = 'STUDENT' LIMIT 1`);
+    if (roleRes.rows.length === 0) {
+      throw new Error("Default STUDENT role not found in database.");
+    }
+    const roleId = roleRes.rows[0].id;
+
+    // Assign role
+    await client.query(`INSERT INTO USER_ROLE (user_id, role_id) VALUES ($1, $2)`, [newUser.id, roleId]);
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully. You can now login.',
+      user: newUser
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    next(error);
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;

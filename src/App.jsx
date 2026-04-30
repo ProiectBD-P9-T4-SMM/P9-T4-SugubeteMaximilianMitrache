@@ -14,6 +14,7 @@ import AddGrades from './pages/AddGrades';
 import Centralizer from './pages/Centralizer';
 import Documents from './pages/Documents';
 import AuditLogs from './pages/AuditLogs';
+import MyGrades from './pages/MyGrades';
 
 export default function App() {
   return (
@@ -28,6 +29,11 @@ export default function App() {
           {/* Protected Routes inside Layout */}
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<Dashboard />} />
+            
+            <Route 
+              path="/my-grades" 
+              element={<RoleRoute allowed={['STUDENT']}><MyGrades /></RoleRoute>} 
+            />
             
             <Route 
               path="/students" 

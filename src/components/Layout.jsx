@@ -15,6 +15,7 @@ export default function Layout() {
   // Define menu items based on role
   const menuItems = [
     { id: '/dashboard', label: 'Dashboard', icon: FileBarChart, roles: ['STUDENT', 'PROFESSOR', 'SECRETARIAT', 'ADMIN'] },
+    { id: '/my-grades', label: 'My Grades', icon: BookOpen, roles: ['STUDENT'] },
     { id: '/students', label: 'Students & Curricula', icon: Users, roles: ['PROFESSOR', 'SECRETARIAT', 'ADMIN'] },
     { id: '/grades/add', label: 'Add Grades', icon: FileText, roles: ['PROFESSOR', 'ADMIN'] },
     { id: '/centralizer', label: 'Centralizer', icon: FileText, roles: ['SECRETARIAT', 'ADMIN'] },

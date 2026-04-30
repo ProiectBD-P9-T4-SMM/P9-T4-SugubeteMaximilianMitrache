@@ -4,7 +4,11 @@ import {
   BookOpen, FileBarChart, Settings, Edit, Eye, Trash, 
   Download, CheckCircle, Mail, Clock, Filter, Plus, FileSignature, Database, Activity
 } from 'lucide-react';
-import { authService, academicService, lookupService } from './services/api';
+import { authService, academicService, lookupService, reportsService, documentsService, notificationsService, auditService } from './services/api';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // --- Bază de Date Fictivă (Mock Data) ---
 const mockPublicData = [
@@ -54,8 +58,6 @@ const mockQueries = [
 export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [user, setUser] = useState(null);
-  const [loginError, setLoginError] = useState('');
-  const [usernameInput, setUsernameInput] = useState('');
 
   // Funcție de navigare
   const navigate = (page) => setCurrentPage(page);
@@ -163,7 +165,11 @@ export default function App() {
 
   // --- Ecrane Specifice (Views) ---
 
-  const ViewLogin = () => (
+  const ViewLogin = () => {
+    const [loginError, setLoginError] = useState('');
+    const [usernameInput, setUsernameInput] = useState('');
+
+    return (
     <div className="flex-1 flex items-center justify-center bg-slate-50 p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center border border-slate-100">
         <div className="flex justify-center mb-6">
@@ -219,7 +225,7 @@ export default function App() {
         </div>
       </div>
     </div>
-  );
+  )};
 
   const ViewPublicPortal = () => (
     <div className="flex-1 container mx-auto px-4 py-8">
@@ -370,8 +376,10 @@ export default function App() {
             <button className="p-3 text-left border border-slate-200 rounded-md hover:bg-slate-50 text-sm font-medium text-slate-700">
               Import Excel Data
             </button>
-            <button className="p-3 text-left border border-slate-200 rounded-md hover:bg-slate-50 text-sm font-medium text-slate-700">
-              New Announcement
+            <button 
+              onClick={() => navigate('add-grade')}
+              className="p-3 text-left border border-slate-200 rounded-md hover:bg-slate-50 text-sm font-medium text-slate-700">
+              Add Grade (Selection-Only)
             </button>
             <button 
               onClick={() => navigate('students')}
@@ -385,7 +393,25 @@ export default function App() {
     </div>
   );
 
-  const ViewStudents = () => (
+  const ViewStudents = () => {
+    const [students, setStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const fetchStudents = async () => {
+        try {
+          const res = await academicService.getStudents();
+          setStudents(res.data);
+        } catch (err) {
+          console.error("Failed to load students", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchStudents();
+    }, []);
+
+    return (
     <div className="flex-1 container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Students & Curricula Management</h2>
@@ -435,22 +461,26 @@ export default function App() {
           <thead className="bg-slate-50">
             <tr>
               <th className="px-6 py-3 text-left w-12"><input type="checkbox" className="rounded border-slate-300" /></th>
-              {['Student ID', 'Name', 'Group', 'Year', 'Status', 'Actions'].map((h) => (
+              {['Reg. Number', 'Name', 'Group', 'Year', 'Status', 'Actions'].map((h) => (
                 <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
-            {mockStudents.map((row) => (
+            {loading ? (
+              <tr><td colSpan="7" className="text-center py-4 text-slate-500">Loading students...</td></tr>
+            ) : students.length === 0 ? (
+              <tr><td colSpan="7" className="text-center py-4 text-slate-500">No students found</td></tr>
+            ) : students.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50">
                 <td className="px-6 py-4"><input type="checkbox" className="rounded border-slate-300" /></td>
-                <td className="px-6 py-4 font-mono text-slate-500">{row.id}</td>
-                <td className="px-6 py-4 font-medium text-slate-900">{row.name}</td>
-                <td className="px-6 py-4">{row.group}</td>
-                <td className="px-6 py-4">{row.year}</td>
+                <td className="px-6 py-4 font-mono text-slate-500">{row.registration_number}</td>
+                <td className="px-6 py-4 font-medium text-slate-900">{row.first_name} {row.last_name}</td>
+                <td className="px-6 py-4">{row.formation_name || 'N/A'}</td>
+                <td className="px-6 py-4">{row.study_year || 'N/A'}</td>
                 <td className="px-6 py-4">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    row.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    row.status === 'ENROLLED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
                     {row.status}
                   </span>
@@ -467,7 +497,7 @@ export default function App() {
         
         {/* Footer actions */}
         <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-between items-center text-sm text-slate-500">
-          <span>Pagination: 1 2 3 ...</span>
+          <span>Total students: {students.length}</span>
           <div className="flex space-x-2">
             <span className="py-1">Export as:</span>
             {['CSV', 'XML', 'XLS', 'PDF'].map(ext => (
@@ -479,166 +509,572 @@ export default function App() {
         </div>
       </div>
     </div>
-  );
+  )};
 
-  const ViewReports = () => (
+  const ViewAddGrade = () => {
+    const [students, setStudents] = useState([]);
+    const [disciplines, setDisciplines] = useState([]);
+    const [loading, setLoading] = useState(true);
+    
+    const [selectedStudent, setSelectedStudent] = useState('');
+    const [selectedDiscipline, setSelectedDiscipline] = useState('');
+    const [gradeValue, setGradeValue] = useState('');
+    const [examSession, setExamSession] = useState('WINTER');
+    const [submitStatus, setSubmitStatus] = useState(null);
+
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const [studentsRes, disciplinesRes] = await Promise.all([
+            academicService.getStudents(),
+            lookupService.getDisciplines()
+          ]);
+          setStudents(studentsRes.data);
+          setDisciplines(disciplinesRes.data);
+        } catch (err) {
+          console.error("Failed to load lookups", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }, []);
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await academicService.addGrade({
+          student_id: selectedStudent,
+          discipline_id: selectedDiscipline,
+          value: parseInt(gradeValue),
+          exam_session: examSession
+        });
+        setSubmitStatus({ success: true, message: 'Grade added successfully! (Audited)' });
+        setGradeValue('');
+      } catch (err) {
+        setSubmitStatus({ 
+          success: false, 
+          message: err.response?.data?.message || 'Failed to add grade' 
+        });
+      }
+    };
+
+    return (
+      <div className="flex-1 container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">Add Grade (Selection-Only)</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-2xl mx-auto">
+          {loading ? (
+            <div className="text-center text-slate-500 py-4">Loading data...</div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {submitStatus && (
+                <div className={`p-4 rounded-md ${submitStatus.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                  {submitStatus.message}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Student</label>
+                <select 
+                  required
+                  value={selectedStudent}
+                  onChange={(e) => setSelectedStudent(e.target.value)}
+                  className="w-full border-slate-300 rounded-md shadow-sm p-3 border focus:ring-blue-500 bg-slate-50"
+                >
+                  <option value="">-- Select Student --</option>
+                  {students.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.last_name} {s.first_name} ({s.registration_number})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Discipline</label>
+                <select 
+                  required
+                  value={selectedDiscipline}
+                  onChange={(e) => setSelectedDiscipline(e.target.value)}
+                  className="w-full border-slate-300 rounded-md shadow-sm p-3 border focus:ring-blue-500 bg-slate-50"
+                >
+                  <option value="">-- Select Discipline --</option>
+                  {disciplines.map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.code} - {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Grade (1-10)</label>
+                  <input 
+                    type="number" 
+                    min="1" max="10" 
+                    required
+                    value={gradeValue}
+                    onChange={(e) => setGradeValue(e.target.value)}
+                    className="w-full border-slate-300 rounded-md shadow-sm p-3 border focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Exam Session</label>
+                  <select 
+                    value={examSession}
+                    onChange={(e) => setExamSession(e.target.value)}
+                    className="w-full border-slate-300 rounded-md shadow-sm p-3 border focus:ring-blue-500"
+                  >
+                    <option value="WINTER">Winter</option>
+                    <option value="SUMMER">Summer</option>
+                    <option value="AUTUMN">Autumn (Re-take)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200"
+              >
+                Submit Grade
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const ViewReports = () => {
+    const [reportData, setReportData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    
+    // Filters state
+    const [academicYears, setAcademicYears] = useState([]);
+    const [specializations, setSpecializations] = useState([]);
+    
+    const [filters, setFilters] = useState({
+      academicYear: '',
+      specializationId: '',
+      studyYear: ''
+    });
+
+    useEffect(() => {
+      const loadFilters = async () => {
+        try {
+          const [yearsRes, specsRes] = await Promise.all([
+            lookupService.getAcademicYears(),
+            lookupService.getSpecializations()
+          ]);
+          setAcademicYears(yearsRes.data);
+          setSpecializations(specsRes.data);
+        } catch (err) {
+          console.error("Failed to load filters", err);
+        }
+      };
+      loadFilters();
+    }, []);
+
+    const handleSearch = async () => {
+      setLoading(true);
+      try {
+        const res = await reportsService.getCentralizer(filters);
+        setReportData(res.data);
+      } catch (err) {
+        console.error("Failed to load report", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const exportCSV = () => {
+      const csv = Papa.unparse(reportData);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'e-grade-centralizer.csv';
+      link.click();
+    };
+
+    const exportXLS = () => {
+      const worksheet = XLSX.utils.json_to_sheet(reportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Centralizer");
+      XLSX.writeFile(workbook, "e-grade-centralizer.xlsx");
+    };
+
+    const exportPDF = () => {
+      const doc = new jsPDF();
+      doc.text("e-Grade Centralizer", 14, 15);
+      
+      const tableColumn = ["Reg. Num", "First Name", "Last Name", "Avg Grade", "Credits", "Exams"];
+      const tableRows = [];
+
+      reportData.forEach(student => {
+        const rowData = [
+          student.registration_number,
+          student.first_name,
+          student.last_name,
+          student.average_grade || 'N/A',
+          student.accumulated_credits || '0',
+          student.exams_taken || '0'
+        ];
+        tableRows.push(rowData);
+      });
+
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+      });
+      doc.save("e-grade-centralizer.pdf");
+    };
+
+    const exportXML = () => {
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<centralizer>\n';
+      reportData.forEach(row => {
+        xml += '  <student>\n';
+        for (const [key, value] of Object.entries(row)) {
+          xml += `    <${key}>${value}</${key}>\n`;
+        }
+        xml += '  </student>\n';
+      });
+      xml += '</centralizer>';
+      const blob = new Blob([xml], { type: 'application/xml;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'e-grade-centralizer.xml';
+      link.click();
+    };
+
+    return (
     <div className="flex-1 container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">Reports – e-Grade Centralizer</h2>
 
+      {/* Control Panel */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[150px]">
           <label className="block text-xs font-medium text-slate-500 mb-1">Academic Year</label>
-          <select className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500"><option>2023-2024</option></select>
+          <select 
+            value={filters.academicYear}
+            onChange={(e) => setFilters({...filters, academicYear: e.target.value})}
+            className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500"
+          >
+            <option value="">All</option>
+            {academicYears.map(ay => <option key={ay.code} value={ay.code}>{ay.code}</option>)}
+          </select>
         </div>
         <div className="flex-1 min-w-[150px]">
           <label className="block text-xs font-medium text-slate-500 mb-1">Specialization</label>
-          <select className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500"><option>Informatics</option></select>
+          <select 
+            value={filters.specializationId}
+            onChange={(e) => setFilters({...filters, specializationId: e.target.value})}
+            className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500"
+          >
+            <option value="">All</option>
+            {specializations.map(sp => <option key={sp.id} value={sp.id}>{sp.name}</option>)}
+          </select>
         </div>
         <div className="flex-1 min-w-[150px]">
           <label className="block text-xs font-medium text-slate-500 mb-1">Study Year</label>
-          <select className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500"><option>Year 2</option></select>
-        </div>
-        <div className="flex-1 min-w-[150px]">
-          <label className="block text-xs font-medium text-slate-500 mb-1">Form of Education</label>
-          <select className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500">
-            <option>Full-time</option>
-            <option>Distance Learning</option>
+          <select 
+            value={filters.studyYear}
+            onChange={(e) => setFilters({...filters, studyYear: e.target.value})}
+            className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500"
+          >
+            <option value="">All</option>
+            {[1, 2, 3, 4].map(y => <option key={y} value={y}>Year {y}</option>)}
           </select>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition shadow-sm">
-          Generate
+        <button 
+          onClick={handleSearch}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition"
+        >
+          Generate Report
         </button>
       </div>
 
-      <div className="flex justify-between items-end mb-2">
-        <h3 className="text-lg font-semibold text-slate-700">
-          Preview Data <span className="text-xs font-normal text-slate-500 ml-2">(Sorted alphabetically)</span>
-        </h3>
-        <div className="flex space-x-2 items-center">
-          <label className="text-sm font-medium text-slate-600">Export as:</label>
-          <select className="border-slate-300 rounded-md shadow-sm p-1 border text-sm focus:ring-blue-500">
-            <option>PDF</option>
-            <option>XLS</option>
-            <option>CSV</option>
-            <option>XML</option>
-          </select>
-          <button className="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-md text-sm font-medium transition flex items-center space-x-1">
-            <Download className="h-4 w-4" />
-            <span>Download</span>
+      {/* Main Report Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <h3 className="text-lg font-medium text-slate-800">Generated Centralizer</h3>
+          <div className="flex space-x-3">
+            <button onClick={exportCSV} className="text-sm font-medium text-slate-600 border border-slate-300 px-3 py-1 rounded bg-white hover:bg-slate-50">CSV</button>
+            <button onClick={exportXML} className="text-sm font-medium text-slate-600 border border-slate-300 px-3 py-1 rounded bg-white hover:bg-slate-50">XML</button>
+            <button onClick={exportXLS} className="text-sm font-medium text-green-600 border border-green-300 px-3 py-1 rounded bg-green-50 hover:bg-green-100 flex items-center space-x-1">
+              <Download className="h-4 w-4" /> <span>XLS</span>
+            </button>
+            <button onClick={exportPDF} className="text-sm font-medium text-red-600 border border-red-300 px-3 py-1 rounded bg-red-50 hover:bg-red-100 flex items-center space-x-1">
+              <Download className="h-4 w-4" /> <span>PDF</span>
+            </button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-white">
+              <tr>
+                {['#', 'Reg. Num', 'Last Name', 'First Name', 'Average Grade', 'Total Credits', 'Exams Taken'].map((h) => (
+                  <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {loading ? (
+                <tr><td colSpan="7" className="text-center py-4 text-slate-500">Loading report...</td></tr>
+              ) : reportData.length === 0 ? (
+                <tr><td colSpan="7" className="text-center py-4 text-slate-500">No data found. Adjust filters and generate.</td></tr>
+              ) : reportData.map((row, idx) => (
+                <tr key={row.student_id} className="hover:bg-slate-50">
+                  <td className="px-6 py-4 text-slate-500">{idx + 1}</td>
+                  <td className="px-6 py-4 font-mono text-slate-500">{row.registration_number}</td>
+                  <td className="px-6 py-4 font-medium text-slate-900">{row.last_name}</td>
+                  <td className="px-6 py-4">{row.first_name}</td>
+                  <td className="px-6 py-4 font-bold text-blue-600">{row.average_grade || 'N/A'}</td>
+                  <td className="px-6 py-4">{row.accumulated_credits}</td>
+                  <td className="px-6 py-4">{row.exams_taken}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 text-sm text-slate-500">
+          Generated {new Date().toLocaleString()}
+        </div>
+      </div>
+    </div>
+  )};
+
+  const ViewDocuments = () => {
+    const [documents, setDocuments] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [filters, setFilters] = useState({
+      type: '', author_id: '', startDate: '', endDate: '', contentKeyword: ''
+    });
+
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [emailForm, setEmailForm] = useState({ groupId: '', subject: '', body: '' });
+    const [studyFormations, setStudyFormations] = useState([]);
+    const [emailStatus, setEmailStatus] = useState(null);
+
+    useEffect(() => {
+      fetchDocuments();
+      loadFormations();
+    }, []);
+
+    const fetchDocuments = async () => {
+      setLoading(true);
+      try {
+        const res = await documentsService.getDocuments(filters);
+        setDocuments(res.data);
+      } catch (err) {
+        console.error("Failed to load documents", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const loadFormations = async () => {
+      try {
+        const res = await lookupService.getStudyFormations();
+        setStudyFormations(res.data);
+      } catch (err) {
+        console.error("Failed to load formations", err);
+      }
+    };
+
+    const handleUpdateStatus = async (id, newStatus) => {
+      try {
+        await documentsService.updateStatus(id, newStatus);
+        fetchDocuments(); // refresh list
+      } catch (err) {
+        console.error("Failed to update status", err);
+      }
+    };
+
+    const handleSendEmail = async (e) => {
+      e.preventDefault();
+      setEmailStatus({ loading: true });
+      try {
+        const res = await notificationsService.sendGroupEmail(emailForm);
+        setEmailStatus({ success: true, message: res.data.message });
+        setTimeout(() => setShowEmailModal(false), 2000);
+      } catch (err) {
+        setEmailStatus({ success: false, message: err.response?.data?.message || 'Failed to send' });
+      }
+    };
+
+    return (
+      <div className="flex-1 container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-slate-800">Documents & Workflow</h2>
+          <button 
+            onClick={() => { setShowEmailModal(true); setEmailStatus(null); }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center space-x-2"
+          >
+            <Mail className="h-4 w-4" />
+            <span>Send Group Email (Outlook)</span>
           </button>
         </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              {['Student ID', 'Name', 'Discipline', 'Credits', 'Grade', 'Exam Date'].map(h => (
-                <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-slate-200">
-            {mockReports.map((row, idx) => (
-              <tr key={idx} className="hover:bg-slate-50">
-                <td className="px-6 py-4 font-mono text-slate-500">{row.id}</td>
-                <td className="px-6 py-4 font-medium text-slate-900">{row.name}</td>
-                <td className="px-6 py-4">{row.discipline}</td>
-                <td className="px-6 py-4">{row.credits}</td>
-                <td className="px-6 py-4 font-bold text-blue-600">{row.grade}</td>
-                <td className="px-6 py-4 text-slate-500">{row.examDate}</td>
+        {/* Email Modal */}
+        {showEmailModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+              <h3 className="text-xl font-bold text-slate-800 mb-4">Compose Group Email</h3>
+              {emailStatus && (
+                <div className={`p-3 rounded mb-4 text-sm ${emailStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {emailStatus.loading ? 'Sending via Nodemailer...' : emailStatus.message}
+                </div>
+              )}
+              <form onSubmit={handleSendEmail} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Target Group</label>
+                  <select required value={emailForm.groupId} onChange={e => setEmailForm({...emailForm, groupId: e.target.value})} className="w-full p-2 border border-slate-300 rounded">
+                    <option value="">-- Select Group --</option>
+                    {studyFormations.map(f => <option key={f.id} value={f.id}>{f.name} (Year {f.study_year})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
+                  <input required type="text" value={emailForm.subject} onChange={e => setEmailForm({...emailForm, subject: e.target.value})} className="w-full p-2 border border-slate-300 rounded" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Message Body</label>
+                  <textarea required rows="4" value={emailForm.body} onChange={e => setEmailForm({...emailForm, body: e.target.value})} className="w-full p-2 border border-slate-300 rounded"></textarea>
+                </div>
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button type="button" onClick={() => setShowEmailModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Cancel</button>
+                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" disabled={emailStatus?.loading}>Send Email</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Document type</label>
+            <input type="text" placeholder="e.g. Cerere bursa" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})} className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Start Date</label>
+            <input type="date" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">End Date</label>
+            <input type="date" value={filters.endDate} onChange={e => setFilters({...filters, endDate: e.target.value})} className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Full-text search</label>
+            <input type="text" placeholder="Keywords..." value={filters.contentKeyword} onChange={e => setFilters({...filters, contentKeyword: e.target.value})} className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
+          </div>
+          <button onClick={fetchDocuments} className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2 rounded-md font-medium transition flex items-center justify-center space-x-2">
+            <Search className="h-4 w-4" />
+            <span>Search</span>
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50">
+              <tr>
+                {['Type', 'Title', 'Author', 'Created Date', 'Status', 'Actions'].map(h => (
+                  <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 text-xs text-slate-400 text-right">
-          Generation time: 0.24 sec
-        </div>
-      </div>
-    </div>
-  );
-
-  const ViewDocuments = () => (
-    <div className="flex-1 container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">Documents & Workflow</h2>
-
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-        <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Document type</label>
-          <select className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500">
-            <option>All Types</option>
-            <option>Scholarship Request</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Created from / to</label>
-          <input type="date" className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Author</label>
-          <input type="text" placeholder="Name or ID" className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Full-text search</label>
-          <input type="text" placeholder="Keywords..." className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500" />
-        </div>
-        <button className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2 rounded-md font-medium transition flex items-center justify-center space-x-2">
-          <Search className="h-4 w-4" />
-          <span>Search</span>
-        </button>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              {['Doc ID', 'Type', 'Title', 'Author', 'Created Date', 'Status', 'Actions'].map(h => (
-                <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-200">
+              {loading ? (
+                <tr><td colSpan="6" className="text-center py-4 text-slate-500">Loading documents...</td></tr>
+              ) : documents.length === 0 ? (
+                <tr><td colSpan="6" className="text-center py-4 text-slate-500">No documents found matching filters.</td></tr>
+              ) : documents.map((row) => (
+                <tr key={row.id} className="hover:bg-slate-50">
+                  <td className="px-6 py-4">{row.type}</td>
+                  <td className="px-6 py-4 font-medium text-slate-900">{row.title}</td>
+                  <td className="px-6 py-4">{row.author_name || 'System'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{new Date(row.created_at).toLocaleDateString()}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      row.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 
+                      row.status === 'REJECTED' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-3">
+                    <button className="text-slate-600 hover:text-slate-900" title="View"><Eye className="h-4 w-4" /></button>
+                    {row.status !== 'APPROVED' && (
+                      <button onClick={() => handleUpdateStatus(row.id, 'APPROVED')} className="text-green-600 hover:text-green-900" title="Approve"><CheckCircle className="h-4 w-4" /></button>
+                    )}
+                    {row.status !== 'REJECTED' && (
+                      <button onClick={() => handleUpdateStatus(row.id, 'REJECTED')} className="text-red-600 hover:text-red-900" title="Reject"><Trash className="h-4 w-4" /></button>
+                    )}
+                  </td>
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-slate-200">
-            {mockDocs.map((row) => (
-              <tr key={row.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4 font-mono text-slate-500">{row.id}</td>
-                <td className="px-6 py-4">{row.type}</td>
-                <td className="px-6 py-4 font-medium text-slate-900">{row.title}</td>
-                <td className="px-6 py-4">{row.author}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{row.date}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    row.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {row.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-3">
-                  <button className="text-slate-600 hover:text-slate-900 flex items-center space-x-1" title="View"><Eye className="h-4 w-4" /></button>
-                  <button className="text-green-600 hover:text-green-900 flex items-center space-x-1" title="Approve"><CheckCircle className="h-4 w-4" /></button>
-                  <button className="text-blue-600 hover:text-blue-900 flex items-center space-x-1" title="Send email to group"><Mail className="h-4 w-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const ViewAdmin = () => {
-    const [adminTab, setAdminTab] = useState('users');
+    const [adminTab, setAdminTab] = useState('audit');
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [rollbackStatus, setRollbackStatus] = useState(null);
+
+    useEffect(() => {
+      if (adminTab === 'audit') {
+        fetchAuditLogs();
+      }
+    }, [adminTab]);
+
+    const fetchAuditLogs = async () => {
+      setLoading(true);
+      try {
+        const res = await auditService.getLogs();
+        setAuditLogs(res.data);
+      } catch (err) {
+        console.error("Failed to load audit logs", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleRollback = async (log) => {
+      if (!window.confirm(`Are you sure you want to rollback this ${log.entity_type} UPDATE?`)) return;
+      
+      try {
+        const res = await auditService.rollback(log.id);
+        setRollbackStatus({ success: true, message: res.data.message });
+        fetchAuditLogs(); // refresh
+        setTimeout(() => setRollbackStatus(null), 3000);
+      } catch (err) {
+        setRollbackStatus({ success: false, message: err.response?.data?.message || 'Rollback failed' });
+        setTimeout(() => setRollbackStatus(null), 3000);
+      }
+    };
 
     return (
       <div className="flex-1 container mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-slate-800 mb-6">Administration & Audit</h2>
 
+        {rollbackStatus && (
+          <div className={`p-4 rounded-md mb-4 ${rollbackStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {rollbackStatus.message}
+          </div>
+        )}
+
         {/* Inner Tabs */}
         <div className="flex border-b border-slate-200 mb-6 overflow-x-auto">
           {[
+            { id: 'audit', label: 'Audit Log & Rollback' },
             { id: 'users', label: 'Users & Roles' },
-            { id: 'audit', label: 'Audit Log' },
             { id: 'queries', label: 'Query Monitor (DBA)' },
-            { id: 'backup', label: 'Backup / Rollback' },
           ].map(t => (
             <button 
               key={t.id}
@@ -651,120 +1087,36 @@ export default function App() {
         </div>
 
         {/* Tab Content */}
-        {adminTab === 'users' && (
-          <div>
-            <div className="flex justify-end mb-4">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center space-x-2">
-                <Plus className="h-4 w-4" /> <span>Add User</span>
-              </button>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>{['Username', 'Name', 'Role(s)', 'Status', 'Actions'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
-                  {mockUsers.map((u, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="px-6 py-4 font-mono font-medium text-slate-700">{u.username}</td>
-                      <td className="px-6 py-4">{u.name}</td>
-                      <td className="px-6 py-4"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{u.roles}</span></td>
-                      <td className="px-6 py-4"><span className="text-green-600 font-medium text-xs">{u.status}</span></td>
-                      <td className="px-6 py-4 text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 border border-blue-200 bg-blue-50 px-2 py-1 rounded text-xs">Edit Roles</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
         {adminTab === 'audit' && (
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50">
-                <tr>{['Timestamp', 'User', 'Action', 'Entity', 'Before', 'After'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
+                <tr>{['Timestamp', 'User', 'Action', 'Entity', 'Before', 'After', 'Rollback'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
-                {mockAudit.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{row.time}</td>
-                    <td className="px-6 py-4 font-mono text-xs">{row.user}</td>
-                    <td className="px-6 py-4 font-medium">{row.action}</td>
-                    <td className="px-6 py-4">{row.entity}</td>
-                    <td className="px-6 py-4 text-red-500 text-xs">{row.before}</td>
-                    <td className="px-6 py-4 text-green-600 text-xs">{row.after}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {adminTab === 'queries' && (
-          <div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-4 flex gap-4 items-end">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-slate-500 mb-1">Filter by Status</label>
-                <select className="w-full border-slate-300 rounded-md shadow-sm p-2 border text-sm focus:ring-blue-500">
-                  <option>All Queries</option>
-                  <option>Running</option>
-                  <option>Slow Queries (&gt;1000ms)</option>
-                </select>
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-slate-500 mb-1">Search Query Text</label>
-                <input type="text" placeholder="e.g. SELECT * FROM..." className="w-full border-slate-300 rounded-md shadow-sm p-2 border text-sm focus:ring-blue-500" />
-              </div>
-              <button className="bg-slate-800 text-white px-6 py-2 rounded-md text-sm font-medium transition flex items-center space-x-2">
-                <Activity className="h-4 w-4" />
-                <span>Monitor</span>
-              </button>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>{['Query ID', 'Time', 'User', 'Query Statement', 'Duration', 'Status'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
-                  {mockQueries.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="px-6 py-4 font-mono text-xs text-slate-500 whitespace-nowrap">{row.id}</td>
-                      <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{row.time}</td>
-                      <td className="px-6 py-4 font-mono text-xs">{row.user}</td>
-                      <td className="px-6 py-4 font-mono text-xs text-blue-600 bg-slate-50 break-all">{row.query}</td>
-                      <td className="px-6 py-4 font-medium">{row.duration}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${row.status === 'Success' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                          {row.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {adminTab === 'backup' && (
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b border-slate-200 bg-slate-50 font-medium text-slate-700">List of Recovery Points</div>
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50">
-                <tr>{['Date/Time', 'Created by', 'Description', 'Actions'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {mockBackups.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 font-medium">{row.time}</td>
-                    <td className="px-6 py-4 text-slate-500">{row.creator}</td>
-                    <td className="px-6 py-4">{row.desc}</td>
-                    <td className="px-6 py-4 text-sm font-medium flex space-x-2">
-                      <button className="text-slate-600 hover:text-blue-600 border border-slate-200 bg-white px-2 py-1 rounded text-xs shadow-sm">Preview</button>
-                      <button className="text-red-600 hover:text-white hover:bg-red-600 border border-red-200 bg-red-50 px-2 py-1 rounded text-xs transition">Rollback</button>
+                {loading ? (
+                  <tr><td colSpan="7" className="text-center py-4">Loading...</td></tr>
+                ) : auditLogs.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{new Date(row.occurred_at).toLocaleString()}</td>
+                    <td className="px-6 py-4 font-mono text-xs">{row.actor_name || 'System'}</td>
+                    <td className="px-6 py-4 font-medium">{row.action_type}</td>
+                    <td className="px-6 py-4">{row.entity_type}</td>
+                    <td className="px-6 py-4 text-red-500 text-xs max-w-xs truncate" title={JSON.stringify(row.before_snapshot_json)}>
+                      {row.before_snapshot_json ? JSON.stringify(row.before_snapshot_json).substring(0, 50) + '...' : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-green-600 text-xs max-w-xs truncate" title={JSON.stringify(row.after_snapshot_json)}>
+                      {row.after_snapshot_json ? JSON.stringify(row.after_snapshot_json).substring(0, 50) + '...' : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium">
+                      {row.action_type === 'UPDATE' && row.before_snapshot_json && (
+                        <button 
+                          onClick={() => handleRollback(row)}
+                          className="text-red-600 hover:text-white hover:bg-red-600 border border-red-200 bg-red-50 px-2 py-1 rounded text-xs transition"
+                        >
+                          Rollback
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -772,6 +1124,15 @@ export default function App() {
             </table>
           </div>
         )}
+
+        {adminTab === 'users' && (
+          <div className="p-4 text-center text-slate-500 bg-white rounded-lg border border-slate-200">User management is out of scope for this demo.</div>
+        )}
+
+        {adminTab === 'queries' && (
+          <div className="p-4 text-center text-slate-500 bg-white rounded-lg border border-slate-200">Query monitor is out of scope for this demo.</div>
+        )}
+
       </div>
     );
   };
@@ -786,6 +1147,7 @@ export default function App() {
       {currentPage === 'public' && <ViewPublicPortal />}
       {currentPage === 'dashboard' && <ViewDashboard />}
       {currentPage === 'students' && <ViewStudents />}
+      {currentPage === 'add-grade' && <ViewAddGrade />}
       {currentPage === 'reports' && <ViewReports />}
       {currentPage === 'documents' && <ViewDocuments />}
       {currentPage === 'admin' && <ViewAdmin />}

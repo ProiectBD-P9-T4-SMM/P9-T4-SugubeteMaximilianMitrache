@@ -28,7 +28,26 @@ export const lookupService = {
 export const academicService = {
   getStudents: () => api.get('/academic/students'),
   getGrades: () => api.get('/academic/grades'),
+  addGrade: (data) => api.post('/academic/grades', data),
   updateGrade: (id, data) => api.put(`/academic/grades/${id}`, data),
+};
+
+export const reportsService = {
+  getCentralizer: (params) => api.get('/reports/centralizer', { params }),
+};
+
+export const documentsService = {
+  getDocuments: (params) => api.get('/documents', { params }),
+  updateStatus: (id, status) => api.put(`/documents/${id}/status`, { status }),
+};
+
+export const notificationsService = {
+  sendGroupEmail: (data) => api.post('/notifications/send', data),
+};
+
+export const auditService = {
+  getLogs: () => api.get('/audit'),
+  rollback: (logId) => api.post(`/audit/rollback/${logId}`),
 };
 
 export default api;

@@ -6,6 +6,10 @@ const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
 const lookupRoutes = require('./routes/lookup');
 const academicRoutes = require('./routes/academic');
+const reportsRoutes = require('./routes/reports');
+const documentsRoutes = require('./routes/documents');
+const notificationsRoutes = require('./routes/notifications');
+const auditRoutes = require('./routes/audit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +22,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/lookup', lookupRoutes);
 app.use('/api/academic', academicRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/documents', documentsRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Root route
 app.get('/', (req, res) => {

@@ -48,50 +48,22 @@ router.post('/students/bulk', async (req, res, next) => {
   const { students } = req.body;
   
   if (!Array.isArray(students) || students.length === 0) {
-    return res.status(400).json({ message: 'Invalid payload. Expected an array of students.' });
+    return res.status(400).json({ error: true, message: 'Invalid students data.' });
   }
 
-  const client = await db.getPool().connect();
   try {
-    await client.query('BEGIN');
-    
-    // Process each student
-    const addedStudents = [];
+    const results = [];
     for (const student of students) {
-      const { first_name, last_name, email, study_formation_code } = student;
-      
-      // Lookup the formation ID by its code
-      const formationRes = await client.query('SELECT id FROM STUDY_FORMATION WHERE code = $1 LIMIT 1', [study_formation_code]);
-      if (formationRes.rows.length === 0) {
-         throw new Error(`Study formation code '${study_formation_code}' not found.`);
-      }
-      const study_formation_id = formationRes.rows[0].id;
-      
       const regNum = 'MAT' + Math.floor(1000 + Math.random() * 9000);
-      
-      const insertQuery = `
+      const res = await db.query(`
         INSERT INTO STUDENT (registration_number, first_name, last_name, email, study_formation_id, enrollment_date, status)
-        VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE')
-        RETURNING *
-      `;
-      const result = await client.query(insertQuery, [regNum, first_name, last_name, email, study_formation_id, new Date().toISOString()]);
-      const newStudent = result.rows[0];
-      addedStudents.push(newStudent);
-      
-      // Audit log it
-      await client.query(`
-        INSERT INTO AUDIT_LOG_ENTRY (user_id, operation_type, table_name, record_id, before_snapshot_json, after_snapshot_json)
-        VALUES ($1, 'INSERT', 'STUDENT', $2, NULL, $3)
-      `, [req.user.id, newStudent.id, JSON.stringify(newStudent)]);
+        VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 'ENROLLED') RETURNING *
+      `, [regNum, student.first_name, student.last_name, student.email, student.study_formation_id]);
+      results.push(res.rows[0]);
     }
-
-    await client.query('COMMIT');
-    res.status(201).json({ success: true, count: addedStudents.length, message: `Successfully imported ${addedStudents.length} students.` });
+    res.json({ success: true, message: `Successfully imported ${results.length} students.`, data: results });
   } catch (error) {
-    await client.query('ROLLBACK');
     next(error);
-  } finally {
-    client.release();
   }
 });
 
@@ -114,11 +86,10 @@ router.put('/students/:id', async (req, res, next) => {
   }
 });
 
-// Soft Delete Student
+// Soft Delete Student (mark as INACTIVE)
 router.delete('/students/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    
     const updatedStudent = await auditableUpdate(
       req.user.id,
       'ACADEMIC_DATA',
@@ -126,47 +97,54 @@ router.delete('/students/:id', async (req, res, next) => {
       id,
       { status: 'INACTIVE' }
     );
-    res.json({ success: true, message: 'Student marked as INACTIVE', student: updatedStudent });
+    res.json(updatedStudent);
   } catch (error) {
     next(error);
   }
 });
 
 // --- GRADES ---
+
+// Fetch all grades for centralizer
 router.get('/grades', async (req, res, next) => {
   try {
-    const query = `
-      SELECT g.id, g.value, g.exam_session, g.grading_date, g.validated,
-             s.registration_number, s.first_name as student_first_name, s.last_name as student_last_name,
-             d.name as discipline_name, d.code as discipline_code,
-             u.full_name as graded_by
+    const { student_id, academic_year_id } = req.query;
+    let query = `
+      SELECT g.*, s.first_name, s.last_name, d.name as discipline_name, d.ects_credits
       FROM GRADE g
       JOIN STUDENT s ON g.student_id = s.id
       JOIN DISCIPLINE d ON g.discipline_id = d.id
-      LEFT JOIN USER_ACCOUNT u ON g.graded_by_user_id = u.id
-      ORDER BY g.grading_date DESC
+      WHERE 1=1
     `;
-    const result = await db.query(query);
+    const params = [];
+    if (student_id) {
+      params.push(student_id);
+      query += ` AND g.student_id = $${params.length}`;
+    }
+    if (academic_year_id) {
+      params.push(academic_year_id);
+      query += ` AND g.academic_year_id = $${params.length}`;
+    }
+
+    const result = await db.query(query, params);
     res.json(result.rows);
   } catch (error) {
     next(error);
   }
 });
 
-// Example of auditable update for a grade
+// Update Grade
 router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN']), async (req, res, next) => {
   try {
-    const gradeId = req.params.id;
-    const { value, validated } = req.body;
-
-    const updateFields = { value, validated };
+    const { id } = req.params;
+    const { value, exam_session } = req.body;
     
     const updatedGrade = await auditableUpdate(
-      req.user.id, 
-      'ACADEMIC_DATA', 
-      'GRADE', 
-      gradeId, 
-      updateFields
+      req.user.id,
+      'ACADEMIC_DATA',
+      'GRADE',
+      id,
+      { value, exam_session }
     );
 
     res.json(updatedGrade);

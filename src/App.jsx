@@ -10,7 +10,6 @@ import Register from './pages/Register';
 import PublicPortal from './pages/PublicPortal';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
-import AddGrades from './pages/AddGrades';
 import Disciplines from './pages/Disciplines';
 import Centralizer from './pages/Centralizer';
 import GradesList from './pages/GradesList';
@@ -50,11 +49,6 @@ export default function App() {
             <Route 
               path="/disciplines" 
               element={<RoleRoute allowed={['ADMIN', 'SECRETARIAT']}><Disciplines /></RoleRoute>} 
-            />
-            
-            <Route 
-              path="/grades/add" 
-              element={<RoleRoute allowed={['PROFESSOR', 'ADMIN']}><AddGrades /></RoleRoute>} 
             />
             
             <Route 

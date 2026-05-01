@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save, History, Download, Upload, FileText } from 'lucide-react';
+import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save, History, Download, Upload, FileText, Plus } from 'lucide-react';
 import api, { academicService } from '../services/api';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
@@ -59,6 +59,10 @@ export default function GradesList() {
   const [importLoading, setImportLoading] = useState(false);
   const [importResults, setImportResults] = useState(null);
 
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addFormData, setAddFormData] = useState({ studentId: '', disciplineId: '', gradeValue: '', examSession: 'WINTER' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleExport = async () => {
     try {
       const response = await academicService.exportGrades(filters);
@@ -110,6 +114,41 @@ export default function GradesList() {
       setShowTemplateModal(false);
     } catch (err) {
       setMessage({ type: 'error', text: 'Failed to generate template.' });
+    }
+  };
+
+  const handleAddGradeSubmit = async (e) => {
+    e.preventDefault();
+    setMessage({ type: '', text: '' });
+
+    if (!addFormData.studentId || !addFormData.disciplineId) {
+      setMessage({ type: 'error', text: 'Please select a student and a discipline.' });
+      return;
+    }
+
+    const gradeNum = parseFloat(addFormData.gradeValue);
+    if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > 10) {
+      setMessage({ type: 'error', text: 'Grade must be between 0 and 10.' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await api.post('/academic/grades', {
+        studentId: addFormData.studentId,
+        disciplineId: addFormData.disciplineId,
+        gradeValue: gradeNum,
+        examSession: addFormData.examSession
+      });
+      
+      setMessage({ type: 'success', text: 'Grade added successfully!' });
+      setAddFormData({ ...addFormData, gradeValue: '' });
+      setShowAddModal(false);
+      loadGrades(filters);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Error saving grade.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -311,6 +350,12 @@ export default function GradesList() {
         </div>
 
         <div className="flex gap-2">
+          <button
+            onClick={() => { setShowAddModal(true); setMessage({ type: '', text: '' }); }}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition font-bold text-sm shadow-md shadow-blue-100"
+          >
+            <Plus size={16} /> Add Grade
+          </button>
           <button
             onClick={handleExport}
             className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-md hover:bg-emerald-100 transition font-bold text-sm"
@@ -869,6 +914,110 @@ export default function GradesList() {
                   className="flex-1 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition shadow-lg shadow-amber-100 disabled:opacity-50"
                 >
                   Download CSV Template
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Grade Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <Plus className="text-blue-600" size={24} /> Add Official Grade
+              </h3>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddGradeSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Student</label>
+                  <Select 
+                    options={(addFormData.disciplineId 
+                      ? students.filter(s => {
+                          const disc = disciplines.find(d => d.id === addFormData.disciplineId);
+                          return s.curriculum_ids && s.curriculum_ids.includes(disc?.curriculum_id);
+                        })
+                      : students
+                    ).map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name} (${s.registration_number})` }))}
+                    value={addFormData.studentId ? { value: addFormData.studentId, label: students.find(s => s.id === addFormData.studentId)?.last_name + ' ' + students.find(s => s.id === addFormData.studentId)?.first_name } : null}
+                    onChange={(option) => setAddFormData({...addFormData, studentId: option ? option.value : ''})}
+                    placeholder="Search Student..."
+                    isClearable
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Discipline</label>
+                  <Select 
+                    options={(addFormData.studentId
+                      ? disciplines.filter(d => {
+                          const student = students.find(s => s.id === addFormData.studentId);
+                          return student?.curriculum_ids && student.curriculum_ids.includes(d.curriculum_id);
+                        })
+                      : disciplines
+                    ).map(d => ({ value: d.id, label: `${d.name} (Sem. ${d.semester})` }))}
+                    value={addFormData.disciplineId ? { value: addFormData.disciplineId, label: disciplines.find(d => d.id === addFormData.disciplineId)?.name } : null}
+                    onChange={(option) => {
+                      const disc = disciplines.find(d => d.id === option?.value);
+                      const autoSession = disc ? (disc.semester % 2 !== 0 ? 'WINTER' : 'SUMMER') : addFormData.examSession;
+                      setAddFormData({...addFormData, disciplineId: option ? option.value : '', examSession: autoSession});
+                    }}
+                    placeholder="Search Discipline..."
+                    isClearable
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Session</label>
+                    <Select 
+                      options={[
+                        { value: 'WINTER', label: 'Winter' },
+                        { value: 'SUMMER', label: 'Summer' },
+                        { value: 'RETAKE', label: 'Retake' }
+                      ]}
+                      value={{ value: addFormData.examSession, label: addFormData.examSession }}
+                      onChange={(option) => setAddFormData({...addFormData, examSession: option ? option.value : 'WINTER'})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Grade (0-10)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      min="0" 
+                      max="10" 
+                      required
+                      className="w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border font-bold text-blue-600"
+                      value={addFormData.gradeValue}
+                      onChange={(e) => setAddFormData({...addFormData, gradeValue: e.target.value})}
+                      placeholder="0=Abs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100 disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Saving...' : 'Save Official Grade'}
                 </button>
               </div>
             </form>

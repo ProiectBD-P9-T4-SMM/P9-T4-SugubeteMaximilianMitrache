@@ -2,15 +2,46 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { verifyToken } = require('../middleware/auth');
-const { auditableUpdate, auditableInsert } = require('../services/auditService');
+const { auditableUpdate, auditableInsert, auditableDelete } = require('../services/auditService');
 
 router.use(verifyToken);
-
 // GET /api/admin/roles - Fetch available roles
 router.get('/roles', async (req, res, next) => {
   try {
     const result = await db.query('SELECT * FROM ROLE ORDER BY name ASC');
     res.json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/admin/roles - Create a new role
+router.post('/roles', async (req, res, next) => {
+  try {
+    const { code, name, description } = req.body;
+    const result = await auditableInsert(req.user.id, 'ADMINISTRATION', 'ROLE', { code, name, description });
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/admin/roles/:id - Update a role
+router.put('/roles/:id', async (req, res, next) => {
+  try {
+    const { code, name, description } = req.body;
+    const result = await auditableUpdate(req.user.id, 'ADMINISTRATION', 'ROLE', req.params.id, { code, name, description });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/admin/roles/:id - Delete a role
+router.delete('/roles/:id', async (req, res, next) => {
+  try {
+    await auditableDelete(req.user.id, 'ADMINISTRATION', 'ROLE', req.params.id);
+    res.json({ success: true, message: 'Role deleted successfully' });
   } catch (error) {
     next(error);
   }
@@ -34,6 +65,46 @@ router.get('/users', async (req, res, next) => {
   }
 });
 
+// POST /api/admin/users - Create a new user (local admin creation)
+router.post('/users', async (req, res, next) => {
+  try {
+    const { sso_subject, username, email, full_name, account_status } = req.body;
+    const result = await auditableInsert(req.user.id, 'ADMINISTRATION', 'USER_ACCOUNT', { 
+      sso_subject, username, email, full_name, account_status: account_status || 'ACTIVE' 
+    });
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/admin/users/:id - Update user details
+router.put('/users/:id', async (req, res, next) => {
+  try {
+    const { full_name, email, account_status, username } = req.body;
+    const updateFields = {};
+    if (full_name) updateFields.full_name = full_name;
+    if (email) updateFields.email = email;
+    if (account_status) updateFields.account_status = account_status;
+    if (username) updateFields.username = username;
+
+    const result = await auditableUpdate(req.user.id, 'ADMINISTRATION', 'USER_ACCOUNT', req.params.id, updateFields);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/admin/users/:id - Delete a user
+router.delete('/users/:id', async (req, res, next) => {
+  try {
+    await auditableDelete(req.user.id, 'ADMINISTRATION', 'USER_ACCOUNT', req.params.id);
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // PUT /api/admin/users/:id/role - Update user's role
 router.put('/users/:id/role', async (req, res, next) => {
   try {
@@ -44,22 +115,9 @@ router.put('/users/:id/role', async (req, res, next) => {
     const existing = await db.query('SELECT id FROM USER_ROLE WHERE user_id = $1', [userId]);
     
     if (existing.rows.length > 0) {
-      // Update existing
-      await auditableUpdate(
-        req.user.id,
-        'ADMINISTRATION',
-        'USER_ROLE',
-        existing.rows[0].id,
-        { role_id: roleId }
-      );
+      await auditableUpdate(req.user.id, 'ADMINISTRATION', 'USER_ROLE', existing.rows[0].id, { role_id: roleId });
     } else {
-      // Insert new
-      await auditableInsert(
-        req.user.id,
-        'ADMINISTRATION',
-        'USER_ROLE',
-        { user_id: userId, role_id: roleId }
-      );
+      await auditableInsert(req.user.id, 'ADMINISTRATION', 'USER_ROLE', { user_id: userId, role_id: roleId });
     }
     
     res.json({ success: true, message: 'Role updated successfully' });

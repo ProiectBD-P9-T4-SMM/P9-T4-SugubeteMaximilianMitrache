@@ -78,8 +78,16 @@ export const auditService = {
 
 export const adminService = {
   getRoles: () => api.get('/admin/roles'),
+  createRole: (data) => api.post('/admin/roles', data),
+  updateRole: (id, data) => api.put(`/admin/roles/${id}`, data),
+  deleteRole: (id) => api.delete(`/admin/roles/${id}`),
+  
   getUsers: () => api.get('/admin/users'),
+  createUser: (data) => api.post('/admin/users', data),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
   updateUserRole: (id, roleId) => api.put(`/admin/users/${id}/role`, { roleId }),
+  
   getActiveQueries: () => api.get('/admin/queries'),
   getEmailLogs: () => api.get('/admin/emails'),
   getBackups: () => api.get('/admin/backups'),

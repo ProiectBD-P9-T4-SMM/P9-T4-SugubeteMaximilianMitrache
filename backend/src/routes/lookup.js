@@ -46,12 +46,12 @@ router.get('/study-formations', async (req, res, next) => {
 router.get('/disciplines', async (req, res, next) => {
   try {
     const query = `
-      SELECT d.id, d.code, d.name, d.semester, d.evaluation_type, d.ects_credits
+      SELECT d.id, d.code, d.name, d.semester, d.evaluation_type, d.ects_credits, d.curriculum_id
       FROM DISCIPLINE d
       ORDER BY d.semester, d.name ASC
     `;
     const result = await db.query(query);
-    res.json(result.rows);
+    res.json({ success: true, disciplines: result.rows });
   } catch (error) {
     next(error);
   }

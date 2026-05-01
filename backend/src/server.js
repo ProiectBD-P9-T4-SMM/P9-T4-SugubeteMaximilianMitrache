@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
 
+const mockSsoRoutes = require('./routes/mockSso');
 const authRoutes = require('./routes/auth');
 const lookupRoutes = require('./routes/lookup');
 const academicRoutes = require('./routes/academic');
@@ -21,6 +22,10 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+// Ruta externă (Simulatorul Universității)
+app.use('/api/mock-sso', mockSsoRoutes);
+
+// Rutele interne AFSMS
 app.use('/api/auth', authRoutes);
 app.use('/api/lookup', lookupRoutes);
 app.use('/api/academic', academicRoutes);

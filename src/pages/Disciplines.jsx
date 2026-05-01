@@ -1,11 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Trash2, Edit2, Plus, X, AlertCircle, CheckCircle, BookOpen, Layers, GraduationCap } from 'lucide-react';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function Disciplines() {
+  const specRef = useRef(null);
+  const planRef = useRef(null);
+  
   const [specializations, setSpecializations] = useState([]);
   const [curricula, setCurricula] = useState([]);
   const [disciplines, setDisciplines] = useState([]);
+
+  useKeyboardShortcuts({
+    'Alt+S': () => specRef.current?.focus(),
+    'Alt+P': () => planRef.current?.focus(),
+    'Alt+D': () => {
+      if (selectedCurriculum) {
+        resetDisciplineForm();
+        setShowDisciplineForm(!showDisciplineForm);
+      }
+    },
+    'Escape': () => {
+      setShowSpecForm(false);
+      setShowCurriculumForm(false);
+      setShowDisciplineForm(false);
+    }
+  });
 
   const [selectedSpecialization, setSelectedSpecialization] = useState('');
   const [selectedCurriculum, setSelectedCurriculum] = useState('');
@@ -302,6 +322,7 @@ export default function Disciplines() {
         ) : (
           <select
             value={selectedSpecialization}
+            ref={specRef}
             onChange={(e) => setSelectedSpecialization(e.target.value)}
             className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
           >
@@ -352,6 +373,7 @@ export default function Disciplines() {
         ) : (
           <select
             value={selectedCurriculum}
+            ref={planRef}
             onChange={(e) => setSelectedCurriculum(e.target.value)}
             className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
           >

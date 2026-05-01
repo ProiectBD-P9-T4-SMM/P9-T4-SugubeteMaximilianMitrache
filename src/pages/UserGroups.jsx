@@ -1,13 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Users, Plus, Trash2, UserPlus, X, Edit, Save, Check } from 'lucide-react';
 import Select from 'react-select';
 import { groupsService, adminService } from '../services/api';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function UserGroups() {
+  const nameRef = useRef(null);
+  const memberRef = useRef(null);
+  
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [members, setMembers] = useState([]);
   const [systemUsers, setSystemUsers] = useState([]);
+
+  useKeyboardShortcuts({
+    'Alt+N': () => nameRef.current?.focus(),
+    'Alt+M': () => memberRef.current?.focus(),
+    'Escape': () => {
+      setIsEditing(false);
+      setSelectedGroup(null);
+    }
+  });
   
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
@@ -138,7 +151,7 @@ export default function UserGroups() {
             </div>
             
             <form onSubmit={handleCreateGroup} className="mb-6 space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <input required type="text" placeholder="New Group Name" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+              <input required ref={nameRef} type="text" placeholder="New Group Name" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
               <input type="text" placeholder="Group Description" value={newGroupDesc} onChange={e => setNewGroupDesc(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
               <button type="submit" className="w-full bg-slate-900 text-white rounded-xl py-3 text-xs font-black flex justify-center items-center gap-2 hover:bg-black shadow-lg transition-all">
                 <Plus size={16} /> Create Group
@@ -215,6 +228,7 @@ export default function UserGroups() {
                     <form onSubmit={handleAddMember} className="flex flex-col md:flex-row gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div className="flex-1">
                             <Select
+                                ref={memberRef}
                                 className="text-sm"
                                 options={systemUsers.filter(u => !members.find(m => m.user_account_id === u.id)).map(u => ({ value: u.id, label: `${u.full_name} (${u.email})` }))}
                                 value={selectedUserId ? { value: selectedUserId, label: systemUsers.find(u => u.id === selectedUserId)?.full_name } : null}

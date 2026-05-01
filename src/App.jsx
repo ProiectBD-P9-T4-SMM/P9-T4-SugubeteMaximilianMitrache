@@ -21,6 +21,7 @@ import UserGroups from './pages/UserGroups';
 import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
 import Help from './pages/Help';
+import Shortcuts from './pages/Shortcuts';
 
 export default function App() {
   return (
@@ -83,6 +84,7 @@ export default function App() {
 
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/shortcuts" element={<Shortcuts />} />
             <Route path="/help" element={<Help />} />
           </Route>
           

@@ -1,14 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { AlertCircle, CheckCircle, X } from 'lucide-react';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function AddGrades() {
+  const studentRef = useRef(null);
+  const disciplineRef = useRef(null);
+  const gradeRef = useRef(null);
+  
   const [students, setStudents] = useState([]);
   const [disciplines, setDisciplines] = useState([]);
   const [formData, setFormData] = useState({ studentId: '', disciplineId: '', gradeValue: '', examSession: 'WINTER' });
   const [message, setMessage] = useState({ type: '', text: '', hint: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recentGrades, setRecentGrades] = useState([]);
+
+  useKeyboardShortcuts({
+    'Alt+S': () => studentRef.current?.focus(),
+    'Alt+D': () => disciplineRef.current?.focus(),
+    'Alt+N': () => gradeRef.current?.focus(),
+    'Enter': (e) => {
+      // Only submit if an input or select is focused (not global)
+      if (['INPUT', 'SELECT'].includes(document.activeElement.tagName)) {
+        handleSubmit(e);
+      }
+    }
+  });
 
   useEffect(() => {
     // Fetch data for dropdowns
@@ -82,6 +99,7 @@ export default function AddGrades() {
       }, ...recentGrades.slice(0, 4)]);
       
       setFormData({ ...formData, gradeValue: '' }); // Reset only the grade, keep context
+      setTimeout(() => studentRef.current?.focus(), 100);
     } catch (err) {
       const msg = err.response?.data?.message || 'Error saving grade.';
       let suggestion = "Check if the grade is valid and if you have selected all parameters.";
@@ -130,6 +148,7 @@ export default function AddGrades() {
               </div>
               <select 
                 required
+                ref={studentRef}
                 className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border"
                 value={formData.studentId}
                 onChange={(e) => setFormData({...formData, studentId: e.target.value})}
@@ -157,6 +176,7 @@ export default function AddGrades() {
               </div>
               <select 
                 required
+                ref={disciplineRef}
                 className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border"
                 value={formData.disciplineId}
                 onChange={(e) => setFormData({...formData, disciplineId: e.target.value})}
@@ -204,6 +224,7 @@ export default function AddGrades() {
                   min="0" 
                   max="10" 
                   required
+                  ref={gradeRef}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border"
                   value={formData.gradeValue}
                   onChange={(e) => setFormData({...formData, gradeValue: e.target.value})}

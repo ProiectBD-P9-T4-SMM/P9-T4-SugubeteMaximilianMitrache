@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save } from 'lucide-react';
 import api from '../services/api';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function GradesList() {
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+
+  useKeyboardShortcuts({
+    'Alt+F': () => setShowFilters(!showFilters),
+    'Alt+R': () => handleClearFilters(),
+    'Escape': () => {
+      setShowFilters(false);
+      setEditingId(null);
+    }
+  });
   
   // Filter and Lookup states
   const [students, setStudents] = useState([]);

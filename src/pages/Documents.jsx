@@ -1,11 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Mail, Search, Eye, CheckCircle, Trash, XCircle, Download, FilePlus, ArrowRight } from 'lucide-react';
 import Select from 'react-select';
 import { documentsService, notificationsService, lookupService, adminService, groupsService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function Documents() {
+  const searchRef = useRef(null);
   const [documents, setDocuments] = useState([]);
+
+  useKeyboardShortcuts({
+    'Alt+U': () => {
+      setShowUploadModal(true);
+      setUploadStatus(null);
+      setUploadForm({ title: '', type: '' });
+      setUploadFile(null);
+    },
+    'Alt+E': () => {
+      setShowEmailModal(true);
+      setEmailStatus(null);
+    },
+    '/': (e) => {
+      if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    },
+    'Escape': () => {
+      setShowUploadModal(false);
+      setShowEmailModal(false);
+      setShowForwardModal(false);
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     type: '', authorKeyword: '', startDate: '', endDate: '', contentKeyword: ''
@@ -318,7 +344,14 @@ export default function Documents() {
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 mb-1">Full-text search</label>
-          <input type="text" placeholder="Keywords..." value={filters.contentKeyword} onChange={e => setFilters({...filters, contentKeyword: e.target.value})} className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
+          <input 
+            type="text" 
+            ref={searchRef}
+            placeholder="Keywords..." 
+            value={filters.contentKeyword} 
+            onChange={e => setFilters({...filters, contentKeyword: e.target.value})} 
+            className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" 
+          />
         </div>
         <button onClick={fetchDocuments} className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2 rounded-md font-medium transition flex items-center justify-center space-x-2">
           <Search className="h-4 w-4" />

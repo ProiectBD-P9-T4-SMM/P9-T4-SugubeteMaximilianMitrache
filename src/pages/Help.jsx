@@ -1,5 +1,5 @@
-import React from 'react';
-import { Search, Book, GraduationCap, Users, Settings, MessageSquare, Clock, Globe, ExternalLink, HelpCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Book, GraduationCap, Users, Settings, MessageSquare, Clock, Globe, ExternalLink, HelpCircle, Zap } from 'lucide-react';
 
 export default function Help() {
   const roles = [
@@ -91,7 +91,7 @@ export default function Help() {
             <h2 className="text-2xl font-bold text-slate-900">Immediate In-App Assistance</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="p-8 bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
               <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
                 <Globe className="h-6 w-6 text-blue-600" />
@@ -119,6 +119,18 @@ export default function Help() {
                 If input is invalid, the system displays brief, non-technical messages with exact resolution steps.
               </p>
             </div>
+            <Link to="/shortcuts" className="p-8 bg-slate-900 rounded-2xl shadow-xl border border-slate-800 hover:scale-[1.02] transition-all group">
+              <div className="h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-500 transition-colors">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Keyboard Shortcuts</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                Master the AFSMS portal with professional keyboard shortcuts for rapid data entry and navigation.
+              </p>
+              <span className="text-blue-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                Learn Shortcuts <ExternalLink size={14} />
+              </span>
+            </Link>
           </div>
         </section>
 

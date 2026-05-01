@@ -1,15 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Database, Plus, Search, Edit, Trash, BookOpen, X, Check, MapPin, Calendar, Users, Save, ChevronRight, Layers, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { academicService, lookupService } from '../services/api';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function Students() {
+  const searchRef = useRef(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formations, setFormations] = useState([]);
   const [curricula, setCurricula] = useState([]);
   const [specializations, setSpecializations] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useKeyboardShortcuts({
+    'Alt+A': () => {
+      setEditingStudent(null);
+      setStudentForm({ first_name: '', last_name: '', email: '', status: 'ENROLLED' });
+      setShowModal(true);
+    },
+    '/': (e) => {
+      // Don't focus if we're already in an input
+      if (document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    },
+    'Escape': () => setShowModal(false)
+  });
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -498,6 +516,7 @@ export default function Students() {
         <div className="relative w-full max-w-xl">
           <input 
             type="text" 
+            ref={searchRef}
             placeholder="Search Registry..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

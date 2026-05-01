@@ -1,6 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { BookOpen, User, HelpCircle, LogOut, FileBarChart, Users, FileText, FileSignature, Settings, BookMarked, List } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -27,6 +28,18 @@ export default function Layout() {
   ];
 
   const visibleMenu = menuItems.filter(item => user && item.roles.includes(user.role));
+
+  // Global Keyboard Shortcuts
+  const globalShortcuts = {};
+  visibleMenu.forEach((item, index) => {
+    if (index < 9) {
+      globalShortcuts[`Alt+${index + 1}`] = () => navigate(item.id);
+    }
+  });
+  globalShortcuts['Alt+L'] = handleLogout;
+  globalShortcuts['Alt+H'] = () => navigate('/help');
+
+  useKeyboardShortcuts(globalShortcuts);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-slate-900">

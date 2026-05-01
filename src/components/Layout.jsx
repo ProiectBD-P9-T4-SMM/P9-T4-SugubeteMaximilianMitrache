@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { BookOpen, User, HelpCircle, LogOut, FileBarChart, Users, FileText, FileSignature, Settings } from 'lucide-react';
+import { BookOpen, User, HelpCircle, LogOut, FileBarChart, Users, FileText, FileSignature, Settings, BookMarked, List } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Layout() {
@@ -17,7 +17,9 @@ export default function Layout() {
     { id: '/dashboard', label: 'Dashboard', icon: FileBarChart, roles: ['STUDENT', 'PROFESSOR', 'SECRETARIAT', 'ADMIN'] },
     { id: '/my-grades', label: 'My Grades', icon: BookOpen, roles: ['STUDENT'] },
     { id: '/students', label: 'Students & Curricula', icon: Users, roles: ['PROFESSOR', 'SECRETARIAT', 'ADMIN'] },
+    { id: '/disciplines', label: 'Disciplines', icon: BookMarked, roles: ['ADMIN', 'SECRETARIAT'] },
     { id: '/grades/add', label: 'Add Grades', icon: FileText, roles: ['PROFESSOR', 'ADMIN'] },
+    { id: '/grades/list', label: 'Grades List', icon: List, roles: ['PROFESSOR', 'ADMIN', 'SECRETARIAT'] },
     { id: '/centralizer', label: 'Centralizer', icon: FileText, roles: ['SECRETARIAT', 'ADMIN'] },
     { id: '/documents', label: 'Documents & Workflow', icon: FileSignature, roles: ['STUDENT', 'PROFESSOR', 'SECRETARIAT', 'ADMIN'] },
     { id: '/audit', label: 'Admin & Audit', icon: Settings, roles: ['ADMIN'] },

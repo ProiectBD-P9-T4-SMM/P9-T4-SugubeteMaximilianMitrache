@@ -1,0 +1,512 @@
+import { useState, useEffect } from 'react';
+import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save } from 'lucide-react';
+import api from '../services/api';
+
+export default function GradesList() {
+  const [grades, setGrades] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // Filter and Lookup states
+  const [students, setStudents] = useState([]);
+  const [disciplines, setDisciplines] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+  
+  const [filters, setFilters] = useState({
+    student_id: '',
+    discipline_id: '',
+    academic_year_id: '',
+    exam_session: '',
+    min_date: '',
+    max_date: ''
+  });
+
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    student_id: '',
+    discipline_id: '',
+    value: '',
+    exam_session: '',
+    grading_date: '',
+    validated: false
+  });
+  
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    loadLookupData();
+    loadGrades();
+  }, []);
+
+  const loadLookupData = async () => {
+    try {
+      const [studentsRes, disciplinesRes, yearsRes] = await Promise.all([
+        api.get('/academic/students-dropdown'),
+        api.get('/academic/disciplines'),
+        api.get('/academic/academic-years')
+      ]);
+      
+      setStudents(studentsRes.data.success ? studentsRes.data.students : []);
+      setDisciplines(disciplinesRes.data.success ? disciplinesRes.data.disciplines : []);
+      setAcademicYears(yearsRes.data.success ? yearsRes.data.academicYears : []);
+    } catch (err) {
+      console.error('Failed to load lookup data:', err);
+    }
+  };
+
+  const loadGrades = async (filterParams = {}) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      
+      if (filterParams.student_id) params.append('student_id', filterParams.student_id);
+      if (filterParams.discipline_id) params.append('discipline_id', filterParams.discipline_id);
+      if (filterParams.academic_year_id) params.append('academic_year_id', filterParams.academic_year_id);
+      if (filterParams.exam_session) params.append('exam_session', filterParams.exam_session);
+      if (filterParams.min_date) params.append('min_date', filterParams.min_date);
+      if (filterParams.max_date) params.append('max_date', filterParams.max_date);
+
+      const response = await api.get(`/academic/grades?${params.toString()}`);
+      setGrades(response.data.grades || []);
+      setMessage({ type: '', text: '' });
+    } catch (err) {
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Eroare la încărcarea notelor.' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters({ ...filters, [key]: value });
+  };
+
+  const handleApplyFilters = () => {
+    loadGrades(filters);
+    setShowFilters(false);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      student_id: '',
+      discipline_id: '',
+      academic_year_id: '',
+      exam_session: '',
+      min_date: '',
+      max_date: ''
+    });
+    loadGrades({});
+  };
+
+  const handleStartEdit = (grade) => {
+    setEditingId(grade.id);
+    setEditForm({
+      student_id: grade.student_id,
+      discipline_id: grade.discipline_id,
+      value: grade.value,
+      exam_session: grade.exam_session || 'IARNA',
+      grading_date: grade.grading_date ? new Date(grade.grading_date).toISOString().split('T')[0] : '',
+      validated: grade.validated
+    });
+  };
+
+  const handleSaveEdit = async (gradeId) => {
+    if (editForm.value === undefined || editForm.value === null || editForm.value === '' || editForm.value < 0 || editForm.value > 10) {
+      setMessage({ 
+        type: 'error', 
+        text: 'Nota trebuie să fie între 1 și 10 (sau 0 pentru Absent).' 
+      });
+      return;
+    }
+
+    try {
+      await api.put(`/academic/grades/${gradeId}`, {
+        student_id: editForm.student_id,
+        discipline_id: editForm.discipline_id,
+        value: parseFloat(editForm.value),
+        exam_session: editForm.exam_session,
+        grading_date: editForm.grading_date,
+        validated: editForm.validated
+      });
+      
+      setMessage({ type: 'success', text: 'Nota a fost actualizată complet!' });
+      setEditingId(null);
+      loadGrades(filters);
+    } catch (err) {
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Eroare la actualizarea notei.' 
+      });
+    }
+  };
+
+  const handleDelete = async (gradeId) => {
+    if (!confirm('Sunteți sigur că doriți să ștergeți această notă?')) return;
+
+    try {
+      await api.delete(`/academic/grades/${gradeId}`);
+      setMessage({ type: 'success', text: 'Notă ștearsă cu succes!' });
+      loadGrades(filters);
+    } catch (err) {
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Eroare la ștergerea notei.' 
+      });
+    }
+  };
+
+  const handleValidate = async (gradeId, currentValidated) => {
+    try {
+      await api.put(`/academic/grades/${gradeId}`, { validated: !currentValidated });
+      setMessage({ 
+        type: 'success', 
+        text: `Notă ${!currentValidated ? 'validată' : 'invalidată'} cu succes!` 
+      });
+      loadGrades(filters);
+    } catch (err) {
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Eroare la validarea notei.' 
+      });
+    }
+  };
+
+  return (
+    <div className="flex-1 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <h2 className="text-2xl font-bold text-slate-800 mb-6">Lista Notelor</h2>
+
+      {message.text && (
+        <div className={`p-4 rounded-md mb-6 flex gap-3 ${
+          message.type === 'error' 
+            ? 'bg-red-50 text-red-700 border border-red-200' 
+            : 'bg-green-50 text-green-700 border border-green-200'
+        }`}>
+          {message.type === 'error' && <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />}
+          <div>
+            <p className="font-semibold">{message.text}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Toggle */}
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition"
+        >
+          <Filter size={16} /> {showFilters ? 'Ascunde' : 'Arată'} Filtre
+        </button>
+        {(filters.student_id || filters.discipline_id || filters.academic_year_id || filters.exam_session || filters.min_date || filters.max_date) && (
+          <button
+            onClick={handleClearFilters}
+            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition"
+          >
+            <X size={16} /> Resetare Filtre
+          </button>
+        )}
+      </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Student</label>
+              <select
+                value={filters.student_id}
+                onChange={(e) => handleFilterChange('student_id', e.target.value)}
+                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+              >
+                <option value="">-- Toți --</option>
+                {students.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.last_name} {s.first_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Disciplină</label>
+              <select
+                value={filters.discipline_id}
+                onChange={(e) => handleFilterChange('discipline_id', e.target.value)}
+                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+              >
+                <option value="">-- Toate --</option>
+                {disciplines.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.code} - {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">An Academic</label>
+              <select
+                value={filters.academic_year_id}
+                onChange={(e) => handleFilterChange('academic_year_id', e.target.value)}
+                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+              >
+                <option value="">-- Toți --</option>
+                {academicYears.map(y => (
+                  <option key={y.id} value={y.id}>
+                    {y.year_start}/{y.year_end}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Sesiune Examen</label>
+              <select
+                value={filters.exam_session}
+                onChange={(e) => handleFilterChange('exam_session', e.target.value)}
+                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+              >
+                <option value="">-- Toate --</option>
+                <option value="IARNA">Iarnă (Ianuarie-Februarie)</option>
+                <option value="VARA">Vară (Iunie-Iulie)</option>
+                <option value="RESTANTA">Restanță (August-Septembrie)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">De la:</label>
+              <input
+                type="date"
+                value={filters.min_date}
+                onChange={(e) => handleFilterChange('min_date', e.target.value)}
+                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Până la:</label>
+              <input
+                type="date"
+                value={filters.max_date}
+                onChange={(e) => handleFilterChange('max_date', e.target.value)}
+                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleApplyFilters}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition"
+          >
+            Aplică Filtre
+          </button>
+        </div>
+      )}
+
+      {/* Grades Table */}
+      <div className="overflow-x-auto">
+        {loading ? (
+          <p className="text-center text-gray-500 py-8">Se încarcă...</p>
+        ) : grades.length === 0 ? (
+          <p className="text-center text-gray-500 py-8">Nu sunt note. Ajustați filtrele și încercați din nou.</p>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 uppercase text-xs tracking-wider">
+                <th className="p-4">#</th>
+                <th className="p-4">Student</th>
+                <th className="p-4">Disciplină</th>
+                <th className="p-4">Notă</th>
+                <th className="p-4">Sesiune</th>
+                <th className="p-4">Data Notării</th>
+                <th className="p-4">Notat de</th>
+                <th className="p-4">Validare</th>
+                <th className="p-4">Acțiuni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {grades.map((grade, idx) => (
+                <tr key={grade.id} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${editingId === grade.id ? 'bg-blue-50/50' : ''}`}>
+                  <td className="p-4 font-semibold text-slate-700">{idx + 1}</td>
+                  
+                  {/* STUDENT EDIT */}
+                  <td className="p-4">
+                    {editingId === grade.id ? (
+                      <select 
+                        value={editForm.student_id}
+                        onChange={(e) => setEditForm({...editForm, student_id: e.target.value})}
+                        className="w-full p-1 text-sm border border-slate-300 rounded"
+                      >
+                        {students.map(s => <option key={s.id} value={s.id}>{s.last_name} {s.first_name}</option>)}
+                      </select>
+                    ) : (
+                      <>
+                        <div className="font-mono text-xs text-blue-600 font-bold">{grade.registration_number}</div>
+                        <div className="font-medium text-slate-900">{grade.student_name}</div>
+                      </>
+                    )}
+                  </td>
+
+                  {/* DISCIPLINE EDIT */}
+                  <td className="p-4">
+                    {editingId === grade.id ? (
+                      <select 
+                        value={editForm.discipline_id}
+                        onChange={(e) => setEditForm({...editForm, discipline_id: e.target.value})}
+                        className="w-full p-1 text-sm border border-slate-300 rounded"
+                      >
+                        {disciplines.map(d => <option key={d.id} value={d.id}>{d.code} - {d.name}</option>)}
+                      </select>
+                    ) : (
+                      <>
+                        <div className="font-medium">{grade.discipline_name}</div>
+                        <div className="text-xs text-slate-500">{grade.discipline_code}</div>
+                      </>
+                    )}
+                  </td>
+
+                  {/* VALUE EDIT */}
+                  <td className="p-4">
+                    {editingId === grade.id ? (
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        step="0.01"
+                        value={editForm.value}
+                        onChange={(e) => setEditForm({...editForm, value: e.target.value})}
+                        className="w-16 border-gray-300 rounded-md p-1 border font-bold text-blue-600"
+                        placeholder="0=Abs"
+                      />
+                    ) : (
+                      <span className={`font-bold text-lg ${parseFloat(grade.value) >= 5 ? 'text-green-600' : 'text-red-600'}`}>
+                        {parseFloat(grade.value) === 0 ? 'Abs.' : grade.value}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* SESSION EDIT */}
+                  <td className="p-4">
+                    {editingId === grade.id ? (
+                      <select 
+                        value={editForm.exam_session}
+                        onChange={(e) => setEditForm({...editForm, exam_session: e.target.value})}
+                        className="w-full p-1 text-sm border border-slate-300 rounded"
+                      >
+                        <option value="IARNA">Iarnă</option>
+                        <option value="VARA">Vară</option>
+                        <option value="RESTANTA">Restanță</option>
+                      </select>
+                    ) : (
+                      <span className="text-sm">{grade.exam_session || '-'}</span>
+                    )}
+                  </td>
+
+                  {/* DATE EDIT */}
+                  <td className="p-4">
+                    {editingId === grade.id ? (
+                      <input 
+                        type="date"
+                        value={editForm.grading_date}
+                        onChange={(e) => setEditForm({...editForm, grading_date: e.target.value})}
+                        className="w-full p-1 text-xs border border-slate-300 rounded"
+                      />
+                    ) : (
+                      <span className="text-sm">{new Date(grade.grading_date).toLocaleDateString('ro-RO')}</span>
+                    )}
+                  </td>
+
+                  {/* GRADED BY (Read Only usually) */}
+                  <td className="p-4 text-sm text-slate-600">
+                    {grade.graded_by_name || '-'}
+                  </td>
+
+                  {/* VALIDATED EDIT */}
+                  <td className="p-4">
+                    {editingId === grade.id ? (
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={editForm.validated}
+                          onChange={(e) => setEditForm({...editForm, validated: e.target.checked})}
+                          className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="text-xs font-medium text-slate-600">Valid</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleValidate(grade.id, grade.validated)}
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded text-sm font-medium transition ${
+                          grade.validated
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                        }`}
+                      >
+                        <CheckCircle size={14} />
+                        {grade.validated ? 'Validată' : 'Nev.'}
+                      </button>
+                    )}
+                  </td>
+
+                  <td className="p-4">
+                    <div className="flex gap-2">
+                      {editingId === grade.id ? (
+                        <>
+                          <button
+                            onClick={() => handleSaveEdit(grade.id)}
+                            className="bg-emerald-600 text-white p-1.5 rounded-md hover:bg-emerald-700 transition flex items-center gap-1 shadow-sm"
+                            title="Salvează Tot"
+                          >
+                            <Save size={16} /> <span className="text-xs font-bold px-1">Salvare</span>
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="bg-slate-200 text-slate-700 p-1.5 rounded-md hover:bg-slate-300 transition"
+                            title="Anulare"
+                          >
+                            <X size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleStartEdit(grade)}
+                            className="text-blue-600 hover:text-blue-800 p-2 rounded-md hover:bg-blue-50 transition border border-transparent hover:border-blue-100"
+                            title="Editare Completă"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(grade.id)}
+                            className="text-red-600 hover:text-red-800 p-2 rounded-md hover:bg-red-50 transition border border-transparent hover:border-red-100"
+                            title="Ștergere"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {grades.length > 0 && (
+        <div className="mt-6 text-sm text-gray-600 border-t border-gray-200 pt-4 flex justify-between items-center">
+          <div className="flex gap-6">
+            <p>Total note: <strong>{grades.length}</strong></p>
+            <p className="text-emerald-600">Validate: <strong>{grades.filter(g => g.validated).length}</strong></p>
+            <p className="text-amber-600">Nevalidate: <strong>{grades.filter(g => !g.validated).length}</strong></p>
+          </div>
+          <div className="text-xs text-slate-400 italic">
+            * Folosiți butonul de editare pentru a modifica orice câmp al notei.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

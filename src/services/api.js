@@ -21,7 +21,7 @@ export const authService = {
 
 export const lookupService = {
   getAcademicYears: () => api.get('/lookup/academic-years'),
-  getSpecializations: () => api.get('/lookup/specializations'),
+  getSpecializations: () => api.get('/academic/specializations'),
   getStudyFormations: () => api.get('/lookup/study-formations'),
   getDisciplines: () => api.get('/lookup/disciplines'),
 };
@@ -35,6 +35,11 @@ export const academicService = {
   getGrades: () => api.get('/academic/grades'),
   addGrade: (data) => api.post('/academic/grades', data),
   updateGrade: (id, data) => api.put(`/academic/grades/${id}`, data),
+  getCurricula: () => api.get('/academic/curricula'),
+  getStudentEnrollments: (studentId) => api.get(`/academic/student-enrollments/${studentId}`),
+  enrollStudent: (data) => api.post('/academic/enroll-student', data),
+  updateEnrollmentFormation: (data) => api.post('/academic/update-enrollment-formation', data),
+  unenrollStudent: (studentId, curriculumId) => api.delete(`/academic/unenroll-student/${studentId}/${curriculumId}`),
 };
 
 export const reportsService = {

@@ -139,8 +139,19 @@ export default function AuditLogs() {
     }
   };
 
-  const handleDownloadBackup = (filename) => {
-    window.open(`http://localhost:3000/api/admin/backups/download/${filename}`, '_blank');
+  const handleDownloadBackup = async (filename) => {
+    try {
+      const response = await adminService.downloadBackup(filename);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('Failed to download backup: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   return (

@@ -103,6 +103,18 @@ export default function Centralizer() {
     } catch (err) { setMessage({ type: 'error', text: 'Eroare la export Excel.' }); }
   };
 
+  const handleExportXML = async () => {
+    try {
+      const response = await api.post('/reports/e-grade-centralizer/export/xml', filters, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Centralizator_${new Date().getTime()}.xml`);
+      document.body.appendChild(link);
+      link.click();
+    } catch (err) { setMessage({ type: 'error', text: 'Eroare la export XML.' }); }
+  };
+
   const handleExportPDF = () => {
     if (!centralizedData || students.length === 0) return;
     const doc = new jsPDF('l', 'mm', 'a4');
@@ -199,6 +211,9 @@ export default function Centralizer() {
                 </button>
                 <button onClick={handleExportXLSX} className="bg-green-600 text-white px-6 py-4 rounded-2xl font-black text-xs hover:bg-green-700 shadow-xl shadow-green-100 transition-all flex items-center gap-2">
                    <Download size={18} /> Excel (.xlsx)
+                </button>
+                <button onClick={handleExportXML} className="bg-orange-500 text-white px-6 py-4 rounded-2xl font-black text-xs hover:bg-orange-600 shadow-xl shadow-orange-100 transition-all flex items-center gap-2">
+                   <FileText size={18} /> XML
                 </button>
                 <button onClick={handleExportPDF} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs hover:bg-black shadow-xl transition-all flex items-center gap-2">
                    <Download size={18} /> PDF

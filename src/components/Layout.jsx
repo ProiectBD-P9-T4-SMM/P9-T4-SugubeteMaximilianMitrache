@@ -22,6 +22,7 @@ export default function Layout() {
     { id: '/grades/list', label: 'Grades List', icon: List, roles: ['PROFESSOR', 'ADMIN', 'SECRETARIAT'] },
     { id: '/centralizer', label: 'Centralizer', icon: FileText, roles: ['SECRETARIAT', 'ADMIN'] },
     { id: '/documents', label: 'Documents & Workflow', icon: FileSignature, roles: ['STUDENT', 'PROFESSOR', 'SECRETARIAT', 'ADMIN'] },
+    { id: '/groups', label: 'User Groups', icon: Users, roles: ['SECRETARIAT', 'ADMIN'] },
     { id: '/audit', label: 'Admin & Audit', icon: Settings, roles: ['ADMIN'] },
   ];
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Mail, Search, Eye, CheckCircle, Trash, XCircle, Download, FilePlus } from 'lucide-react';
-import { documentsService, notificationsService, lookupService } from '../services/api';
+import { Mail, Search, Eye, CheckCircle, Trash, XCircle, Download, FilePlus, ArrowRight } from 'lucide-react';
+import Select from 'react-select';
+import { documentsService, notificationsService, lookupService, adminService, groupsService } from '../services/api';
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
@@ -10,8 +11,9 @@ export default function Documents() {
   });
 
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailForm, setEmailForm] = useState({ groupId: '', subject: '', body: '' });
+  const [emailForm, setEmailForm] = useState({ targetType: 'FORMATION', groupId: '', subject: '', body: '' });
   const [studyFormations, setStudyFormations] = useState([]);
+  const [customGroups, setCustomGroups] = useState([]);
   const [emailStatus, setEmailStatus] = useState(null);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -19,10 +21,35 @@ export default function Documents() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState(null);
 
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardDocId, setForwardDocId] = useState(null);
+  const [forwardUserId, setForwardUserId] = useState('');
+  const [systemUsers, setSystemUsers] = useState([]);
+
   useEffect(() => {
     fetchDocuments();
     loadFormations();
+    loadUsers();
+    loadGroups();
   }, []);
+
+  const loadGroups = async () => {
+    try {
+      const res = await groupsService.getGroups();
+      setCustomGroups(res.data || []);
+    } catch (err) {
+      console.error("Failed to load custom groups", err);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const res = await adminService.getUsers();
+      setSystemUsers(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to load users", err);
+    }
+  };
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -51,6 +78,19 @@ export default function Documents() {
       fetchDocuments(); // refresh list
     } catch (err) {
       console.error("Failed to update status", err);
+    }
+  };
+
+  const handleForwardDocument = async (e) => {
+    e.preventDefault();
+    if (!forwardUserId) return;
+    try {
+      await documentsService.forwardDocument(forwardDocId, forwardUserId);
+      setShowForwardModal(false);
+      fetchDocuments();
+    } catch (err) {
+      console.error("Failed to forward document", err);
+      alert('Failed to forward document');
     }
   };
 
@@ -171,6 +211,32 @@ export default function Documents() {
       )}
 
 
+      {/* Forward Modal */}
+      {showForwardModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h3 className="text-xl font-bold text-slate-800 mb-4">Forward Document</h3>
+            <form onSubmit={handleForwardDocument} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Select User to Assign To</label>
+                <Select
+                  options={systemUsers.map(u => ({ value: u.id, label: `${u.full_name} (${u.username})` }))}
+                  value={forwardUserId ? { value: forwardUserId, label: systemUsers.find(u => u.id === forwardUserId)?.full_name } : null}
+                  onChange={option => setForwardUserId(option ? option.value : '')}
+                  placeholder="-- Search User --"
+                  isClearable
+                  className="text-sm"
+                />
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button type="button" onClick={() => setShowForwardModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Forward</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Email Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -182,12 +248,32 @@ export default function Documents() {
               </div>
             )}
             <form onSubmit={handleSendEmail} className="space-y-4">
+              <div className="flex gap-4 mb-2">
+                <label className="flex items-center gap-1 text-sm font-medium text-slate-700">
+                  <input type="radio" value="FORMATION" checked={emailForm.targetType === 'FORMATION'} onChange={e => setEmailForm({...emailForm, targetType: e.target.value, groupId: ''})} /> Study Formation
+                </label>
+                <label className="flex items-center gap-1 text-sm font-medium text-slate-700">
+                  <input type="radio" value="GROUP" checked={emailForm.targetType === 'GROUP'} onChange={e => setEmailForm({...emailForm, targetType: e.target.value, groupId: ''})} /> Custom User Group
+                </label>
+              </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Target Group</label>
-                <select required value={emailForm.groupId} onChange={e => setEmailForm({...emailForm, groupId: e.target.value})} className="w-full p-2 border border-slate-300 rounded">
-                  <option value="">-- Select Group --</option>
-                  {studyFormations.map(f => <option key={f.id} value={f.id}>{f.name} (Year {f.study_year})</option>)}
-                </select>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Select Target</label>
+                <Select
+                  options={emailForm.targetType === 'FORMATION' 
+                    ? studyFormations.map(f => ({ value: f.id, label: f.name }))
+                    : customGroups.map(g => ({ value: g.id, label: g.name }))
+                  }
+                  value={emailForm.groupId ? { 
+                    value: emailForm.groupId, 
+                    label: emailForm.targetType === 'FORMATION' 
+                      ? studyFormations.find(f => f.id === emailForm.groupId)?.name 
+                      : customGroups.find(g => g.id === emailForm.groupId)?.name 
+                  } : null}
+                  onChange={option => setEmailForm({...emailForm, groupId: option ? option.value : ''})}
+                  placeholder="-- Search Target --"
+                  isClearable
+                  className="text-sm"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
@@ -237,7 +323,7 @@ export default function Documents() {
         <table className="min-w-full divide-y divide-slate-200 text-sm">
           <thead className="bg-slate-50">
             <tr>
-              {['Type', 'Title', 'Author', 'Created Date', 'Status', 'Actions'].map(h => (
+              {['Type', 'Title', 'Author / Assigned To', 'Created Date', 'Status', 'Actions'].map(h => (
                 <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>
               ))}
             </tr>
@@ -251,7 +337,14 @@ export default function Documents() {
               <tr key={row.id} className="hover:bg-slate-50">
                 <td className="px-6 py-4">{row.type}</td>
                 <td className="px-6 py-4 font-medium text-slate-900">{row.title}</td>
-                <td className="px-6 py-4">{row.author_name || 'System'}</td>
+                <td className="px-6 py-4">
+                  <div className="font-medium text-slate-900">{row.author_name || 'System'}</div>
+                  {row.assigned_to_user_name && (
+                    <div className="text-xs text-blue-600 font-semibold mt-1">
+                      ➔ {row.assigned_to_user_name}
+                    </div>
+                  )}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">{new Date(row.created_at).toLocaleDateString()}</td>
                 <td className="px-6 py-4">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -273,6 +366,7 @@ export default function Documents() {
                   {row.status !== 'REJECTED' && (
                     <button onClick={() => handleUpdateStatus(row.id, 'REJECTED')} className="text-orange-600 hover:text-orange-900" title="Reject"><XCircle className="h-4 w-4" /></button>
                   )}
+                  <button onClick={() => { setForwardDocId(row.id); setForwardUserId(''); setShowForwardModal(true); }} className="text-indigo-600 hover:text-indigo-900" title="Forward"><ArrowRight className="h-4 w-4" /></button>
                   <button onClick={() => handleDeleteDocument(row.id)} className="text-red-600 hover:text-red-900" title="Delete"><Trash className="h-4 w-4" /></button>
                 </td>
               </tr>

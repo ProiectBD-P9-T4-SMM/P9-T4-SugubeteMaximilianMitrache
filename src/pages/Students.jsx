@@ -74,7 +74,7 @@ export default function Students() {
       return;
     }
     try {
-      // Build only the fields that are actually set (avoid sending undefined/null study_formation_id when not changed)
+      // Build only the fields that are actually set
       const payload = {
         first_name: studentForm.first_name,
         last_name: studentForm.last_name,
@@ -88,7 +88,11 @@ export default function Students() {
       if (editingStudent) { await academicService.updateStudent(editingStudent.id, payload); }
       else { await academicService.addStudent(studentForm); }
       setShowModal(false); fetchStudents();
-    } catch (err) { alert(err.response?.data?.message || 'Failed to save student'); }
+    } catch (err) { 
+      const msg = err.response?.data?.message || 'Failed to save student';
+      const suggestion = err.response?.status === 400 ? "\n\n💡 Sugestie: Verifică dacă toate câmpurile obligatorii sunt completate corect și dacă formația de studiu a fost identificată." : "";
+      alert(msg + suggestion); 
+    }
   };
 
   const handleDeleteStudent = async (id) => {
@@ -153,7 +157,9 @@ export default function Students() {
                   alert(res.data.message);
                   fetchStudents();
                 } catch (err) {
-                  alert(err.response?.data?.message || 'Failed to import bulk students.');
+                  const msg = err.response?.data?.message || 'Failed to import bulk students.';
+                  const suggestion = "\n\n💡 Sugestie: Asigură-te că fișierul Excel are coloanele: first_name, last_name, email și study_formation_id.";
+                  alert(msg + suggestion);
                 }
               };
               reader.readAsBinaryString(file);

@@ -64,7 +64,10 @@ export const adminService = {
   getRoles: () => api.get('/admin/roles'),
   getUsers: () => api.get('/admin/users'),
   updateUserRole: (id, roleId) => api.put(`/admin/users/${id}/role`, { roleId }),
-  getActiveQueries: () => api.get('/admin/queries')
+  getActiveQueries: () => api.get('/admin/queries'),
+  getBackups: () => api.get('/admin/backups'),
+  createBackup: () => api.post('/admin/backups/create'),
+  restoreBackup: (filename) => api.post('/admin/backups/restore', { filename })
 };
 
 export const publicService = {

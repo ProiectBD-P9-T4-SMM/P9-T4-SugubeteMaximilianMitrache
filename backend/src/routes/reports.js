@@ -51,7 +51,12 @@ router.get('/centralizer', requireRole(['SECRETARIAT', 'ADMIN']), async (req, re
       ORDER BY s.last_name ASC, s.first_name ASC
     `;
 
+    const startTime = Date.now();
     const result = await db.query(query, params);
+    const duration = Date.now() - startTime;
+    
+    console.log(`[BENCHMARK] Centralizer generated in ${duration}ms for ${result.rows.length} students.`);
+    
     res.json(result.rows);
   } catch (error) {
     next(error);

@@ -38,10 +38,19 @@ export default function AddGrades() {
       setMessage({ type: 'success', text: res.data.message });
       setFormData({ ...formData, gradeValue: '' }); // Resetăm doar nota
     } catch (err) {
+      const msg = err.response?.data?.message || 'Eroare la salvarea notei.';
+      let suggestion = "Verificați dacă nota este validă și dacă ați selectat toți parametrii.";
+      
+      if (err.response?.status === 400) {
+        suggestion = "Nota trebuie să fie un număr între 1 și 10. Verificați dacă ați selectat disciplina corectă.";
+      } else if (err.response?.status === 500) {
+        suggestion = "Eroare internă. S-ar putea să nu existe un An Academic ACTIV configurat în baza de date.";
+      }
+
       setMessage({ 
         type: 'error', 
-        text: err.response?.data?.message || 'Eroare la salvarea notei.',
-        hint: err.response?.data?.resolutionHint || 'Verificați conexiunea la server.'
+        text: msg,
+        hint: suggestion
       });
     } finally {
       setIsSubmitting(false);

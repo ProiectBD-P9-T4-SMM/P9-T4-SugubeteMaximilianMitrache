@@ -60,6 +60,10 @@ router.get('/', async (req, res, next) => {
       params.push(`%${contentKeyword}%`);
       query += ` AND (d.title ILIKE $${params.length} OR d.content ILIKE $${params.length})`;
     }
+    if (req.query.authorKeyword) {
+      params.push(`%${req.query.authorKeyword}%`);
+      query += ` AND u.full_name ILIKE $${params.length}`;
+    }
 
     query += ` ORDER BY d.created_at DESC`;
 

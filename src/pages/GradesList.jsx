@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save } from 'lucide-react';
+import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save, History } from 'lucide-react';
 import api from '../services/api';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
@@ -22,6 +22,7 @@ export default function GradesList() {
   const [students, setStudents] = useState([]);
   const [disciplines, setDisciplines] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
+  const [evaluators, setEvaluators] = useState([]);
   
   const [filters, setFilters] = useState({
     student_id: '',
@@ -29,7 +30,8 @@ export default function GradesList() {
     academic_year_id: '',
     exam_session: '',
     min_date: '',
-    max_date: ''
+    max_date: '',
+    graded_by: ''
   });
 
   const [editingId, setEditingId] = useState(null);
@@ -43,6 +45,10 @@ export default function GradesList() {
   });
   
   const [showFilters, setShowFilters] = useState(false);
+  
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedGradeHistory, setSelectedGradeHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     loadLookupData();
@@ -51,15 +57,17 @@ export default function GradesList() {
 
   const loadLookupData = async () => {
     try {
-      const [studentsRes, disciplinesRes, yearsRes] = await Promise.all([
+      const [studentsRes, disciplinesRes, yearsRes, evaluatorsRes] = await Promise.all([
         api.get('/academic/students-dropdown'),
         api.get('/academic/disciplines'),
-        api.get('/academic/academic-years')
+        api.get('/academic/academic-years'),
+        api.get('/lookup/evaluators')
       ]);
       
       setStudents(studentsRes.data.success ? studentsRes.data.students : []);
       setDisciplines(disciplinesRes.data.success ? disciplinesRes.data.disciplines : []);
       setAcademicYears(yearsRes.data.success ? yearsRes.data.academicYears : []);
+      setEvaluators(evaluatorsRes.data.success ? evaluatorsRes.data.evaluators : []);
     } catch (err) {
       console.error('Failed to load lookup data:', err);
     }
@@ -76,6 +84,7 @@ export default function GradesList() {
       if (filterParams.exam_session) params.append('exam_session', filterParams.exam_session);
       if (filterParams.min_date) params.append('min_date', filterParams.min_date);
       if (filterParams.max_date) params.append('max_date', filterParams.max_date);
+      if (filterParams.graded_by) params.append('graded_by', filterParams.graded_by);
 
       const response = await api.get(`/academic/grades?${params.toString()}`);
       setGrades(response.data.grades || []);
@@ -106,7 +115,8 @@ export default function GradesList() {
       academic_year_id: '',
       exam_session: '',
       min_date: '',
-      max_date: ''
+      max_date: '',
+      graded_by: ''
     });
     loadGrades({});
   };
@@ -183,6 +193,19 @@ export default function GradesList() {
       });
     }
   };
+  
+  const fetchHistory = async (gradeId) => {
+    setHistoryLoading(true);
+    setShowHistoryModal(true);
+    try {
+      const res = await api.get(`/academic/grades/${gradeId}/history`);
+      setSelectedGradeHistory(res.data.history || []);
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   return (
     <div className="flex-1 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -209,7 +232,7 @@ export default function GradesList() {
         >
           <Filter size={16} /> {showFilters ? 'Hide' : 'Show'} Filters
         </button>
-        {(filters.student_id || filters.discipline_id || filters.academic_year_id || filters.exam_session || filters.min_date || filters.max_date) && (
+        {(filters.student_id || filters.discipline_id || filters.academic_year_id || filters.exam_session || filters.min_date || filters.max_date || filters.graded_by) && (
           <button
             onClick={handleClearFilters}
             className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition"
@@ -292,6 +315,17 @@ export default function GradesList() {
                 value={filters.max_date}
                 onChange={(e) => handleFilterChange('max_date', e.target.value)}
                 className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Graded By (Evaluator)</label>
+              <Select
+                options={evaluators.map(e => ({ value: e.id, label: e.full_name }))}
+                value={filters.graded_by ? { value: filters.graded_by, label: evaluators.find(e => e.id === filters.graded_by)?.full_name } : null}
+                onChange={(option) => handleFilterChange('graded_by', option ? option.value : '')}
+                placeholder="-- All Evaluators --"
+                isClearable
+                className="text-sm"
               />
             </div>
           </div>
@@ -471,6 +505,13 @@ export default function GradesList() {
                       ) : (
                         <>
                           <button
+                            onClick={() => fetchHistory(grade.id)}
+                            className="text-slate-400 hover:text-slate-600 p-2 rounded-md hover:bg-slate-50 transition"
+                            title="View History"
+                          >
+                            <History size={16} />
+                          </button>
+                          <button
                             onClick={() => handleStartEdit(grade)}
                             className="text-blue-600 hover:text-blue-800 p-2 rounded-md hover:bg-blue-50 transition border border-transparent hover:border-blue-100"
                             title="Full Edit"
@@ -504,6 +545,67 @@ export default function GradesList() {
           </div>
           <div className="text-xs text-slate-400 italic">
             * Use the edit button to modify any field of the grade.
+          </div>
+        </div>
+      )}
+      
+      {/* History Modal */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <History className="text-blue-600" size={24} /> Grade Audit Trail
+              </h3>
+              <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+              {historyLoading ? (
+                <p className="text-center py-8 text-slate-500 italic">Reconstructing audit records...</p>
+              ) : selectedGradeHistory.length === 0 ? (
+                <p className="text-center py-8 text-slate-500 italic">No historical records found for this entry.</p>
+              ) : (
+                <div className="space-y-4">
+                  {selectedGradeHistory.map((log) => (
+                    <div key={log.id} className="border-l-4 border-blue-500 bg-slate-50 p-4 rounded-r-xl">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs font-black uppercase tracking-widest text-blue-600">{log.action_type}</span>
+                        <span className="text-xs text-slate-400 font-medium">{new Date(log.occurred_at).toLocaleString()}</span>
+                      </div>
+                      <p className="text-sm font-bold text-slate-700 mb-1">
+                        Performed by: <span className="text-slate-900">{log.actor_name}</span>
+                      </p>
+                      <div className="grid grid-cols-2 gap-4 mt-3">
+                        <div className="bg-red-50/50 p-2 rounded border border-red-100">
+                          <p className="text-[10px] font-black uppercase text-red-400 mb-1">Previous State</p>
+                          <p className="text-xs font-mono font-bold text-red-600">
+                            {log.before_snapshot_json?.value === 0 ? 'Abs.' : (log.before_snapshot_json?.value ?? 'N/A')}
+                          </p>
+                        </div>
+                        <div className="bg-emerald-50/50 p-2 rounded border border-emerald-100">
+                          <p className="text-[10px] font-black uppercase text-emerald-400 mb-1">New State</p>
+                          <p className="text-xs font-mono font-bold text-emerald-600">
+                            {log.after_snapshot_json?.value === 0 ? 'Abs.' : (log.after_snapshot_json?.value ?? 'N/A')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-black transition-all"
+              >
+                Close Traceability Log
+              </button>
+            </div>
           </div>
         </div>
       )}

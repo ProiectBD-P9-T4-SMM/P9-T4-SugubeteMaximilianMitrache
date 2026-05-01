@@ -174,13 +174,13 @@ router.delete('/students/:id', async (req, res, next) => {
 // Fetch all grades with filtering (REQ-AFSMS-39)
 router.get('/grades', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
   try {
-    const { student_id, discipline_id, academic_year_id, exam_session, min_date, max_date } = req.query;
+    const { student_id, discipline_id, academic_year_id, exam_session, min_date, max_date, graded_by } = req.query;
     let query = `
       SELECT g.id, g.value, g.exam_session, g.grading_date, g.validated,
              s.id as student_id, s.first_name, s.last_name, s.registration_number,
              (s.last_name || ' ' || s.first_name) AS student_name,
              d.id as discipline_id, d.code as discipline_code, d.name as discipline_name, d.ects_credits, d.semester,
-             u.full_name as graded_by_name
+             u.full_name as graded_by_name, u.id as graded_by_id
       FROM GRADE g
       JOIN STUDENT s ON g.student_id = s.id
       JOIN DISCIPLINE d ON g.discipline_id = d.id
@@ -212,6 +212,10 @@ router.get('/grades', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async 
     if (max_date) {
       params.push(max_date);
       query += ` AND g.grading_date <= $${params.length}`;
+    }
+    if (graded_by) {
+      params.push(graded_by);
+      query += ` AND g.graded_by_user_id = $${params.length}`;
     }
     
     query += ' ORDER BY s.last_name ASC, d.semester ASC';
@@ -246,6 +250,9 @@ router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), as
     if (req.body.discipline_id !== undefined) updateData.discipline_id = req.body.discipline_id;
     if (req.body.grading_date !== undefined) updateData.grading_date = req.body.grading_date;
     
+    // Track who performed the last edit
+    updateData.graded_by_user_id = req.user.userId;
+    
     const updatedGrade = await auditableUpdate(
       req.user.userId,
       'ACADEMIC_DATA',
@@ -255,6 +262,25 @@ router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), as
     );
 
     res.json(updatedGrade);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Fetch Grade Audit History (REQ-AFSMS-50)
+router.get('/grades/:id/history', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const query = `
+      SELECT al.id, al.action_type, al.occurred_at, al.before_snapshot_json, al.after_snapshot_json,
+             u.full_name as actor_name
+      FROM AUDIT_LOG_ENTRY al
+      JOIN USER_ACCOUNT u ON al.actor_user_id = u.id
+      WHERE al.entity_type = 'GRADE' AND al.entity_id = $1
+      ORDER BY al.occurred_at DESC
+    `;
+    const { rows } = await db.query(query, [id]);
+    res.json({ success: true, history: rows });
   } catch (error) {
     next(error);
   }

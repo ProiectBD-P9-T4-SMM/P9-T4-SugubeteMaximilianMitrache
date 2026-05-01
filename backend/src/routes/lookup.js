@@ -57,4 +57,21 @@ router.get('/disciplines', async (req, res, next) => {
   }
 });
 
+router.get('/evaluators', async (req, res, next) => {
+  try {
+    const query = `
+      SELECT DISTINCT u.id, u.full_name, u.email, r.code as role_code
+      FROM USER_ACCOUNT u
+      JOIN USER_ROLE ur ON u.id = ur.user_id
+      JOIN ROLE r ON ur.role_id = r.id
+      WHERE r.code IN ('PROFESSOR', 'ADMIN', 'SECRETARIAT')
+      ORDER BY u.full_name ASC
+    `;
+    const result = await db.query(query);
+    res.json({ success: true, evaluators: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

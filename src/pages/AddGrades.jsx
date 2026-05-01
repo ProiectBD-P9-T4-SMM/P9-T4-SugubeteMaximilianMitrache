@@ -3,8 +3,10 @@ import Select from 'react-select';
 import api from '../services/api';
 import { AlertCircle, CheckCircle, X } from 'lucide-react';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useAuth } from '../context/AuthContext';
 
 export default function AddGrades() {
+  const { user } = useAuth();
   const studentRef = useRef(null);
   const disciplineRef = useRef(null);
   const gradeRef = useRef(null);
@@ -96,6 +98,7 @@ export default function AddGrades() {
         discipline: selectedDiscipline?.name,
         grade: gradeNum,
         session: formData.examSession,
+        gradedBy: user?.fullName || 'Me',
         time: new Date().toLocaleTimeString('en-US')
       }, ...recentGrades.slice(0, 4)]);
       
@@ -275,10 +278,13 @@ export default function AddGrades() {
             <div className="space-y-2">
               {recentGrades.map((g, idx) => (
                 <div key={idx} className="bg-white p-2 rounded border border-slate-200 text-xs">
-                  <p className="font-medium text-slate-700">{g.grade}</p>
+                  <div className="flex justify-between items-start">
+                    <p className="font-medium text-slate-700">{g.grade}</p>
+                    <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold">{g.gradedBy}</span>
+                  </div>
                   <p className="text-slate-600">{g.student}</p>
                   <p className="text-slate-500 truncate">{g.discipline}</p>
-                  <p className="text-gray-400 text-xs">{g.session} • {g.time}</p>
+                  <p className="text-gray-400 text-[10px] mt-1">{g.session} • {g.time}</p>
                 </div>
               ))}
             </div>

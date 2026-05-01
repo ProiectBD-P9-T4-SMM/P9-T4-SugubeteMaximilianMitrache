@@ -159,7 +159,7 @@ export default function Students() {
   const handleSaveStudent = async (e) => {
     e.preventDefault();
     try {
->>>>>>> upstream/main
+
       const payload = {
         first_name: studentForm.first_name,
         last_name: studentForm.last_name,

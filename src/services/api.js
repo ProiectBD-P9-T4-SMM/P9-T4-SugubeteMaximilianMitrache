@@ -72,7 +72,8 @@ export const adminService = {
   getActiveQueries: () => api.get('/admin/queries'),
   getBackups: () => api.get('/admin/backups'),
   createBackup: () => api.post('/admin/backups/create'),
-  restoreBackup: (filename) => api.post('/admin/backups/restore', { filename })
+  restoreBackup: (filename) => api.post('/admin/backups/restore', { filename }),
+  downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' })
 };
 
 export const publicService = {

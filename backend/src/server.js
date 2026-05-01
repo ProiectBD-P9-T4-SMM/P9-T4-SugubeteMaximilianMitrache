@@ -2,6 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
+const { initScheduler } = require('./services/schedulerService');
+
+// Initialize background tasks
+initScheduler();
 
 const mockSsoRoutes = require('./routes/mockSso');
 const authRoutes = require('./routes/auth');

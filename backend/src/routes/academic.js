@@ -42,7 +42,7 @@ router.post('/students', async (req, res, next) => {
     const regNum = 'MAT' + Math.floor(1000 + Math.random() * 9000);
     
     const newStudent = await auditableInsert(
-      req.user.id,
+      req.user.userId,
       'ACADEMIC_DATA',
       'STUDENT',
       { registration_number: regNum, first_name, last_name, email, study_formation_id, enrollment_date: new Date().toISOString(), status: 'ACTIVE' }
@@ -140,7 +140,7 @@ router.put('/students/:id', async (req, res, next) => {
     const { first_name, last_name, email, study_formation_id, status } = req.body;
     
     const updatedStudent = await auditableUpdate(
-      req.user.id,
+      req.user.userId,
       'ACADEMIC_DATA',
       'STUDENT',
       id,
@@ -157,7 +157,7 @@ router.delete('/students/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const updatedStudent = await auditableUpdate(
-      req.user.id,
+      req.user.userId,
       'ACADEMIC_DATA',
       'STUDENT',
       id,
@@ -247,7 +247,7 @@ router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), as
     if (req.body.grading_date !== undefined) updateData.grading_date = req.body.grading_date;
     
     const updatedGrade = await auditableUpdate(
-      req.user.id,
+      req.user.userId,
       'ACADEMIC_DATA',
       'GRADE',
       id,
@@ -263,39 +263,25 @@ router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), as
 // GET /api/academic/my-grades (Accessible ONLY for Student)
 router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     // 1. Search for student with full details about specialization and formation
+    // Using LEFT JOINs so we still find the student even if they aren't enrolled in a formation yet
     const studentQuery = `
       SELECT 
         s.id, s.first_name, s.last_name, s.registration_number, s.email, s.status, s.enrollment_date,
         sf.name as formation_name, sf.education_form, sf.study_year as current_study_year,
         spec.name as specialization_name, spec.degree_level, spec.code as specialization_code
       FROM STUDENT s
-      JOIN STUDY_FORMATION sf ON s.study_formation_id = sf.id
-      JOIN SPECIALIZATION spec ON sf.specialization_id = spec.id
+      LEFT JOIN STUDY_FORMATION sf ON s.study_formation_id = sf.id
+      LEFT JOIN SPECIALIZATION spec ON sf.specialization_id = spec.id
       WHERE s.email = (SELECT email FROM USER_ACCOUNT WHERE id = $1)
       LIMIT 1
     `;
-    let studentRes = await db.query(studentQuery, [userId]);
-
-    // Fallback for demo SSO
-    if (studentRes.rows.length === 0) {
-      studentRes = await db.query(`
-        SELECT 
-          s.id, s.first_name, s.last_name, s.registration_number, s.email, s.status, s.enrollment_date,
-          sf.name as formation_name, sf.education_form, sf.study_year as current_study_year,
-          spec.name as specialization_name, spec.degree_level, spec.code as specialization_code
-        FROM STUDENT s
-        JOIN STUDY_FORMATION sf ON s.study_formation_id = sf.id
-        JOIN SPECIALIZATION spec ON sf.specialization_id = spec.id
-        WHERE s.status = 'ENROLLED' 
-        ORDER BY s.last_name ASC LIMIT 1
-      `);
-    }
+    const studentRes = await db.query(studentQuery, [userId]);
     
     if (studentRes.rows.length === 0) {
-      return res.status(404).json({ error: true, message: 'No student profile found.' });
+      return res.status(404).json({ error: true, message: 'No student profile found for this account.' });
     }
     const student = studentRes.rows[0];
 
@@ -461,7 +447,7 @@ router.post('/disciplines', requireRole(['ADMIN', 'SECRETARIAT']), async (req, r
     }
     
     const newDiscipline = await auditableInsert(
-      req.user.id,
+      req.user.userId,
       'ACADEMIC_DATA',
       'DISCIPLINE',
       { curriculum_id, code, name, semester: semNum, evaluation_type, ects_credits: ectsNum, contact_hours: hoursNum }
@@ -505,7 +491,7 @@ router.put('/disciplines/:id', requireRole(['ADMIN', 'SECRETARIAT']), async (req
     }
     
     const updatedDiscipline = await auditableUpdate(
-      req.user.id,
+      req.user.userId,
       'ACADEMIC_DATA',
       'DISCIPLINE',
       id,
@@ -531,7 +517,7 @@ router.delete('/disciplines/:id', requireRole(['ADMIN']), async (req, res, next)
     await db.query(`
       INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, occurred_at, success)
       VALUES ($1, 'DELETE', 'ACADEMIC_DATA', 'DISCIPLINE', $2, CURRENT_TIMESTAMP, true)
-    `, [req.user.id, id]);
+    `, [req.user.userId, id]);
     
     res.json({ success: true, message: 'Discipline deleted successfully.' });
   } catch (error) {
@@ -602,7 +588,7 @@ router.post('/specializations', requireRole(['ADMIN', 'SECRETARIAT']), async (re
     }
 
     const result = await auditableInsert(
-      req.user.id,
+      req.user.userId,
       'ACADEMIC_DATA',
       'SPECIALIZATION',
       { code, name, degree_level, is_active: true }
@@ -664,7 +650,7 @@ router.post('/curricula', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res
     }
 
     const result = await auditableInsert(
-      req.user.id,
+      req.user.userId,
       'ACADEMIC_DATA',
       'CURRICULUM',
       { 
@@ -685,7 +671,7 @@ router.post('/curricula', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res
 // POST /api/academic/grades (Effective grade addition - REQ-AFSMS-47, REQ-AFSMS-48)
 router.post('/grades', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
   const { studentId, disciplineId, gradeValue, examSession } = req.body;
-  const professorId = req.user.id;
+  const professorId = req.user.userId;
 
   try {
     // Backend Validation (Extra safety)
@@ -735,7 +721,7 @@ router.delete('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
     await db.query(`
       INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, before_snapshot_json, occurred_at, success)
       VALUES ($1, 'DELETE', 'ACADEMIC_DATA', 'GRADE', $2, $3, CURRENT_TIMESTAMP, true)
-    `, [req.user.id, id, JSON.stringify(grade)]);
+    `, [req.user.userId, id, JSON.stringify(grade)]);
     
     res.json({ success: true, message: 'Grade deleted successfully.' });
   } catch (error) {

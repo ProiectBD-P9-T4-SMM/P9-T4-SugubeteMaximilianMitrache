@@ -2,26 +2,34 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, FileText, FileSignature, Clock } from 'lucide-react';
 import { auditService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
     const fetchActivity = async () => {
       try {
-        const res = await auditService.getLogs();
-        setRecentActivity(res.data.slice(0, 5));
+        // Only admins, professors and secretariat can see global audit logs
+        if (user && ['ADMIN', 'PROFESSOR', 'SECRETARIAT'].includes(user.role)) {
+          const res = await auditService.getLogs();
+          setRecentActivity(res.data.slice(0, 5));
+        } else {
+          // Students don't see global activity for privacy
+          setRecentActivity([]);
+        }
       } catch (error) {
         console.error("Failed to load recent activity", error);
       }
     };
     fetchActivity();
-  }, []);
+  }, [user]);
 
   return (
     <div className="flex-1 container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">Welcome, User!</h2>
+      <h2 className="text-2xl font-bold text-slate-800 mb-6">Welcome, {user?.fullName || 'User'}!</h2>
       
       {/* Rând 1: 3 carduri mari */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -85,7 +93,7 @@ export default function Dashboard() {
               </li>
             )) : (
               <li className="text-sm text-slate-500 py-4 text-center italic">
-                No recent activity found or you do not have permission to view it.
+                {user?.role === 'STUDENT' ? 'Welcome to your portal! Check your grades and documents.' : 'No recent activity found.'}
               </li>
             )}
           </ul>

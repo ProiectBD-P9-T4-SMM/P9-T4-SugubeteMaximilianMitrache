@@ -14,6 +14,7 @@ export default function AuditLogs() {
   const [queries, setQueries] = useState([]);
   const [backups, setBackups] = useState([]);
   const [emailLogs, setEmailLogs] = useState([]);
+  const [backupConfig, setBackupConfig] = useState({ cron_expression: '0 0 * * *', enabled: false });
 
   // Modals / Forms state
   const [showUserModal, setShowUserModal] = useState(false);
@@ -31,9 +32,35 @@ export default function AuditLogs() {
       fetchRoles();
     }
     if (adminTab === 'queries') fetchQueries();
-    if (adminTab === 'backups') fetchBackups();
+    if (adminTab === 'backups') {
+      fetchBackups();
+      fetchBackupConfig();
+    }
     if (adminTab === 'emails') fetchEmailLogs();
   }, [adminTab]);
+
+  const fetchBackupConfig = async () => {
+    try {
+      const res = await adminService.getBackupConfig();
+      if (res.data) setBackupConfig(res.data);
+    } catch (err) {
+      console.error("Failed to fetch backup config", err);
+    }
+  };
+
+  const handleUpdateBackupConfig = async (e) => {
+    e.preventDefault();
+    try {
+      await adminService.updateBackupConfig({
+        cronExpression: backupConfig.cron_expression,
+        enabled: backupConfig.enabled
+      });
+      setRollbackStatus({ success: true, message: 'Backup schedule updated!' });
+      setTimeout(() => setRollbackStatus(null), 3000);
+    } catch (err) {
+      alert('Failed to update schedule');
+    }
+  };
 
   const fetchEmailLogs = async () => {
     setLoading(true);
@@ -139,6 +166,7 @@ export default function AuditLogs() {
       fetchBackups();
       setRollbackStatus({ success: true, message: 'Database snapshot created successfully!' });
     } catch (err) {
+      console.error("Backup trigger failed:", err);
       setRollbackStatus({ success: false, message: 'Failed to create snapshot' });
     } finally {
       setLoading(false);
@@ -456,14 +484,54 @@ export default function AuditLogs() {
 
             {adminTab === 'backups' && (
                 <div className="space-y-8">
-                    <div className="bg-slate-900 rounded-3xl p-8 flex flex-col md:flex-row justify-between items-center gap-6 shadow-2xl shadow-slate-200 border border-slate-800">
-                        <div className="text-center md:text-left">
-                            <h3 className="text-xl font-black text-white mb-2">High Availability & Recovery</h3>
-                            <p className="text-slate-400 text-xs font-bold leading-relaxed max-w-md uppercase tracking-wider">Point-in-time recovery system. Ensure data integrity by creating encrypted database snapshots before critical operations.</p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Manual Backup Card */}
+                        <div className="bg-slate-900 rounded-3xl p-8 flex flex-col justify-between shadow-2xl shadow-slate-200 border border-slate-800">
+                            <div>
+                                <h3 className="text-xl font-black text-white mb-2">Manual Snapshot</h3>
+                                <p className="text-slate-400 text-[10px] font-black leading-relaxed uppercase tracking-widest mb-6">Immediate point-in-time recovery system. Trigger an instant encrypted database snapshot.</p>
+                            </div>
+                            <button onClick={handleCreateBackup} disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all flex items-center justify-center gap-3">
+                                <Database size={20} /> Create Manual Snapshot
+                            </button>
                         </div>
-                        <button onClick={handleCreateBackup} disabled={loading} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all flex items-center gap-3">
-                            <Database size={20} /> Create Snapshot
-                        </button>
+
+                        {/* Automatic Backup Card */}
+                        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <form onSubmit={handleUpdateBackupConfig} className="space-y-6">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 mb-1">Timed Automation</h3>
+                                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Scheduled CRON-based Backup Protocol</p>
+                                    </div>
+                                    <label className={`relative inline-flex items-center cursor-pointer p-1 rounded-xl transition-all ${backupConfig.enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                                        <input type="checkbox" className="hidden" checked={backupConfig.enabled} onChange={e => setBackupConfig({...backupConfig, enabled: e.target.checked})} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest px-2">{backupConfig.enabled ? 'Enabled' : 'Disabled'}</span>
+                                    </label>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">CRON Expression</label>
+                                        <div className="flex gap-2">
+                                            <input 
+                                                required 
+                                                type="text" 
+                                                value={backupConfig.cron_expression} 
+                                                onChange={e => setBackupConfig({...backupConfig, cron_expression: e.target.value})} 
+                                                className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" 
+                                                placeholder="e.g. 0 0 * * *" 
+                                            />
+                                            <button type="submit" className="bg-slate-900 text-white px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all">Update</button>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button type="button" onClick={() => setBackupConfig({...backupConfig, cron_expression: '0 0 * * *'})} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-100 transition-all">Midnight Daily</button>
+                                        <button type="button" onClick={() => setBackupConfig({...backupConfig, cron_expression: '0 0 * * 0'})} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-100 transition-all">Weekly (Sun)</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     <div className="space-y-4">

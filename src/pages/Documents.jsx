@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Mail, Search, Eye, CheckCircle, Trash, XCircle, Download, FilePlus, ArrowRight } from 'lucide-react';
 import Select from 'react-select';
 import { documentsService, notificationsService, lookupService, adminService, groupsService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
@@ -26,12 +27,18 @@ export default function Documents() {
   const [forwardUserId, setForwardUserId] = useState('');
   const [systemUsers, setSystemUsers] = useState([]);
 
+  const { user } = useAuth();
+
   useEffect(() => {
     fetchDocuments();
-    loadFormations();
-    loadUsers();
-    loadGroups();
-  }, []);
+    
+    // Administrative lookups should only be performed by staff roles
+    if (user && ['ADMIN', 'PROFESSOR', 'SECRETARIAT'].includes(user.role)) {
+      loadFormations();
+      loadUsers();
+      loadGroups();
+    }
+  }, [user]);
 
   const loadGroups = async () => {
     try {

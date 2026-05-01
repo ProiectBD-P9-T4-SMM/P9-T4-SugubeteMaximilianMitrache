@@ -92,8 +92,8 @@ router.post('/send', async (req, res, next) => {
          VALUES ($1, $3, $4, $5, 'SENT')`;
 
     const insertParams = targetType === 'GROUP'
-      ? [req.user.id, groupId, emails.join(', '), subject, body.substring(0, 500)]
-      : [req.user.id, null, emails.join(', '), subject, body.substring(0, 500)];
+      ? [req.user.userId, groupId, emails.join(', '), subject, body.substring(0, 500)]
+      : [req.user.userId, null, emails.join(', '), subject, body.substring(0, 500)];
 
     await db.query(insertQuery, insertParams);
 

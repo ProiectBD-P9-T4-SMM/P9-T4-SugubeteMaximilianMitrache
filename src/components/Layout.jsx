@@ -39,9 +39,10 @@ export default function Layout() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-sm">
-                <User className="h-4 w-4" />
-                <span>{user ? user.fullName || user.role : 'User'}</span>
+              <div className="flex items-center space-x-2 text-sm bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                <span className="text-slate-300 font-medium">{user?.fullName}</span>
+                <User className="h-4 w-4 text-blue-400" />
+                <span className="text-xs text-slate-500 font-bold tracking-tighter uppercase">{user?.role}</span>
               </div>
               <button 
                 onClick={() => navigate('/help')}

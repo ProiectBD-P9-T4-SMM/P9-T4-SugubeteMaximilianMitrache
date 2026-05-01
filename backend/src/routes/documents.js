@@ -84,7 +84,7 @@ router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res
 
     // Audit the document status update
     const updatedDocument = await auditableUpdate(
-      req.user.id,
+      req.user.userId,
       'DOCUMENT_FLOW',
       'DOCUMENT',
       id,
@@ -104,7 +104,7 @@ router.put('/:id/forward', requireRole(['SECRETARIAT', 'ADMIN']), async (req, re
     const { userId } = req.body; 
 
     const updatedDocument = await auditableUpdate(
-      req.user.id,
+      req.user.userId,
       'DOCUMENT_FLOW',
       'DOCUMENT',
       id,
@@ -139,7 +139,7 @@ router.post('/', upload.single('file'), async (req, res, next) => {
       title,
       type,
       status: 'DRAFT',
-      author_id: req.user.id,
+      author_id: req.user.userId,
       created_at: new Date().toISOString()
     };
 
@@ -150,7 +150,7 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     }
 
     const newDoc = await auditableInsert(
-      req.user.id,
+      req.user.userId,
       'DOCUMENT_FLOW',
       'DOCUMENT',
       insertFields

@@ -40,12 +40,60 @@ router.post('/exchange-token', async (req, res, next) => {
                 if (roleRes.rows.length > 0) {
                     await client.query('INSERT INTO USER_ROLE (user_id, role_id) VALUES ($1, $2)', [user.id, roleRes.rows[0].id]);
                 }
+
+                // --- NEW: Auto-create STUDENT profile if role is STUDENT ---
+                if (targetRole === 'STUDENT') {
+                    await client.query('SAVEPOINT student_creation');
+                    try {
+                        const studentCheck = await client.query('SELECT id FROM STUDENT WHERE email = $1', [user.email]);
+                        if (studentCheck.rows.length === 0) {
+                            const regNum = 'MAT' + Date.now().toString().slice(-4) + Math.floor(10 + Math.random() * 89);
+                            const names = user.full_name.split(' ');
+                            const lastName = names[0] || 'Student';
+                            const firstName = names.slice(1).join(' ') || 'Fictiv';
+                            
+                            await client.query(`
+                                INSERT INTO STUDENT (registration_number, first_name, last_name, email, enrollment_date, status)
+                                VALUES ($1, $2, $3, $4, CURRENT_DATE, 'ENROLLED')
+                                ON CONFLICT (email) DO NOTHING
+                            `, [regNum, firstName, lastName, user.email]);
+                        }
+                        await client.query('RELEASE SAVEPOINT student_creation');
+                    } catch (studentErr) {
+                        await client.query('ROLLBACK TO SAVEPOINT student_creation');
+                        console.error('Non-critical error creating student profile:', studentErr);
+                    }
+                }
             } else if (decodedIdP.role) {
                 // Sincronizare forțată a rolului la fiecare login pentru a facilita testarea SSO-ului
                 const roleRes = await client.query("SELECT id FROM ROLE WHERE code = $1", [decodedIdP.role]);
                 if (roleRes.rows.length > 0) {
                     await client.query('DELETE FROM USER_ROLE WHERE user_id = $1', [user.id]);
                     await client.query('INSERT INTO USER_ROLE (user_id, role_id) VALUES ($1, $2)', [user.id, roleRes.rows[0].id]);
+                }
+
+                // --- NEW: Also ensure STUDENT profile exists if role is synced to STUDENT ---
+                if (decodedIdP.role === 'STUDENT') {
+                    await client.query('SAVEPOINT student_creation_sync');
+                    try {
+                        const studentCheck = await client.query('SELECT id FROM STUDENT WHERE email = $1', [user.email]);
+                        if (studentCheck.rows.length === 0) {
+                            const regNum = 'MAT' + Date.now().toString().slice(-4) + Math.floor(10 + Math.random() * 89);
+                            const names = user.full_name.split(' ');
+                            const lastName = names[0] || 'Student';
+                            const firstName = names.slice(1).join(' ') || 'Fictiv';
+                            
+                            await client.query(`
+                                INSERT INTO STUDENT (registration_number, first_name, last_name, email, enrollment_date, status)
+                                VALUES ($1, $2, $3, $4, CURRENT_DATE, 'ENROLLED')
+                                ON CONFLICT (email) DO NOTHING
+                            `, [regNum, firstName, lastName, user.email]);
+                        }
+                        await client.query('RELEASE SAVEPOINT student_creation_sync');
+                    } catch (studentErr) {
+                        await client.query('ROLLBACK TO SAVEPOINT student_creation_sync');
+                        console.error('Non-critical error creating student profile:', studentErr);
+                    }
                 }
             }
 
@@ -62,7 +110,7 @@ router.post('/exchange-token', async (req, res, next) => {
 
             // 5. Generăm token-ul intern pentru AFSMS (Sesiunea portalului privat)
             const sessionToken = jwt.sign(
-                { userId: user.id, role: roleCode },
+                { userId: user.id, role: roleCode, fullName: user.full_name },
                 process.env.JWT_SECRET || 'cheie_secreta_afsms_2026',
                 { expiresIn: '8h' }
             );

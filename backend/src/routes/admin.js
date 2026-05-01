@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require('../db');
 const { verifyToken } = require('../middleware/auth');
 const { auditableUpdate, auditableInsert, auditableDelete } = require('../services/auditService');
+const fs = require('fs');
+const path = require('path');
 
 router.use(verifyToken);
 // GET /api/admin/roles - Fetch available roles
@@ -19,7 +21,7 @@ router.get('/roles', async (req, res, next) => {
 router.post('/roles', async (req, res, next) => {
   try {
     const { code, name, description } = req.body;
-    const result = await auditableInsert(req.user.id, 'ADMINISTRATION', 'ROLE', { code, name, description });
+    const result = await auditableInsert(req.user.userId, 'ADMINISTRATION', 'ROLE', { code, name, description });
     res.status(201).json(result);
   } catch (error) {
     next(error);
@@ -30,7 +32,7 @@ router.post('/roles', async (req, res, next) => {
 router.put('/roles/:id', async (req, res, next) => {
   try {
     const { code, name, description } = req.body;
-    const result = await auditableUpdate(req.user.id, 'ADMINISTRATION', 'ROLE', req.params.id, { code, name, description });
+    const result = await auditableUpdate(req.user.userId, 'ADMINISTRATION', 'ROLE', req.params.id, { code, name, description });
     res.json(result);
   } catch (error) {
     next(error);
@@ -40,7 +42,7 @@ router.put('/roles/:id', async (req, res, next) => {
 // DELETE /api/admin/roles/:id - Delete a role
 router.delete('/roles/:id', async (req, res, next) => {
   try {
-    await auditableDelete(req.user.id, 'ADMINISTRATION', 'ROLE', req.params.id);
+    await auditableDelete(req.user.userId, 'ADMINISTRATION', 'ROLE', req.params.id);
     res.json({ success: true, message: 'Role deleted successfully' });
   } catch (error) {
     next(error);
@@ -69,7 +71,7 @@ router.get('/users', async (req, res, next) => {
 router.post('/users', async (req, res, next) => {
   try {
     const { sso_subject, username, email, full_name, account_status } = req.body;
-    const result = await auditableInsert(req.user.id, 'ADMINISTRATION', 'USER_ACCOUNT', { 
+    const result = await auditableInsert(req.user.userId, 'ADMINISTRATION', 'USER_ACCOUNT', { 
       sso_subject, username, email, full_name, account_status: account_status || 'ACTIVE' 
     });
     res.status(201).json(result);
@@ -88,7 +90,7 @@ router.put('/users/:id', async (req, res, next) => {
     if (account_status) updateFields.account_status = account_status;
     if (username) updateFields.username = username;
 
-    const result = await auditableUpdate(req.user.id, 'ADMINISTRATION', 'USER_ACCOUNT', req.params.id, updateFields);
+    const result = await auditableUpdate(req.user.userId, 'ADMINISTRATION', 'USER_ACCOUNT', req.params.id, updateFields);
     res.json(result);
   } catch (error) {
     next(error);
@@ -98,7 +100,7 @@ router.put('/users/:id', async (req, res, next) => {
 // DELETE /api/admin/users/:id - Delete a user
 router.delete('/users/:id', async (req, res, next) => {
   try {
-    await auditableDelete(req.user.id, 'ADMINISTRATION', 'USER_ACCOUNT', req.params.id);
+    await auditableDelete(req.user.userId, 'ADMINISTRATION', 'USER_ACCOUNT', req.params.id);
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
     next(error);
@@ -115,9 +117,9 @@ router.put('/users/:id/role', async (req, res, next) => {
     const existing = await db.query('SELECT id FROM USER_ROLE WHERE user_id = $1', [userId]);
     
     if (existing.rows.length > 0) {
-      await auditableUpdate(req.user.id, 'ADMINISTRATION', 'USER_ROLE', existing.rows[0].id, { role_id: roleId });
+      await auditableUpdate(req.user.userId, 'ADMINISTRATION', 'USER_ROLE', existing.rows[0].id, { role_id: roleId });
     } else {
-      await auditableInsert(req.user.id, 'ADMINISTRATION', 'USER_ROLE', { user_id: userId, role_id: roleId });
+      await auditableInsert(req.user.userId, 'ADMINISTRATION', 'USER_ROLE', { user_id: userId, role_id: roleId });
     }
     
     res.json({ success: true, message: 'Role updated successfully' });
@@ -164,20 +166,7 @@ router.get('/emails', async (req, res, next) => {
   }
 });
 
-// --- BACKUP & RECOVERY (REQ-AFSMS-55, 56) ---
-const fs = require('fs');
-const path = require('path');
-
-const BACKUP_DIR = path.join(__dirname, '../../backups');
-if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
-
-const TABLES_TO_BACKUP = [
-  'role', 'permission', 'role_permission',
-  'user_account', 'user_role',
-  'academic_year', 'specialization', 'curriculum', 'curriculum_snapshot', 
-  'discipline', 'study_formation', 'student', 'grade',
-  'document', 'audit_log_entry', 'user_group'
-];
+const { createBackup, BACKUP_DIR, TABLES_TO_BACKUP } = require('../services/backupService');
 
 // GET /api/admin/backups - List all backups
 router.get('/backups', async (req, res, next) => {
@@ -198,21 +187,32 @@ router.get('/backups', async (req, res, next) => {
 // POST /api/admin/backups/create - Create a new backup (REQ-AFSMS-56)
 router.post('/backups/create', async (req, res, next) => {
   try {
-    const snapshot = {
-      timestamp: new Date().toISOString(),
-      version: '1.0',
-      data: {}
-    };
+    const result = await createBackup(req.user.userId, 'MANUAL');
+    res.json({ success: true, message: 'Backup created successfully', filename: result.filename });
+  } catch (error) {
+    console.error('[AdminRoute] Manual backup failed:', error);
+    next(error);
+  }
+});
 
-    for (const table of TABLES_TO_BACKUP) {
-      const result = await db.query(`SELECT * FROM ${table.toUpperCase()}`);
-      snapshot.data[table] = result.rows;
-    }
+const { updateSchedule } = require('../services/schedulerService');
 
-    const filename = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-    fs.writeFileSync(path.join(BACKUP_DIR, filename), JSON.stringify(snapshot, null, 2));
+// GET /api/admin/backups/config - Get current backup configuration
+router.get('/backups/config', async (req, res, next) => {
+  try {
+    const result = await db.query('SELECT * FROM BACKUP_CONFIG LIMIT 1');
+    res.json(result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+});
 
-    res.json({ success: true, message: 'Backup created successfully', filename });
+// PUT /api/admin/backups/config - Update backup configuration
+router.put('/backups/config', async (req, res, next) => {
+  try {
+    const { cronExpression, enabled } = req.body;
+    await updateSchedule(cronExpression, enabled);
+    res.json({ success: true, message: 'Backup schedule updated successfully' });
   } catch (error) {
     next(error);
   }
@@ -254,7 +254,7 @@ router.post('/backups/restore', async (req, res, next) => {
       await client.query(`
         INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, after_snapshot_json)
         VALUES ($1, 'RECOVERY', 'ADMIN_SYSTEM', 'DATABASE', 0, $2)
-      `, [req.user.id, JSON.stringify({ restored_file: filename })]);
+      `, [req.user.userId, JSON.stringify({ restored_file: filename })]);
     });
 
     res.json({ success: true, message: 'Database restored successfully' });

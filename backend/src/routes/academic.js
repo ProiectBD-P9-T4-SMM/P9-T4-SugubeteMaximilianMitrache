@@ -11,9 +11,17 @@ router.get('/students', async (req, res, next) => {
   try {
     const query = `
       SELECT s.id, s.registration_number, s.first_name, s.last_name, s.email, s.status, 
-             sf.name as formation_name, sf.study_year,
-             (SELECT COUNT(*) FROM STUDENT_CURRICULUM sc WHERE sc.student_id = s.id) as plan_count,
-             (SELECT c.name FROM STUDENT_CURRICULUM sc JOIN CURRICULUM c ON sc.curriculum_id = c.id WHERE sc.student_id = s.id LIMIT 1) as first_plan_name
+             sf.name as main_formation_name, sf.study_year as main_study_year,
+             (SELECT COUNT(*) FROM STUDENT_CURRICULUM sc WHERE sc.student_id = s.id AND sc.status = 'ACTIVE') as plan_count,
+             (SELECT JSON_AGG(JSON_BUILD_OBJECT(
+               'curriculum_name', c.name, 
+               'formation_name', sf_sc.name, 
+               'study_year', sf_sc.study_year
+             )) 
+              FROM STUDENT_CURRICULUM sc 
+              JOIN CURRICULUM c ON sc.curriculum_id = c.id 
+              LEFT JOIN STUDY_FORMATION sf_sc ON sc.study_formation_id = sf_sc.id
+              WHERE sc.student_id = s.id AND sc.status = 'ACTIVE') as enrollments
       FROM STUDENT s
       LEFT JOIN STUDY_FORMATION sf ON s.study_formation_id = sf.id
       ORDER BY s.last_name ASC
@@ -55,16 +63,72 @@ router.post('/students/bulk', async (req, res, next) => {
 
   try {
     const results = [];
-    for (const student of students) {
-      const regNum = 'MAT' + Math.floor(1000 + Math.random() * 9000);
-      const res = await db.query(`
-        INSERT INTO STUDENT (registration_number, first_name, last_name, email, study_formation_id, enrollment_date, status)
-        VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 'ENROLLED') RETURNING *
-      `, [regNum, student.first_name, student.last_name, student.email, student.study_formation_id]);
-      results.push(res.rows[0]);
+    for (const data of students) {
+      // Normalize keys (handle both exported Romanian headers and standard keys)
+      const email = data.Email || data.email;
+      const firstName = data.Prenume || data.first_name;
+      const lastName = data.Nume || data.last_name;
+      const regNum = data['Nr. Matricol'] || data.registration_number || ('MAT' + Math.floor(1000 + Math.random() * 9000));
+      const curriculumName = data['Program Academic'] || data.curriculum_name;
+      const formationName = data['Formație Specifică'] || data.formation_name;
+
+      if (!email || !firstName || !lastName) continue;
+
+      // 1. Find or Create Student
+      let studentId;
+      const statusMap = {
+        'SUSPENDAT': 'SUSPENDED',
+        'ACTIV': 'ACTIVE',
+        'INMATRICULAT': 'ENROLLED',
+        'ÎNMATRICULAT': 'ENROLLED',
+        'ABSOLVIT': 'GRADUATED'
+      };
+      
+      const rawStatus = data.Status || data.status;
+      const normalizedStatus = statusMap[rawStatus?.toUpperCase()] || rawStatus?.toUpperCase() || 'ENROLLED';
+
+      const existingStudent = await db.query('SELECT id FROM STUDENT WHERE email = $1', [email]);
+      
+      if (existingStudent.rows.length > 0) {
+        studentId = existingStudent.rows[0].id;
+        // Optionally update status for existing student
+        await db.query('UPDATE STUDENT SET status = $1 WHERE id = $2', [normalizedStatus, studentId]);
+      } else {
+        const newStudent = await db.query(`
+          INSERT INTO STUDENT (registration_number, first_name, last_name, email, enrollment_date, status)
+          VALUES ($1, $2, $3, $4, CURRENT_DATE, $5) RETURNING id
+        `, [regNum, firstName, lastName, email, normalizedStatus]);
+        studentId = newStudent.rows[0].id;
+      }
+
+      // 2. Resolve Curriculum & Formation if names provided
+      let curriculumId = data.curriculum_id;
+      let formationId = data.study_formation_id;
+
+      if (!curriculumId && curriculumName) {
+        const currRes = await db.query('SELECT id FROM CURRICULUM WHERE name = $1 LIMIT 1', [curriculumName]);
+        curriculumId = currRes.rows[0]?.id;
+      }
+
+      if (!formationId && formationName) {
+        const formRes = await db.query('SELECT id FROM STUDY_FORMATION WHERE name = $1 LIMIT 1', [formationName]);
+        formationId = formRes.rows[0]?.id;
+      }
+
+      // 3. Enroll in Curriculum if possible
+      if (studentId && curriculumId) {
+        await db.query(`
+          INSERT INTO STUDENT_CURRICULUM (student_id, curriculum_id, study_formation_id, status)
+          VALUES ($1, $2, $3, 'ACTIVE')
+          ON CONFLICT (student_id, curriculum_id) DO UPDATE SET study_formation_id = EXCLUDED.study_formation_id
+        `, [studentId, curriculumId, formationId || null]);
+      }
+
+      results.push({ email, studentId });
     }
-    res.json({ success: true, message: `Successfully imported ${results.length} students.`, data: results });
+    res.json({ success: true, message: `Successfully processed ${results.length} records.`, data: results });
   } catch (error) {
+    console.error("Bulk import error:", error);
     next(error);
   }
 });
@@ -171,7 +235,7 @@ router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), as
       if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > 10) {
         return res.status(400).json({ 
           error: true, 
-          message: 'Nota trebuie să fie între 1 și 10 (sau 0 pentru Absent).' 
+          message: 'The grade must be between 1 and 10 (or 0 for Absent).' 
         });
       }
       updateData.value = gradeNum;
@@ -196,12 +260,12 @@ router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), as
   }
 });
 
-// GET /api/academic/my-grades (Accesibil DOAR pentru Student)
+// GET /api/academic/my-grades (Accessible ONLY for Student)
 router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    // 1. Căutăm studentul cu detalii complete despre specializare și formație
+    // 1. Search for student with full details about specialization and formation
     const studentQuery = `
       SELECT 
         s.id, s.first_name, s.last_name, s.registration_number, s.email, s.status, s.enrollment_date,
@@ -215,7 +279,7 @@ router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
     `;
     let studentRes = await db.query(studentQuery, [userId]);
 
-    // Fallback pentru demo SSO
+    // Fallback for demo SSO
     if (studentRes.rows.length === 0) {
       studentRes = await db.query(`
         SELECT 
@@ -231,11 +295,11 @@ router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
     }
     
     if (studentRes.rows.length === 0) {
-      return res.status(404).json({ error: true, message: 'Nu a fost găsit niciun profil de student.' });
+      return res.status(404).json({ error: true, message: 'No student profile found.' });
     }
     const student = studentRes.rows[0];
 
-    // 2. Extragem TOATE planurile de învățământ la care este înscris studentul
+    // 2. Extract ALL study plans the student is enrolled in
     const curriculaQuery = `
       SELECT 
         c.id as curriculum_id, c.name as curriculum_name, c.code as curriculum_code,
@@ -248,7 +312,7 @@ router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
     const curriculaRes = await db.query(curriculaQuery, [student.id]);
     const studentCurricula = curriculaRes.rows;
 
-    // 3. Extragem TOATE materiile și notele, grupate pe curriculum
+    // 3. Extract ALL disciplines and grades, grouped by curriculum
     const gradesQuery = `
       SELECT 
         c.id as curriculum_id,
@@ -271,7 +335,7 @@ router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
 
     const { rows } = await db.query(gradesQuery, [student.id]);
 
-    // Grupăm datele pe curriculum pentru frontend
+    // Group data by curriculum for frontend
     const academicPlans = studentCurricula.map(plan => ({
       ...plan,
       records: rows.filter(r => r.curriculum_id === plan.curriculum_id)
@@ -281,9 +345,9 @@ router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
       success: true,
       studentInfo: {
         ...student,
-        institution: "Universitatea din Craiova",
-        faculty: "Facultatea de Automatică, Calculatoare și Electronică",
-        domain: "Calculatoare și Tehnologia Informației"
+        institution: "University of Craiova",
+        faculty: "Faculty of Automation, Computers and Electronics",
+        domain: "Computer Science and Information Technology"
       },
       academicPlans
     });
@@ -295,7 +359,7 @@ router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
 
 // --- DISCIPLINES ---
 
-// GET /api/academic/disciplines (Pentru Dropdown Materii + List view)
+// GET /api/academic/disciplines (For Discipline Dropdown + List view)
 router.get('/disciplines', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
   try {
     const { curriculum_id } = req.query;
@@ -335,7 +399,7 @@ router.get('/disciplines/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']
     );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: true, message: 'Disciplina nu a fost găsită.' });
+      return res.status(404).json({ error: true, message: 'Discipline not found.' });
     }
     
     res.json({ success: true, discipline: result.rows[0] });
@@ -349,12 +413,12 @@ router.post('/disciplines', requireRole(['ADMIN', 'SECRETARIAT']), async (req, r
   try {
     const { curriculum_id, code, name, semester, evaluation_type, ects_credits, contact_hours } = req.body;
     
-    // Validare
+    // Validation
     if (!curriculum_id || !code || !name || !semester || !evaluation_type || !ects_credits || !contact_hours) {
       return res.status(400).json({ 
         error: true, 
-        message: 'Toate câmpurile sunt obligatorii.',
-        resolutionHint: 'Verificați că ați completat: cod, nume, semestru, tip evaluare, ECTS, ore contact.'
+        message: 'All fields are required.',
+        resolutionHint: 'Check that you completed: code, name, semester, evaluation type, ECTS, contact hours.'
       });
     }
     
@@ -365,24 +429,24 @@ router.post('/disciplines', requireRole(['ADMIN', 'SECRETARIAT']), async (req, r
     if (semNum < 1 || semNum > 8) {
       return res.status(400).json({ 
         error: true, 
-        message: 'Semestrul trebuie să fie între 1 și 8.',
-        resolutionHint: 'Introduceți un semestru valid.'
+        message: 'Semester must be between 1 and 8.',
+        resolutionHint: 'Enter a valid semester.'
       });
     }
     
     if (ectsNum < 1 || ectsNum > 20) {
       return res.status(400).json({ 
         error: true, 
-        message: 'Creditele ECTS trebuie să fie între 1 și 20.',
-        resolutionHint: 'Introduceți o valoare validă pentru ECTS.'
+        message: 'ECTS credits must be between 1 and 20.',
+        resolutionHint: 'Enter a valid ECTS value.'
       });
     }
     
     if (hoursNum < 0 || hoursNum > 200) {
       return res.status(400).json({ 
         error: true, 
-        message: 'Orele contact trebuie să fie între 0 și 200.',
-        resolutionHint: 'Introduceți o valoare validă pentru ore contact.'
+        message: 'Contact hours must be between 0 and 200.',
+        resolutionHint: 'Enter a valid value for contact hours.'
       });
     }
     
@@ -391,8 +455,8 @@ router.post('/disciplines', requireRole(['ADMIN', 'SECRETARIAT']), async (req, r
     if (existingCode.rows.length > 0) {
       return res.status(400).json({ 
         error: true, 
-        message: 'Un cod de disciplină cu această valoare există deja.',
-        resolutionHint: 'Folosiți un cod unic pentru disciplină.'
+        message: 'A discipline code with this value already exists.',
+        resolutionHint: 'Use a unique code for the discipline.'
       });
     }
     
@@ -403,7 +467,7 @@ router.post('/disciplines', requireRole(['ADMIN', 'SECRETARIAT']), async (req, r
       { curriculum_id, code, name, semester: semNum, evaluation_type, ects_credits: ectsNum, contact_hours: hoursNum }
     );
     
-    res.status(201).json({ success: true, message: 'Disciplina creată cu succes!', discipline: newDiscipline });
+    res.status(201).json({ success: true, message: 'Discipline created successfully!', discipline: newDiscipline });
   } catch (error) {
     next(error);
   }
@@ -415,7 +479,7 @@ router.put('/disciplines/:id', requireRole(['ADMIN', 'SECRETARIAT']), async (req
     const { id } = req.params;
     const { code, name, semester, evaluation_type, ects_credits, contact_hours } = req.body;
     
-    // Validare
+    // Validation
     const semNum = parseInt(semester);
     const ectsNum = parseInt(ects_credits);
     const hoursNum = parseInt(contact_hours);
@@ -423,8 +487,8 @@ router.put('/disciplines/:id', requireRole(['ADMIN', 'SECRETARIAT']), async (req
     if (semNum < 1 || semNum > 8 || ectsNum < 1 || ectsNum > 20 || hoursNum < 0 || hoursNum > 200) {
       return res.status(400).json({ 
         error: true, 
-        message: 'Una sau mai multe valori nu sunt în intervalul valid.',
-        resolutionHint: 'Semestru: 1-8, ECTS: 1-20, Ore: 0-200.'
+        message: 'One or more values are not in the valid range.',
+        resolutionHint: 'Semester: 1-8, ECTS: 1-20, Hours: 0-200.'
       });
     }
     
@@ -434,8 +498,8 @@ router.put('/disciplines/:id', requireRole(['ADMIN', 'SECRETARIAT']), async (req
       if (existingCode.rows.length > 0) {
         return res.status(400).json({ 
           error: true, 
-          message: 'Un cod de disciplină cu această valoare există deja.',
-          resolutionHint: 'Folosiți un cod unic pentru disciplină.'
+          message: 'A discipline code with this value already exists.',
+          resolutionHint: 'Use a unique code for the discipline.'
         });
       }
     }
@@ -448,7 +512,7 @@ router.put('/disciplines/:id', requireRole(['ADMIN', 'SECRETARIAT']), async (req
       { code, name, semester: semNum, evaluation_type, ects_credits: ectsNum, contact_hours: hoursNum }
     );
     
-    res.json({ success: true, message: 'Disciplina actualizată cu succes!', discipline: updatedDiscipline });
+    res.json({ success: true, message: 'Discipline updated successfully!', discipline: updatedDiscipline });
   } catch (error) {
     next(error);
   }
@@ -469,7 +533,7 @@ router.delete('/disciplines/:id', requireRole(['ADMIN']), async (req, res, next)
       VALUES ($1, 'DELETE', 'ACADEMIC_DATA', 'DISCIPLINE', $2, CURRENT_TIMESTAMP, true)
     `, [req.user.id, id]);
     
-    res.json({ success: true, message: 'Disciplina a fost ștearsă cu succes.' });
+    res.json({ success: true, message: 'Discipline deleted successfully.' });
   } catch (error) {
     next(error);
   }
@@ -492,7 +556,7 @@ router.get('/curriculum/:curriculumId/disciplines', requireRole(['PROFESSOR', 'A
   }
 });
 
-// GET /api/academic/students-dropdown (Pentru Dropdown Studenți din AddGrades)
+// GET /api/academic/students-dropdown (For Students Dropdown in AddGrades)
 router.get('/students-dropdown', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
   try {
     const { rows } = await db.query(`
@@ -534,7 +598,7 @@ router.post('/specializations', requireRole(['ADMIN', 'SECRETARIAT']), async (re
     const { code, name, degree_level } = req.body;
     
     if (!code || !name || !degree_level) {
-      return res.status(400).json({ error: true, message: 'Lipsesc date obligatorii (Cod, Nume, Ciclu Studii).' });
+      return res.status(400).json({ error: true, message: 'Missing mandatory data (Code, Name, Study Cycle).' });
     }
 
     const result = await auditableInsert(
@@ -596,7 +660,7 @@ router.post('/curricula', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res
     const { specialization_id, code, name } = req.body;
     
     if (!specialization_id || !code || !name) {
-      return res.status(400).json({ error: true, message: 'Lipsesc date obligatorii (Specializare, Cod, Nume).' });
+      return res.status(400).json({ error: true, message: 'Missing mandatory data (Specialization, Code, Name).' });
     }
 
     const result = await auditableInsert(
@@ -618,30 +682,30 @@ router.post('/curricula', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res
   }
 });
 
-// POST /api/academic/grades (Adăugarea efectivă a notei - REQ-AFSMS-47, REQ-AFSMS-48)
+// POST /api/academic/grades (Effective grade addition - REQ-AFSMS-47, REQ-AFSMS-48)
 router.post('/grades', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
   const { studentId, disciplineId, gradeValue, examSession } = req.body;
   const professorId = req.user.id;
 
   try {
-    // Validare Backend (Siguranță suplimentară)
+    // Backend Validation (Extra safety)
     const gradeNum = parseFloat(gradeValue);
     if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > 10) {
-      return res.status(400).json({ error: true, message: 'Nota trebuie să fie între 1 și 10 (sau 0 pentru Absent).' });
+      return res.status(400).json({ error: true, message: 'The grade must be between 1 and 10 (or 0 for Absent).' });
     }
 
-    // Extragem Anul Academic Activ și Snapshot-ul Curriculei
+    // Extract Active Academic Year and Curriculum Snapshot
     const academicYearRes = await db.query('SELECT id FROM ACADEMIC_YEAR WHERE is_active = TRUE LIMIT 1');
     const snapshotRes = await db.query("SELECT id FROM CURRICULUM_SNAPSHOT WHERE snapshot_status = 'ACTIVE' LIMIT 1");
     
-    // Inserăm nota (Triggerul de PostgreSQL va face jurnalizarea dacă există)
+    // Insert grade
     const insertRes = await db.query(`
       INSERT INTO GRADE (student_id, discipline_id, academic_year_id, curriculum_snapshot_id, graded_by_user_id, value, exam_session, grading_date, validated)
       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, TRUE)
       RETURNING id, value
     `, [studentId, disciplineId, academicYearRes.rows[0]?.id || null, snapshotRes.rows[0]?.id || null, professorId, gradeNum, examSession]);
 
-    res.json({ success: true, message: 'Notă adăugată cu succes!', grade: insertRes.rows[0] });
+    res.json({ success: true, message: 'Grade added successfully!', grade: insertRes.rows[0] });
   } catch (error) {
     next(error);
   }
@@ -659,7 +723,7 @@ router.delete('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
     );
     
     if (gradeRes.rows.length === 0) {
-      return res.status(404).json({ error: true, message: 'Nota nu a fost găsită.' });
+      return res.status(404).json({ error: true, message: 'Grade not found.' });
     }
     
     const grade = gradeRes.rows[0];
@@ -673,7 +737,7 @@ router.delete('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
       VALUES ($1, 'DELETE', 'ACADEMIC_DATA', 'GRADE', $2, $3, CURRENT_TIMESTAMP, true)
     `, [req.user.id, id, JSON.stringify(grade)]);
     
-    res.json({ success: true, message: 'Nota a fost ștearsă cu succes.' });
+    res.json({ success: true, message: 'Grade deleted successfully.' });
   } catch (error) {
     next(error);
   }
@@ -735,24 +799,25 @@ router.post('/update-enrollment-formation', requireRole(['ADMIN', 'SECRETARIAT']
   try {
     const { student_id, curriculum_id, study_formation_id } = req.body;
     await db.query(`
-      UPDATE STUDENT_CURRICULUM
-      SET study_formation_id = $3
-      WHERE student_id = $1 AND curriculum_id = $2
-    `, [student_id, curriculum_id, study_formation_id]);
+      UPDATE STUDENT_CURRICULUM 
+      SET study_formation_id = $1
+      WHERE student_id = $2 AND curriculum_id = $3
+    `, [study_formation_id, student_id, curriculum_id]);
     res.json({ success: true, message: 'Enrollment formation updated.' });
   } catch (error) {
     next(error);
   }
 });
 
-// DELETE /api/academic/unenroll-student/:studentId/:curriculumId
-router.delete('/unenroll-student/:studentId/:curriculumId', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res, next) => {
+// DELETE /api/academic/unenroll-student
+router.delete('/unenroll-student', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res, next) => {
   try {
-    const { studentId, curriculumId } = req.params;
+    const { student_id, curriculum_id } = req.body;
     await db.query(`
-      DELETE FROM STUDENT_CURRICULUM 
+      UPDATE STUDENT_CURRICULUM 
+      SET status = 'INACTIVE'
       WHERE student_id = $1 AND curriculum_id = $2
-    `, [studentId, curriculumId]);
+    `, [student_id, curriculum_id]);
     res.json({ success: true, message: 'Student unenrolled successfully.' });
   } catch (error) {
     next(error);

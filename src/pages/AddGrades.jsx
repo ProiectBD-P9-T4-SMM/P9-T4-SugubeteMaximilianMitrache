@@ -5,13 +5,13 @@ import { AlertCircle, CheckCircle, X } from 'lucide-react';
 export default function AddGrades() {
   const [students, setStudents] = useState([]);
   const [disciplines, setDisciplines] = useState([]);
-  const [formData, setFormData] = useState({ studentId: '', disciplineId: '', gradeValue: '', examSession: 'IARNA' });
+  const [formData, setFormData] = useState({ studentId: '', disciplineId: '', gradeValue: '', examSession: 'WINTER' });
   const [message, setMessage] = useState({ type: '', text: '', hint: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recentGrades, setRecentGrades] = useState([]);
 
   useEffect(() => {
-    // Extragem datele pentru Dropdown-uri
+    // Fetch data for dropdowns
     Promise.all([
       api.get('/academic/students-dropdown'),
       api.get('/academic/disciplines')
@@ -19,7 +19,7 @@ export default function AddGrades() {
       setStudents(studentsRes.data.students || []);
       setDisciplines(discRes.data.disciplines || []);
     }).catch(() => {
-      setMessage({ type: 'error', text: 'Eroare la încărcarea listelor academice.' });
+      setMessage({ type: 'error', text: 'Error loading academic lists.' });
     });
   }, []);
 
@@ -28,7 +28,7 @@ export default function AddGrades() {
     if (formData.disciplineId) {
       const disc = disciplines.find(d => d.id === formData.disciplineId);
       if (disc) {
-        const autoSession = (disc.semester % 2 !== 0) ? 'IARNA' : 'VARA';
+        const autoSession = (disc.semester % 2 !== 0) ? 'WINTER' : 'SUMMER';
         setFormData(prev => ({ ...prev, examSession: autoSession }));
       }
     }
@@ -38,12 +38,12 @@ export default function AddGrades() {
     e.preventDefault();
     setMessage({ type: '', text: '', hint: '' });
 
-    // Validare Client-Side conform SRS (NFR-AFSMS-SAFE-06)
+    // Client-Side Validation (NFR-AFSMS-SAFE-06)
     if (!formData.studentId || !formData.disciplineId) {
       setMessage({ 
         type: 'error', 
-        text: 'Vă rugăm să selectați un student și o disciplină.',
-        hint: 'Completați ambele câmpuri înainte de a salva.' 
+        text: 'Please select a student and a discipline.',
+        hint: 'Complete both fields before saving.' 
       });
       return;
     }
@@ -52,8 +52,8 @@ export default function AddGrades() {
     if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > 10) {
       setMessage({ 
         type: 'error', 
-        text: 'Nota trebuie să fie un număr valid între 1 și 10 (sau 0 pentru Absent).', 
-        hint: 'Introduceți o valoare între 1.00 și 10.00 sau cifra 0.' 
+        text: 'The grade must be a valid number between 1 and 10 (or 0 for Absent).', 
+        hint: 'Enter a value between 1.00 and 10.00 or the digit 0.' 
       });
       return;
     }
@@ -70,7 +70,7 @@ export default function AddGrades() {
       const selectedStudent = students.find(s => s.id === formData.studentId);
       const selectedDiscipline = disciplines.find(d => d.id === formData.disciplineId);
       
-      setMessage({ type: 'success', text: 'Notă adăugată cu succes!' });
+      setMessage({ type: 'success', text: 'Grade added successfully!' });
       
       // Add to recent grades list
       setRecentGrades([{
@@ -78,18 +78,18 @@ export default function AddGrades() {
         discipline: selectedDiscipline?.name,
         grade: gradeNum,
         session: formData.examSession,
-        time: new Date().toLocaleTimeString('ro-RO')
+        time: new Date().toLocaleTimeString('en-US')
       }, ...recentGrades.slice(0, 4)]);
       
-      setFormData({ ...formData, gradeValue: '' }); // Resetăm doar nota, păstrăm contextul
+      setFormData({ ...formData, gradeValue: '' }); // Reset only the grade, keep context
     } catch (err) {
-      const msg = err.response?.data?.message || 'Eroare la salvarea notei.';
-      let suggestion = "Verificați dacă nota este validă și dacă ați selectat toți parametrii.";
+      const msg = err.response?.data?.message || 'Error saving grade.';
+      let suggestion = "Check if the grade is valid and if you have selected all parameters.";
       
       if (err.response?.status === 400) {
-        suggestion = "Nota trebuie să fie un număr între 1 și 10. Verificați dacă ați selectat disciplina corectă.";
+        suggestion = "The grade must be a number between 1 and 10. Check if you have selected the correct discipline.";
       } else if (err.response?.status === 500) {
-        suggestion = "Eroare internă. S-ar putea să nu existe un An Academic ACTIV configurat în baza de date.";
+        suggestion = "Internal error. There might not be an ACTIVE Academic Year configured in the database.";
       }
 
       setMessage({ 
@@ -104,7 +104,7 @@ export default function AddGrades() {
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">Adăugare Note (Catalog Electronic)</h2>
+      <h2 className="text-2xl font-bold text-slate-800 mb-6">Add Grades (Electronic Catalog)</h2>
       
       {message.text && (
         <div className={`p-4 rounded-md mb-6 flex gap-3 ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
@@ -120,12 +120,12 @@ export default function AddGrades() {
         {/* Form Column */}
         <div className="col-span-2">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Dropdown Studenți (BR-AFSMS-05) */}
+            {/* Student Dropdown (BR-AFSMS-05) */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">Selectează Studentul *</label>
+                <label className="block text-sm font-medium text-gray-700">Select Student *</label>
                 {formData.disciplineId && (
-                  <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">Filtrat după disciplină</span>
+                  <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">Filtered by discipline</span>
                 )}
               </div>
               <select 
@@ -134,7 +134,7 @@ export default function AddGrades() {
                 value={formData.studentId}
                 onChange={(e) => setFormData({...formData, studentId: e.target.value})}
               >
-                <option value="">-- Alege un student --</option>
+                <option value="">-- Choose a student --</option>
                 {(formData.disciplineId 
                   ? students.filter(s => {
                       const disc = disciplines.find(d => d.id === formData.disciplineId);
@@ -147,12 +147,12 @@ export default function AddGrades() {
               </select>
             </div>
 
-            {/* Dropdown Materii (BR-AFSMS-05) */}
+            {/* Discipline Dropdown (BR-AFSMS-05) */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">Selectează Disciplina *</label>
+                <label className="block text-sm font-medium text-gray-700">Select Discipline *</label>
                 {formData.studentId && (
-                  <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-bold">Filtrat după planul studentului</span>
+                  <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-bold">Filtered by student plan</span>
                 )}
               </div>
               <select 
@@ -161,7 +161,7 @@ export default function AddGrades() {
                 value={formData.disciplineId}
                 onChange={(e) => setFormData({...formData, disciplineId: e.target.value})}
               >
-                <option value="">-- Alege materia --</option>
+                <option value="">-- Choose discipline --</option>
                 {(formData.studentId
                   ? disciplines.filter(d => {
                       const student = students.find(s => s.id === formData.studentId);
@@ -178,26 +178,26 @@ export default function AddGrades() {
                   onClick={() => setFormData({ ...formData, studentId: '', disciplineId: '' })}
                   className="mt-2 text-xs text-blue-600 hover:underline flex items-center gap-1"
                 >
-                  <X size={12} /> Resetează selecțiile pentru a vedea lista completă
+                  <X size={12} /> Reset selections to see the full list
                 </button>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sesiune *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Session *</label>
                 <select 
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border"
                   value={formData.examSession}
                   onChange={(e) => setFormData({...formData, examSession: e.target.value})}
                 >
-                  <option value="IARNA">Iarnă (Normală)</option>
-                  <option value="VARA">Vară (Normală)</option>
-                  <option value="RESTANTA">Restanță</option>
+                  <option value="WINTER">Winter (Regular)</option>
+                  <option value="SUMMER">Summer (Regular)</option>
+                  <option value="RETAKE">Retake</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nota (1 - 10) sau 0 pentru Absent *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Grade (1 - 10) or 0 for Absent *</label>
                 <input 
                   type="number" 
                   step="0.01" 
@@ -207,7 +207,7 @@ export default function AddGrades() {
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border"
                   value={formData.gradeValue}
                   onChange={(e) => setFormData({...formData, gradeValue: e.target.value})}
-                  placeholder="ex: 9.50 (sau 0 pt Abs.)"
+                  placeholder="ex: 9.50 (or 0 for Abs.)"
                 />
               </div>
             </div>
@@ -217,16 +217,16 @@ export default function AddGrades() {
               disabled={isSubmitting}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-md transition"
             >
-              {isSubmitting ? 'Se salvează...' : 'Salvează Nota Oficială'}
+              {isSubmitting ? 'Saving...' : 'Save Official Grade'}
             </button>
           </form>
         </div>
 
         {/* Recent Grades Column */}
         <div className="col-span-1 bg-slate-50 p-4 rounded-lg border border-slate-200">
-          <h3 className="font-semibold text-slate-800 mb-3">Ultime note adăugate</h3>
+          <h3 className="font-semibold text-slate-800 mb-3">Recent Grades Added</h3>
           {recentGrades.length === 0 ? (
-            <p className="text-xs text-gray-500">Nicio notă adăugată încă.</p>
+            <p className="text-xs text-gray-500">No grades added yet.</p>
           ) : (
             <div className="space-y-2">
               {recentGrades.map((g, idx) => (

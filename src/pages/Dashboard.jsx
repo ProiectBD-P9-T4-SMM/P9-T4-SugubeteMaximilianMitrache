@@ -77,15 +77,15 @@ export default function Dashboard() {
               <li key={act.id} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 last:border-0">
                 <div className="flex flex-col">
                   <span className="text-slate-700 font-medium">
-                    {act.action_type === 'UPDATE' ? 'Actualizare' : act.action_type === 'INSERT' ? 'Adăugare' : act.action_type === 'DELETE' ? 'Ștergere' : act.action_type} {act.entity_type === 'STUDENT' ? 'Student' : act.entity_type === 'GRADE' ? 'Notă' : act.entity_type === 'DOCUMENT' ? 'Document' : act.entity_type}
+                    {act.action_type === 'UPDATE' ? 'Update' : act.action_type === 'INSERT' ? 'Addition' : act.action_type === 'DELETE' ? 'Deletion' : act.action_type} {act.entity_type === 'STUDENT' ? 'Student' : act.entity_type === 'GRADE' ? 'Grade' : act.entity_type === 'DOCUMENT' ? 'Document' : act.entity_type}
                   </span>
-                  <span className="text-slate-400 text-xs">de către {act.actor_name || act.actor_username || 'Sistem'}</span>
+                  <span className="text-slate-400 text-xs">by {act.actor_name || act.actor_username || 'System'}</span>
                 </div>
-                <span className="text-slate-400 text-xs">{new Date(act.occurred_at).toLocaleString('ro-RO')}</span>
+                <span className="text-slate-400 text-xs">{new Date(act.occurred_at).toLocaleString('en-US')}</span>
               </li>
             )) : (
               <li className="text-sm text-slate-500 py-4 text-center italic">
-                Nu există activitate recentă sau nu aveți permisiunea de a o vizualiza.
+                No recent activity found or you do not have permission to view it.
               </li>
             )}
           </ul>

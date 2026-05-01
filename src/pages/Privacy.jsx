@@ -1,148 +1,76 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Shield, Lock, FileText, Database, UserCheck, Eye, Mail, Info, Globe, MapPin, Phone, Users } from 'lucide-react';
 
 export default function Privacy() {
-  const [lang, setLang] = useState('en');
-  const lastUpdated = new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ro-RO', { year: 'numeric', month: 'long', day: 'numeric' });
+  const lastUpdated = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const content = {
-    en: {
-      title: "Privacy Policy & GDPR Compliance",
-      subtitle: "We are committed to protecting your personal and academic information at the Faculty of Automation, Computers and Electronics.",
-      updated: "Last Updated",
-      sections: ['Introduction', 'Information Collection', 'Usage', 'Authentication', 'Security', 'Retention', 'GDPR Statement', 'Your Rights', 'Contact'],
-      intro: {
-        title: "1. Introduction",
-        text1: "Welcome to the Privacy Policy for the Automated Faculty Student Management System (AFSMS). This system is designed to digitalize and manage the administrative processes of the Faculty of Automation, Computers and Electronics at the University of Craiova.",
-        text2: "We are committed to protecting the privacy and security of your personal and academic information. This policy explains in detail how your data is collected, processed, stored, and protected."
-      },
-      collection: {
-        title: "2. Information Collection",
-        text: "The AFSMS collects and manages data necessary strictly for university-level academic administration:",
-        items: [
-          { name: "Personally Identifiable Information (PII)", desc: "Student names, identification numbers, and contact details." },
-          { name: "Academic Records", desc: "Curricula, study formations, grades, and ECTS credits." },
-          { name: "Workflow Documentation", desc: "Electronic documents submitted for approval or modification." },
-          { name: "System Activity Logs", desc: "Identity, timestamps, and details of all data modifications." }
-        ]
-      },
-      usage: {
-        title: "3. How We Use Your Information",
-        text: "Data is used exclusively for official university processes:",
-        items: [
-          'Maintain accurate academic records without redundancy.',
-          'Generate official documents (e-Transcript, e-Grade Centralizer).',
-          'Facilitate secure electronic document circulation.',
-          'Enable targeted academic communication via Microsoft Outlook.',
-          'Provide 24/7 access to schedules and grades.'
-        ]
-      },
-      auth: {
-        title: "4. Authentication and Access Control",
-        sso: "Single Sign-On (SSO)",
-        ssoText: "AFSMS does not store passwords. Access requires authentication through the University of Craiova's centralized SSO subsystem (SAML 2.0 or OAuth 2.0).",
-        rbac: "Role-Based Access Control (RBAC)",
-        rbacText: "Access is heavily restricted based on your user group (Student, Professor, Registrar, Admin). We enforce \"least privilege\" principles."
-      },
-      security: {
-        title: "5. Data Security Measures",
-        transport: "Secure Transport",
-        transportText: "All communications are encrypted using modern TLS 1.2+ (HTTPS).",
-        integrity: "Data Integrity & Rollback",
-        integrityText: "The database utilizes point-in-time recovery and offline backups for maximum reliability."
-      },
-      retention: {
-        title: "6. Data Retention",
-        text: "Essential academic records are maintained indefinitely in accordance with educational legislation. System audit logs are retained for up to 5 years."
-      },
-      gdpr: {
-        title: "GDPR Compliance Statement",
-        text: "The University of Craiova is fully committed to compliance with the European Union General Data Protection Regulation (GDPR) and corresponding Romanian data protection legislation.",
-        basis: "Lawful Basis",
-        basisText: "Processing is conducted under the lawful basis of performing a public task and complying with legal obligations as a higher education institution.",
-        design: "Privacy by Design",
-        designText: "Data protection is integrated into our core architecture with strict data minimization and access control."
-      },
-      rights: {
-        title: "7. Your Rights",
-        text: "Under the GDPR, you have the right to access, rectify, or, under certain conditions, erase your data. Requests must be processed through official university channels.",
-        dpo: "Data Protection Officer (DPO)"
-      },
-      contact: {
-        title: "Questions?",
-        text: "If you have questions regarding this Privacy Policy or how your data is handled within the AFSMS, please contact the faculty administration."
-      }
+  const t = {
+    title: "Privacy Policy & GDPR Compliance",
+    subtitle: "We are committed to protecting your personal and academic information at the Faculty of Automation, Computers and Electronics, University of Craiova.",
+    updated: "Last Updated",
+    sections: ['Introduction', 'Data Categories', 'Processing Purpose', 'Authentication', 'Security', 'Data Retention', 'GDPR Statement', 'Data Subject Rights', 'Contact'],
+    intro: {
+      title: "1. Introduction",
+      text1: "Welcome to the Privacy Policy for the Automated Faculty Student Management System (AFSMS). This system is designed to digitalize and manage the administrative processes of the Faculty of Automation, Computers and Electronics at the University of Craiova.",
+      text2: "The University of Craiova, as a personal data controller, is constantly concerned with ensuring the protection of the personal data processing it carries out according to Regulation (EU) 2016/679 (GDPR)."
     },
-    ro: {
-      title: "Politica de Confidențialitate și GDPR",
-      subtitle: "Ne angajăm să protejăm informațiile dumneavoastră personale și academice în cadrul Facultății de Automatică, Calculatoare și Electronică.",
-      updated: "Ultima actualizare",
-      sections: ['Introducere', 'Colectarea Datelor', 'Scopul Prelucrării', 'Autentificare', 'Securitate', 'Stocare', 'Declarație GDPR', 'Drepturile Vizate', 'Contact'],
-      intro: {
-        title: "1. Introducere",
-        text1: "Bun venit la Politica de Confidențialitate pentru Sistemul Automatizat de Management al Studenților (AFSMS). Acest sistem este conceput pentru a digitaliza și gestiona procesele administrative ale Facultății de Automatică, Calculatoare și Electronică din cadrul Universității din Craiova.",
-        text2: "Suntem preocupați în mod constant de asigurarea protecției cu privire la prelucrările de date cu caracter personal pe care le efectuăm conform Regulamentului (UE) 2016/679 (GDPR)."
-      },
-      collection: {
-        title: "2. Ce categorii de date sunt prelucrate?",
-        text: "Categoriile de date cu caracter personal prelucrate de Universitatea din Craiova sunt următoarele:",
-        items: [
-          { name: "Date de Identificare", desc: "Nume, prenume, CNP, CI/Pașaport, data și locul nașterii, cetățenia, semnătura." },
-          { name: "Situație Academică", desc: "Informații privind studiile efectuate/absolvite, note și medii obținute pe parcursul studiilor." },
-          { name: "Date Profesionale", desc: "Profesia, locul de muncă, formarea profesională, Curriculum Vitae." },
-          { name: "Date de Contact", desc: "Adresa de email, numărul de telefon, domiciliul." }
-        ]
-      },
-      usage: {
-        title: "3. Care este scopul prelucrării datelor?",
-        text: "Universitatea prelucrează date în scopul executării contractelor și îndeplinirii obligațiilor legale:",
-        items: [
-          'Încheierea și executarea contractelor de studii.',
-          'Generarea actelor de studii și centralizatoarelor de note.',
-          'Analize și prelucrări statistice pentru management.',
-          'Gestionarea relațiilor cu persoanele vizate prin email instituțional.',
-          'Asigurarea securității în spațiul universitar prin supraveghere video.'
-        ]
-      },
-      auth: {
-        title: "4. Autentificare și Control Acces",
-        sso: "Single Sign-On (SSO)",
-        ssoText: "AFSMS nu stochează parole. Accesul necesită autentificare prin subsistemul centralizat SSO al Universității din Craiova.",
-        rbac: "Control Acces bazat pe Roluri (RBAC)",
-        rbacText: "Accesul este restricționat riguros în funcție de grupul de utilizatori (Student, Profesor, Secretariat, Admin)."
-      },
-      security: {
-        title: "5. Măsuri de Securitate",
-        transport: "Transport Securizat",
-        transportText: "Toate comunicațiile sunt criptate folosind TLS 1.2+ (HTTPS).",
-        integrity: "Integritate și Recuperare",
-        integrityText: "Baza de date utilizează puncte de restaurare (point-in-time recovery) pentru eliminarea erorilor critice."
-      },
-      retention: {
-        title: "6. Perioada de Stocare",
-        text: "Datele academice sunt păstrate pe perioada necesară îndeplinirii scopurilor, perioada de arhivare fiind cea prevăzută de legislația națională."
-      },
-      gdpr: {
-        title: "Declarație de Conformitate GDPR",
-        text: "Universitatea din Craiova este operator de date cu caracter personal și respectă drepturile persoanelor conform Regulamentului (UE) 2016/679.",
-        basis: "Temei Legal",
-        basisText: "Prelucrarea este necesară pentru îndeplinirea unei sarcini de interes public sau a obligațiilor legale ale instituției.",
-        design: "Protecție prin Design",
-        designText: "Protecția datelor este integrată în arhitectura sistemului prin minimizarea datelor și control riguros."
-      },
-      rights: {
-        title: "7. Drepturile Persoanelor Vizate",
-        text: "Conform GDPR, beneficiați de dreptul la informare, acces, rectificare, ștergere (\"dreptul de a fi uitat\"), opoziție și portabilitatea datelor.",
-        dpo: "Responsabil cu Protecția Datelor (DPO)"
-      },
-      contact: {
-        title: "Întrebări?",
-        text: "Pentru exercitarea acestor drepturi, vă rugăm să consultați responsabilul DPO la adresa de email afișată mai jos."
-      }
+    collection: {
+      title: "2. What categories of data are processed?",
+      text: "The AFSMS collects and manages data necessary strictly for university-level academic administration:",
+      items: [
+        { name: "Identification Data", desc: "Full name, Personal Identification Number (CNP), ID/Passport details, date and place of birth, citizenship, signature." },
+        { name: "Academic History", desc: "Information on studies completed/graduated, grades and averages obtained during studies." },
+        { name: "Professional Data", desc: "Profession, place of work, professional training, Curriculum Vitae." },
+        { name: "Contact Information", desc: "Email address, phone number, home address." }
+      ]
+    },
+    usage: {
+      title: "3. What is the purpose of data processing?",
+      text: "Data is processed for the conclusion and execution of study contracts and for the fulfillment of legal obligations:",
+      items: [
+        'Conclusion and execution of study contracts.',
+        'Generation of study documents and grade centralizers.',
+        'Statistical analysis and processing for management decisions.',
+        'Managing relations with data subjects through institutional email.',
+        'Ensuring security in the university space through video surveillance.'
+      ]
+    },
+    auth: {
+      title: "4. Authentication and Access Control",
+      sso: "Single Sign-On (SSO)",
+      ssoText: "AFSMS does not store passwords. Access requires authentication through the University of Craiova's centralized SSO subsystem (SAML 2.0 or OAuth 2.0).",
+      rbac: "Role-Based Access Control (RBAC)",
+      rbacText: "Access is strictly restricted based on the user group (Student, Professor, Secretariat, Admin)."
+    },
+    security: {
+      title: "5. Security Measures",
+      transport: "Secure Transport",
+      transportText: "All communications are encrypted using modern TLS 1.2+ (HTTPS).",
+      integrity: "Integrity and Recovery",
+      integrityText: "The database uses point-in-time recovery to eliminate critical errors and ensure data persistence."
+    },
+    retention: {
+      title: "6. Data Retention Period",
+      text: "The University keeps personal data only for the period necessary to fulfill the purposes for which it was collected, the archiving period being that provided by national legislation."
+    },
+    gdpr: {
+      title: "GDPR Compliance Statement",
+      text: "The University of Craiova is a personal data controller and respects the rights of individuals according to Regulation (EU) 2016/679.",
+      basis: "Legal Basis",
+      basisText: "Processing is necessary for the performance of a task carried out in the public interest or for compliance with the legal obligations of the institution.",
+      design: "Privacy by Design",
+      designText: "Data protection is integrated into the system architecture through data minimization and rigorous access control."
+    },
+    rights: {
+      title: "7. Data Subject Rights",
+      text: "According to GDPR, you benefit from the right to information, access, rectification, erasure (\"the right to be forgotten\"), opposition, and data portability.",
+      dpo: "Data Protection Officer (DPO)"
+    },
+    contact: {
+      title: "Questions?",
+      text: "To exercise these rights, please consult the DPO officer at the email address displayed below."
     }
   };
-
-  const t = content[lang];
 
   const scrollTo = (index) => {
     const id = t.sections[index].toLowerCase().replace(/\s+/g, '-');
@@ -151,27 +79,10 @@ export default function Privacy() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl">
-      {/* Header & Language Toggle */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-12 space-y-6 md:space-y-0">
         <div className="text-center md:text-left">
           <h1 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">{t.title}</h1>
           <p className="text-lg text-slate-600 max-w-2xl">{t.subtitle}</p>
-        </div>
-        <div className="flex bg-slate-200 p-1.5 rounded-2xl shadow-inner shrink-0">
-          <button 
-            onClick={() => setLang('en')}
-            className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${lang === 'en' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <Globe className="h-4 w-4" />
-            <span>EN</span>
-          </button>
-          <button 
-            onClick={() => setLang('ro')}
-            className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${lang === 'ro' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <Globe className="h-4 w-4" />
-            <span>RO</span>
-          </button>
         </div>
       </div>
 
@@ -182,12 +93,9 @@ export default function Privacy() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-        {/* Navigation Sidebar */}
         <aside className="lg:col-span-1 hidden lg:block sticky top-8 h-fit">
           <nav className="space-y-1">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-3">
-              {lang === 'en' ? 'Sections' : 'Secțiuni'}
-            </h3>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-3">Sections</h3>
             {t.sections.map((item, idx) => (
               <button
                 key={item}
@@ -200,9 +108,7 @@ export default function Privacy() {
           </nav>
         </aside>
 
-        {/* Content */}
         <div className="lg:col-span-3 space-y-16">
-          {/* 1. Introduction */}
           <section id={t.sections[0].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="p-2.5 bg-blue-100 rounded-xl">
@@ -216,7 +122,6 @@ export default function Privacy() {
             </div>
           </section>
 
-          {/* 2. Information Collection */}
           <section id={t.sections[1].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8 p-8 bg-white rounded-3xl shadow-sm border border-slate-100">
             <div className="flex items-center space-x-3 mb-8">
               <div className="p-2.5 bg-indigo-100 rounded-xl">
@@ -240,7 +145,6 @@ export default function Privacy() {
             </div>
           </section>
 
-          {/* 3. Usage */}
           <section id={t.sections[2].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="p-2.5 bg-emerald-100 rounded-xl">
@@ -253,7 +157,7 @@ export default function Privacy() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {t.usage.items.map((text, i) => (
                   <div key={i} className="flex items-center space-x-3 text-sm border-l-4 border-emerald-500 bg-emerald-50/50 p-4 rounded-r-xl font-medium text-slate-700">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <div className="h-2 w-2 rounded-full bg-emerald-600 shrink-0" />
                     <span>{text}</span>
                   </div>
                 ))}
@@ -261,7 +165,6 @@ export default function Privacy() {
             </div>
           </section>
 
-          {/* 4. Authentication */}
           <section id={t.sections[3].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="p-2.5 bg-amber-100 rounded-xl">
@@ -289,7 +192,6 @@ export default function Privacy() {
             </div>
           </section>
 
-          {/* 5. Security */}
           <section id={t.sections[4].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="p-2.5 bg-red-100 rounded-xl">
@@ -309,7 +211,6 @@ export default function Privacy() {
             </div>
           </section>
 
-          {/* 6. Retention */}
           <section id={t.sections[5].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8">
             <div className="flex items-center space-x-3 mb-6">
               <div className="p-2.5 bg-violet-100 rounded-xl">
@@ -324,7 +225,6 @@ export default function Privacy() {
 
           <hr className="border-slate-200 my-16" />
 
-          {/* GDPR Statement */}
           <section id={t.sections[6].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8 p-10 md:p-16 bg-blue-600 text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden">
             <Shield className="absolute -right-12 -bottom-12 h-64 w-64 opacity-10 rotate-12" />
             <div className="relative z-10">
@@ -343,7 +243,6 @@ export default function Privacy() {
             </div>
           </section>
 
-          {/* Your Rights */}
           <section id={t.sections[7].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8">
             <h2 className="text-3xl font-black text-slate-900 mb-8 tracking-tight">{t.rights.title}</h2>
             <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-lg group hover:border-blue-200 transition-all">
@@ -381,7 +280,6 @@ export default function Privacy() {
             </div>
           </section>
 
-          {/* Contact */}
           <section id={t.sections[8].toLowerCase().replace(/\s+/g, '-')} className="scroll-mt-8 p-12 md:p-20 bg-slate-900 text-white rounded-[3rem] text-center relative overflow-hidden shadow-2xl">
             <div className="absolute inset-0 bg-blue-600 opacity-5 pointer-events-none" />
             <div className="relative z-10">
@@ -409,26 +307,5 @@ export default function Privacy() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Additional icon needed for the usage section
-function CheckCircle2(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   );
 }

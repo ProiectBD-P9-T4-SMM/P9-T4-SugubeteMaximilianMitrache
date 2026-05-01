@@ -18,7 +18,7 @@ export default function Disciplines() {
   const [specFormData, setSpecFormData] = useState({
     code: '',
     name: '',
-    degree_level: 'LICENTA'
+    degree_level: 'BACHELOR'
   });
 
   // Curriculum Form State
@@ -38,7 +38,7 @@ export default function Disciplines() {
     name: '',
     year: '1',
     semester_in_year: '1',
-    evaluation_type: 'EXAMEN',
+    evaluation_type: 'EXAM',
     ects_credits: '5',
     contact_hours: '56',
   });
@@ -75,7 +75,7 @@ export default function Disciplines() {
     } catch (error) {
       setMessage({
         type: 'error',
-        text: 'Eroare la încărcarea specializărilor.',
+        text: 'Error loading specializations.',
         hint: error.response?.data?.resolutionHint,
       });
     }
@@ -90,14 +90,14 @@ export default function Disciplines() {
         if (response.data.curricula.length === 0) {
           setMessage({
             type: 'warning',
-            text: 'Niciun plan de învățământ disponibil pentru această specializare.',
+            text: 'No study plans available for this specialization.',
           });
         }
       }
     } catch (error) {
       setMessage({
         type: 'error',
-        text: 'Eroare la încărcarea planurilor de învățământ.',
+        text: 'Error loading study plans.',
         hint: error.response?.data?.resolutionHint,
       });
     } finally {
@@ -115,7 +115,7 @@ export default function Disciplines() {
     } catch (error) {
       setMessage({
         type: 'error',
-        text: 'Eroare la încărcarea disciplinelor.',
+        text: 'Error loading disciplines.',
         hint: error.response?.data?.resolutionHint,
       });
     } finally {
@@ -129,13 +129,13 @@ export default function Disciplines() {
     try {
       const res = await api.post('/academic/specializations', specFormData);
       if (res.data.success) {
-        setMessage({ type: 'success', text: 'Specializare creată cu succes!' });
+        setMessage({ type: 'success', text: 'Specialization created successfully!' });
         setShowSpecForm(false);
-        setSpecFormData({ code: '', name: '', degree_level: 'LICENTA' });
+        setSpecFormData({ code: '', name: '', degree_level: 'BACHELOR' });
         loadSpecializations();
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Eroare la crearea specializării.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Error creating specialization.' });
     }
   };
 
@@ -150,13 +150,13 @@ export default function Disciplines() {
         valid_from: `${curriculumFormData.startYear}-09-01`
       });
       if (res.data.success) {
-        setMessage({ type: 'success', text: 'Plan de învățământ creat cu succes!' });
+        setMessage({ type: 'success', text: 'Study plan created successfully!' });
         setShowCurriculumForm(false);
         setCurriculumFormData({ code: '', name: '', startYear: new Date().getFullYear().toString() });
         loadCurriculaForSpecialization(selectedSpecialization);
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Eroare la crearea planului.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Error creating plan.' });
     }
   };
 
@@ -167,7 +167,7 @@ export default function Disciplines() {
       name: '',
       year: '1',
       semester_in_year: '1',
-      evaluation_type: 'EXAMEN',
+      evaluation_type: 'EXAM',
       ects_credits: '5',
       contact_hours: '56',
     });
@@ -210,27 +210,27 @@ export default function Disciplines() {
     try {
       if (isEditingDiscipline) {
         await api.put(`/academic/disciplines/${editingDisciplineId}`, payload);
-        setMessage({ type: 'success', text: 'Disciplina a fost actualizată.' });
+        setMessage({ type: 'success', text: 'Discipline updated successfully.' });
       } else {
         await api.post('/academic/disciplines', payload);
-        setMessage({ type: 'success', text: 'Disciplina a fost creată.' });
+        setMessage({ type: 'success', text: 'Discipline created successfully.' });
       }
       resetDisciplineForm();
       setShowDisciplineForm(false);
       fetchDisciplines(selectedCurriculum);
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Eroare la salvarea disciplinei.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Error saving discipline.' });
     }
   };
 
   const handleDeleteDiscipline = async (id) => {
-    if (!confirm('Ștergeți această disciplină?')) return;
+    if (!confirm('Delete this discipline?')) return;
     try {
       await api.delete(`/academic/disciplines/${id}`);
-      setMessage({ type: 'success', text: 'Disciplina a fost ștearsă.' });
+      setMessage({ type: 'success', text: 'Discipline deleted successfully.' });
       fetchDisciplines(selectedCurriculum);
     } catch (err) {
-      setMessage({ type: 'error', text: 'Eroare la ștergere.' });
+      setMessage({ type: 'error', text: 'Error deleting discipline.' });
     }
   };
 
@@ -240,7 +240,7 @@ export default function Disciplines() {
         <div className="bg-blue-600 p-2 rounded-lg text-white">
           <BookOpen size={24} />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Structură Academică & Discipline</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Academic Structure & Disciplines</h2>
       </div>
 
       {message.text && (
@@ -261,15 +261,15 @@ export default function Disciplines() {
       <div className="mb-8 p-6 bg-slate-50/50 rounded-2xl border border-slate-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Pasul 1</div>
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide italic">Specializare (Domeniu)</h3>
+            <div className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Step 1</div>
+            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide italic">Specialization (Domain)</h3>
           </div>
           {!showSpecForm && (
             <button 
               onClick={() => setShowSpecForm(true)}
               className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm"
             >
-              <Plus size={14} /> Nouă Specializare
+              <Plus size={14} /> New Specialization
             </button>
           )}
         </div>
@@ -278,25 +278,25 @@ export default function Disciplines() {
           <form onSubmit={handleCreateSpecialization} className="bg-white p-5 rounded-xl border border-blue-200 shadow-lg shadow-blue-50 animate-in zoom-in-95 duration-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cod</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Code</label>
                 <input required type="text" value={specFormData.code} onChange={e => setSpecFormData({...specFormData, code: e.target.value})} placeholder="ex: CTI" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nume Complet</label>
-                <input required type="text" value={specFormData.name} onChange={e => setSpecFormData({...specFormData, name: e.target.value})} placeholder="ex: Calculatoare și Tehnologia Informației" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Full Name</label>
+                <input required type="text" value={specFormData.name} onChange={e => setSpecFormData({...specFormData, name: e.target.value})} placeholder="ex: Computer Science" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ciclu</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Degree Level</label>
                 <select value={specFormData.degree_level} onChange={e => setSpecFormData({...specFormData, degree_level: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none">
-                   <option value="LICENTA">Licență</option>
-                   <option value="MASTER">Masterat</option>
-                   <option value="DOCTORAT">Doctorat</option>
+                   <option value="BACHELOR">Bachelor</option>
+                   <option value="MASTER">Master</option>
+                   <option value="PHD">PhD</option>
                 </select>
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setShowSpecForm(false)} className="px-4 py-2 text-xs font-bold text-slate-500">Anulează</button>
-              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition">Salvează Specializarea</button>
+              <button type="button" onClick={() => setShowSpecForm(false)} className="px-4 py-2 text-xs font-bold text-slate-500">Cancel</button>
+              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition">Save Specialization</button>
             </div>
           </form>
         ) : (
@@ -305,7 +305,7 @@ export default function Disciplines() {
             onChange={(e) => setSelectedSpecialization(e.target.value)}
             className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
           >
-            <option value="">-- Alege Specializarea (Domeniu/Facultate) --</option>
+            <option value="">-- Choose Specialization --</option>
             {specializations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code}) - {s.degree_level}</option>)}
           </select>
         )}
@@ -315,15 +315,15 @@ export default function Disciplines() {
       <div className={`mb-8 p-6 bg-slate-50/50 rounded-2xl border border-slate-200 transition-all ${!selectedSpecialization ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Pasul 2</div>
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide italic">Plan de Învățământ (Curriculum)</h3>
+            <div className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Step 2</div>
+            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide italic">Study Plan (Curriculum)</h3>
           </div>
           {selectedSpecialization && !showCurriculumForm && (
             <button 
               onClick={() => setShowCurriculumForm(true)}
               className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm"
             >
-              <Plus size={14} /> Nou Plan
+              <Plus size={14} /> New Plan
             </button>
           )}
         </div>
@@ -332,21 +332,21 @@ export default function Disciplines() {
           <form onSubmit={handleCreateCurriculum} className="bg-white p-5 rounded-xl border border-blue-200 shadow-lg shadow-blue-50 animate-in zoom-in-95 duration-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cod Plan</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Plan Code</label>
                 <input required type="text" value={curriculumFormData.code} onChange={e => setCurriculumFormData({...curriculumFormData, code: e.target.value})} placeholder="ex: CURR-2024-AC" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nume Plan</label>
-                <input required type="text" value={curriculumFormData.name} onChange={e => setCurriculumFormData({...curriculumFormData, name: e.target.value})} placeholder="ex: Plan de studii 2024" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Plan Name</label>
+                <input required type="text" value={curriculumFormData.name} onChange={e => setCurriculumFormData({...curriculumFormData, name: e.target.value})} placeholder="ex: Study Plan 2024" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">An Început (Start)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Start Year</label>
                 <input required type="number" min="2000" max="2100" value={curriculumFormData.startYear} onChange={e => setCurriculumFormData({...curriculumFormData, startYear: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setShowCurriculumForm(false)} className="px-4 py-2 text-xs font-bold text-slate-500">Anulează</button>
-              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition">Creează Plan</button>
+              <button type="button" onClick={() => setShowCurriculumForm(false)} className="px-4 py-2 text-xs font-bold text-slate-500">Cancel</button>
+              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition">Create Plan</button>
             </div>
           </form>
         ) : (
@@ -355,7 +355,7 @@ export default function Disciplines() {
             onChange={(e) => setSelectedCurriculum(e.target.value)}
             className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
           >
-            <option value="">-- Alege un Plan de Învățământ existent --</option>
+            <option value="">-- Choose an existing Study Plan --</option>
             {curricula.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
           </select>
         )}
@@ -365,15 +365,15 @@ export default function Disciplines() {
       <div className={`transition-all ${!selectedCurriculum ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Pasul 3</div>
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide italic">Gestionare Discipline</h3>
+            <div className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Step 3</div>
+            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide italic">Manage Disciplines</h3>
           </div>
           <button 
             onClick={() => { resetDisciplineForm(); setShowDisciplineForm(!showDisciplineForm); }}
             className="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-md shadow-blue-100"
           >
             {showDisciplineForm ? <X size={16} /> : <Plus size={16} />}
-            {showDisciplineForm ? 'Închide Formular' : 'Adaugă Disciplină'}
+            {showDisciplineForm ? 'Close Form' : 'Add Discipline'}
           </button>
         </div>
 
@@ -381,51 +381,51 @@ export default function Disciplines() {
           <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-xl shadow-blue-50/50 mb-8 animate-in slide-in-from-top-4 duration-300">
             <h4 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
               {isEditingDiscipline ? <Edit2 className="text-blue-600" size={20} /> : <Plus className="text-blue-600" size={20} />}
-              {isEditingDiscipline ? 'Editează Disciplina' : 'Adaugă Disciplină Nouă în Plan'}
+              {isEditingDiscipline ? 'Edit Discipline' : 'Add New Discipline to Plan'}
             </h4>
             <form onSubmit={handleDisciplineSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Cod Materie</label>
-                  <input required type="text" value={disciplineFormData.code} onChange={e => setDisciplineFormData({...disciplineFormData, code: e.target.value})} placeholder="ex: MAT-101" className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:border-blue-500 outline-none transition shadow-sm" />
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Subject Code</label>
+                  <input required type="text" value={disciplineFormData.code} onChange={e => setDisciplineFormData({...disciplineFormData, code: e.target.value})} placeholder="ex: CS-101" className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:border-blue-500 outline-none transition shadow-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Nume Materie</label>
-                  <input required type="text" value={disciplineFormData.name} onChange={e => setDisciplineFormData({...disciplineFormData, name: e.target.value})} placeholder="ex: Analiză Matematică" className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:border-blue-500 outline-none transition shadow-sm" />
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Subject Name</label>
+                  <input required type="text" value={disciplineFormData.name} onChange={e => setDisciplineFormData({...disciplineFormData, name: e.target.value})} placeholder="ex: Mathematical Analysis" className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:border-blue-500 outline-none transition shadow-sm" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">An Studiu</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Study Year</label>
                   <select value={disciplineFormData.year} onChange={e => setDisciplineFormData({...disciplineFormData, year: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none">
-                    <option value="1">Anul 1</option>
-                    <option value="2">Anul 2</option>
-                    <option value="3">Anul 3</option>
-                    <option value="4">Anul 4</option>
+                    <option value="1">Year 1</option>
+                    <option value="2">Year 2</option>
+                    <option value="3">Year 3</option>
+                    <option value="4">Year 4</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Semestru</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Semester</label>
                   <select value={disciplineFormData.semester_in_year} onChange={e => setDisciplineFormData({...disciplineFormData, semester_in_year: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none">
-                    <option value="1">Semestrul 1</option>
-                    <option value="2">Semestrul 2</option>
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Credite (ECTS)</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Credits (ECTS)</label>
                   <input required type="number" min="1" max="20" value={disciplineFormData.ects_credits} onChange={e => setDisciplineFormData({...disciplineFormData, ects_credits: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Ore Contact</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Contact Hours</label>
                   <input required type="number" min="1" value={disciplineFormData.contact_hours} onChange={e => setDisciplineFormData({...disciplineFormData, contact_hours: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none" />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <button type="button" onClick={() => setShowDisciplineForm(false)} className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-700 transition">Anulează</button>
+                <button type="button" onClick={() => setShowDisciplineForm(false)} className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-700 transition">Cancel</button>
                 <button type="submit" className="bg-emerald-600 text-white px-8 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-100">
-                  {isEditingDiscipline ? 'Salvează Modificările' : 'Adaugă Materia'}
+                  {isEditingDiscipline ? 'Save Changes' : 'Add Discipline'}
                 </button>
               </div>
             </form>
@@ -437,17 +437,17 @@ export default function Disciplines() {
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
-                <th className="px-6 py-4">Cod</th>
-                <th className="px-6 py-4">Disciplină</th>
-                <th className="px-6 py-4 text-center">An / Sem</th>
-                <th className="px-6 py-4 text-center">Tip Eval.</th>
+                <th className="px-6 py-4">Code</th>
+                <th className="px-6 py-4">Discipline</th>
+                <th className="px-6 py-4 text-center">Year / Sem</th>
+                <th className="px-6 py-4 text-center">Eval. Type</th>
                 <th className="px-6 py-4 text-center">ECTS</th>
-                <th className="px-6 py-4 text-center">Acțiuni</th>
+                <th className="px-6 py-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {disciplines.length === 0 ? (
-                <tr><td colSpan="6" className="text-center py-12 text-slate-400 italic font-medium">Nu există discipline înregistrate în acest plan.</td></tr>
+                <tr><td colSpan="6" className="text-center py-12 text-slate-400 italic font-medium">No disciplines registered in this plan.</td></tr>
               ) : disciplines.map(d => {
                 const year = Math.ceil(d.semester / 2);
                 const sem = d.semester % 2 === 0 ? 2 : 1;
@@ -456,11 +456,11 @@ export default function Disciplines() {
                     <td className="px-6 py-4 font-mono font-bold text-blue-600 text-xs">{d.code}</td>
                     <td className="px-6 py-4">
                       <div className="font-bold text-slate-700">{d.name}</div>
-                      <div className="text-[10px] text-slate-400 font-medium italic">{d.contact_hours} ore contact</div>
+                      <div className="text-[10px] text-slate-400 font-medium italic">{d.contact_hours} contact hours</div>
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg font-bold text-[10px]">
-                        An {year} / Sem {sem}
+                        Year {year} / Sem {sem}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -486,7 +486,7 @@ export default function Disciplines() {
       {!selectedSpecialization && (
         <div className="flex flex-col items-center justify-center py-20 text-slate-300">
           <Layers size={64} strokeWidth={1} className="mb-4 opacity-50" />
-          <p className="font-medium text-slate-400">Începe prin a selecta o Specializare din Pasul 1</p>
+          <p className="font-medium text-slate-400">Start by selecting a Specialization in Step 1</p>
         </div>
       )}
     </div>

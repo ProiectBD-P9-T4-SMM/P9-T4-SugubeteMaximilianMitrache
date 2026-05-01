@@ -29,7 +29,7 @@ async function getCentralizerData(filters) {
             CONCAT(s.last_name, ' ', s.first_name) as student_name,
             d.code as discipline_code, d.name as discipline_name, d.semester, d.ects_credits, d.evaluation_type,
             g.value as grade, g.exam_session, g.grading_date,
-            sf.code as formation_code, spec.name as spec_name, COALESCE(spec.degree_level, 'Nespecificat') as degree_level
+            sf.code as formation_code, spec.name as spec_name, COALESCE(spec.degree_level, 'Unspecified') as degree_level
         FROM STUDENT s
         LEFT JOIN STUDENT_CURRICULUM sc ON s.id = sc.student_id
         LEFT JOIN STUDY_FORMATION sf ON COALESCE(sc.study_formation_id, s.study_formation_id) = sf.id
@@ -152,7 +152,7 @@ router.post('/e-grade-centralizer/export/csv', requireRole(['SECRETARIAT', 'ADMI
         const result = await getCentralizerData(req.body);
         const csv = Papa.unparse(result.rows);
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="Centralizator_${new Date().getTime()}.csv"`);
+        res.setHeader('Content-Disposition', `attachment; filename="Centralizer_${new Date().getTime()}.csv"`);
         res.send(csv);
     } catch (error) {
         next(error);
@@ -165,10 +165,10 @@ router.post('/e-grade-centralizer/export/xlsx', requireRole(['SECRETARIAT', 'ADM
         const result = await getCentralizerData(req.body);
         const workbook = XLSX.utils.book_new();
         const worksheet = XLSX.utils.json_to_sheet(result.rows);
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Centralizator');
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Centralizer');
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="Centralizator_${new Date().getTime()}.xlsx"`);
+        res.setHeader('Content-Disposition', `attachment; filename="Centralizer_${new Date().getTime()}.xlsx"`);
         res.send(buffer);
     } catch (error) {
         next(error);
@@ -179,7 +179,7 @@ router.post('/e-grade-centralizer/export/xlsx', requireRole(['SECRETARIAT', 'ADM
 router.post('/e-grade-centralizer/export/xml', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
     try {
         const result = await getCentralizerData(req.body);
-        const builder = new xml2js.Builder({ rootName: 'Centralizator', itemName: 'Inregistrare' });
+        const builder = new xml2js.Builder({ rootName: 'Centralizer', itemName: 'Record' });
         // Clean properties to ensure valid XML tags
         const cleanRows = result.rows.map(row => {
             const cleanRow = {};
@@ -192,7 +192,7 @@ router.post('/e-grade-centralizer/export/xml', requireRole(['SECRETARIAT', 'ADMI
         });
         const xml = builder.buildObject(cleanRows);
         res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="Centralizator_${new Date().getTime()}.xml"`);
+        res.setHeader('Content-Disposition', `attachment; filename="Centralizer_${new Date().getTime()}.xml"`);
         res.send(xml);
     } catch (error) {
         next(error);

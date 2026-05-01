@@ -56,13 +56,12 @@ export default function Centralizer() {
         setFilters(f => ({ ...f, academic_year_id: years[0].id }));
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Eroare la încărcarea datelor de configurare.' });
+      setMessage({ type: 'error', text: 'Error loading configuration data.' });
     }
   };
 
   const handleGenerateReport = async () => {
     setMessage({ type: '', text: '' });
-
 
     setLoading(true);
     try {
@@ -71,24 +70,25 @@ export default function Centralizer() {
       setStudents(response.data.students || []);
       setMessage({ 
         type: 'success', 
-        text: `Raport generat cu succes! ${response.data.student_count} studenți găsiți.` 
+        text: `Report generated successfully! ${response.data.student_count} students found.` 
       });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Eroare la generarea raportului.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Error generating report.' });
     } finally {
       setLoading(false);
     }
   };
+
   const handleExportCSV = async () => {
     try {
       const response = await api.post('/reports/e-grade-centralizer/export/csv', filters, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Centralizator_${new Date().getTime()}.csv`);
+      link.setAttribute('download', `Centralizer_${new Date().getTime()}.csv`);
       document.body.appendChild(link);
       link.click();
-    } catch (err) { setMessage({ type: 'error', text: 'Eroare la export CSV.' }); }
+    } catch (err) { setMessage({ type: 'error', text: 'Error exporting CSV.' }); }
   };
 
   const handleExportXLSX = async () => {
@@ -97,10 +97,10 @@ export default function Centralizer() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Centralizator_${new Date().getTime()}.xlsx`);
+      link.setAttribute('download', `Centralizer_${new Date().getTime()}.xlsx`);
       document.body.appendChild(link);
       link.click();
-    } catch (err) { setMessage({ type: 'error', text: 'Eroare la export Excel.' }); }
+    } catch (err) { setMessage({ type: 'error', text: 'Error exporting Excel.' }); }
   };
 
   const handleExportXML = async () => {
@@ -109,30 +109,21 @@ export default function Centralizer() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Centralizator_${new Date().getTime()}.xml`);
+      link.setAttribute('download', `Centralizer_${new Date().getTime()}.xml`);
       document.body.appendChild(link);
       link.click();
-    } catch (err) { setMessage({ type: 'error', text: 'Eroare la export XML.' }); }
+    } catch (err) { setMessage({ type: 'error', text: 'Error exporting XML.' }); }
   };
 
   const handleExportPDF = () => {
     if (!centralizedData || students.length === 0) return;
     const doc = new jsPDF('l', 'mm', 'a4');
     doc.setFontSize(18);
-    doc.text('e-Centralizatorul de Note', 14, 15);
+    doc.text('e-Grade Centralizer', 14, 15);
     doc.setFontSize(10);
-    doc.text(`Generat la: ${new Date(centralizedData.generated_at).toLocaleString('ro-RO')}`, 14, 22);
+    doc.text(`Generated at: ${new Date(centralizedData.generated_at).toLocaleString('en-US')}`, 14, 22);
 
-    const stripDiacritics = (text) => {
-      if (!text) return '';
-      const map = {
-        'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't',
-        'Ă': 'A', 'Â': 'A', 'Î': 'I', 'Ș': 'S', 'Ț': 'T'
-      };
-      return text.toString().replace(/[ăâîșțĂÂÎȘȚ]/g, m => map[m]);
-    };
-
-    const tableColumn = ['#', 'Matricol', 'Nume Student', 'Specializare', 'Grupa', 'Disciplina', 'Sem.', 'ECTS', 'Nota', 'Medie', 'Total ECTS'].map(h => stripDiacritics(h));
+    const tableColumn = ['#', 'Registration #', 'Student Name', 'Specialization', 'Group', 'Discipline', 'Sem.', 'ECTS', 'Grade', 'Average', 'Total ECTS'];
     const tableRows = [];
 
     students.forEach((student, idx) => {
@@ -143,10 +134,10 @@ export default function Centralizer() {
         tableRows.push([
           didx === 0 ? idx + 1 : '',
           didx === 0 ? student.registration_number : '',
-          didx === 0 ? stripDiacritics(`${student.last_name} ${student.first_name}`) : '',
-          didx === 0 ? stripDiacritics(student.spec_name) : '',
-          didx === 0 ? stripDiacritics(student.formation_code) : '',
-          stripDiacritics(d.discipline_name),
+          didx === 0 ? `${student.last_name} ${student.first_name}` : '',
+          didx === 0 ? student.spec_name : '',
+          didx === 0 ? student.formation_code : '',
+          d.discipline_name,
           d.semester,
           d.ects_credits,
           d.grade || '-',
@@ -178,20 +169,20 @@ export default function Centralizer() {
       },
       columnStyles: {
         0: { cellWidth: 8, halign: 'center' }, // #
-        1: { cellWidth: 15 }, // Matricol
-        2: { cellWidth: 35 }, // Nume Student
-        3: { cellWidth: 40 }, // Specializare
-        4: { cellWidth: 20 }, // Grupa
-        5: { cellWidth: 60 }, // Disciplina
+        1: { cellWidth: 15 }, // Registration #
+        2: { cellWidth: 35 }, // Student Name
+        3: { cellWidth: 40 }, // Specialization
+        4: { cellWidth: 20 }, // Group
+        5: { cellWidth: 60 }, // Discipline
         6: { cellWidth: 10, halign: 'center' }, // Sem
         7: { cellWidth: 10, halign: 'center' }, // ECTS
-        8: { cellWidth: 10, halign: 'center' }, // Nota
-        9: { cellWidth: 15, halign: 'center' }, // Medie
+        8: { cellWidth: 10, halign: 'center' }, // Grade
+        9: { cellWidth: 15, halign: 'center' }, // Average
         10: { cellWidth: 15, halign: 'center' } // Total ECTS
       },
       margin: { top: 30, left: 10, right: 10 }
     });
-    doc.save(`Centralizator_${new Date().getTime()}.pdf`);
+    doc.save(`Centralizer_${new Date().getTime()}.pdf`);
   };
 
   return (
@@ -200,9 +191,9 @@ export default function Centralizer() {
         <div className="flex justify-between items-end">
           <div>
             <h2 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-               e-Centralizator Note
+               e-Grade Centralizer
             </h2>
-            <p className="text-slate-500 font-bold text-sm uppercase tracking-widest mt-1">Sistem de Raportare și Analiză Academică</p>
+            <p className="text-slate-500 font-bold text-sm uppercase tracking-widest mt-1">Academic Reporting & Analysis System</p>
           </div>
           {centralizedData && (
             <div className="flex gap-3">
@@ -226,42 +217,42 @@ export default function Centralizer() {
         <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
            <div className="flex items-center gap-2 mb-8">
                 <Filter size={20} className="text-blue-600" />
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Motor de Filtrare Dinamică</h3>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Dynamic Filter Engine</h3>
            </div>
            
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {/* Required Filter */}
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <Calendar size={12} className="text-blue-600" /> An Academic
+                        <Calendar size={12} className="text-blue-600" /> Academic Year
                     </label>
                     <select 
                         value={filters.academic_year_id} 
                         onChange={e => setFilters({...filters, academic_year_id: e.target.value})}
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 ring-offset-2 transition-all"
                     >
-                        <option value="">-- Toți anii (Transcript) --</option>
+                        <option value="">-- All Years (Transcript) --</option>
                         {academicYears.map(y => <option key={y.id} value={y.id}>{y.year_start}/{y.year_end}</option>)}
                     </select>
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <GraduationCap size={12} /> Specializare
+                        <GraduationCap size={12} /> Specialization
                     </label>
                     <select 
                         value={filters.specialization_id} 
                         onChange={e => setFilters({...filters, specialization_id: e.target.value, curriculum_id: ''})}
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
-                        <option value="">-- Toate Specializările --</option>
+                        <option value="">-- All Specializations --</option>
                         {specializations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.degree_level})</option>)}
                     </select>
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <Layers size={12} /> Plan Învățământ
+                        <Layers size={12} /> Study Plan
                     </label>
                     <select 
                         value={filters.curriculum_id} 
@@ -269,21 +260,21 @@ export default function Centralizer() {
                         disabled={!filters.specialization_id}
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all disabled:opacity-50"
                     >
-                        <option value="">-- Toate Planurile --</option>
+                        <option value="">-- All Plans --</option>
                         {curricula.filter(c => c.specialization_id === filters.specialization_id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <BookOpen size={12} /> Disciplină (Materie)
+                        <BookOpen size={12} /> Discipline (Subject)
                     </label>
                     <select 
                         value={filters.discipline_id} 
                         onChange={e => setFilters({...filters, discipline_id: e.target.value})}
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
-                        <option value="">-- Toate Disciplinele --</option>
+                        <option value="">-- All Disciplines --</option>
                         {disciplines
                             .filter(d => !filters.curriculum_id || d.curriculum_id === filters.curriculum_id)
                             .map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)
@@ -292,33 +283,33 @@ export default function Centralizer() {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Ciclu Studii</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Degree Level</label>
                     <select 
                         value={filters.degree_level} 
                         onChange={e => setFilters({...filters, degree_level: e.target.value})}
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
-                        <option value="">-- Toate Ciclurile --</option>
-                        <option value="Licență">Licență</option>
-                        <option value="Masterat">Masterat</option>
-                        <option value="Doctorat">Doctorat</option>
+                        <option value="">-- All Levels --</option>
+                        <option value="Bachelor">Bachelor</option>
+                        <option value="Master">Master</option>
+                        <option value="PhD">PhD</option>
                     </select>
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">An Studiu</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Study Year</label>
                     <select value={filters.study_year} onChange={e => setFilters({...filters, study_year: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50">
-                        <option value="">-- Toți Anii --</option>
-                        <option value="1">Anul 1</option>
-                        <option value="2">Anul 2</option>
-                        <option value="3">Anul 3</option>
-                        <option value="4">Anul 4</option>
+                        <option value="">-- All Years --</option>
+                        <option value="1">Year 1</option>
+                        <option value="2">Year 2</option>
+                        <option value="3">Year 3</option>
+                        <option value="4">Year 4</option>
                     </select>
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <Users size={12} /> Grupă (Index)
+                        <Users size={12} /> Group (Index)
                     </label>
                     <input 
                         type="number" 
@@ -331,42 +322,42 @@ export default function Centralizer() {
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <Hash size={12} /> Semestru
+                        <Hash size={12} /> Semester
                     </label>
                     <select 
                         value={filters.semester} 
                         onChange={e => setFilters({...filters, semester: e.target.value})}
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
-                        <option value="">-- Toate --</option>
-                        {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semestrul {s}</option>)}
+                        <option value="">-- All --</option>
+                        {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
                     </select>
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <CheckSquare size={12} /> Tip Evaluare
+                        <CheckSquare size={12} /> Evaluation Type
                     </label>
                     <select 
                         value={filters.evaluation_type} 
                         onChange={e => setFilters({...filters, evaluation_type: e.target.value})}
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
-                        <option value="">-- Toate --</option>
-                        <option value="EXAMEN">Examen</option>
-                        <option value="COLOVIU">Coloviu</option>
-                        <option value="PROIECT">Proiect</option>
-                        <option value="VERIFICARE">Verificare</option>
+                        <option value="">-- All --</option>
+                        <option value="EXAM">Exam</option>
+                        <option value="COLLOQUIUM">Colloquium</option>
+                        <option value="PROJECT">Project</option>
+                        <option value="VERIFICATION">Verification</option>
                     </select>
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <Search size={12} /> Căutare Cod
+                        <Search size={12} /> Search Code
                     </label>
                     <input 
                         type="text"
-                        placeholder="Matricol / Disciplină"
+                        placeholder="Matricol / Discipline"
                         value={filters.cod} 
                         onChange={e => setFilters({...filters, cod: e.target.value})}
                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
@@ -381,7 +372,7 @@ export default function Centralizer() {
                             onChange={e => setFilters({...filters, show_only_graded: e.target.checked})}
                             className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Doar Materii cu Note</span>
+                        <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Only Graded Subjects</span>
                     </label>
                 </div>
            </div>
@@ -389,14 +380,14 @@ export default function Centralizer() {
            <div className="mt-10 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                      {loading && <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
-                     <span className="text-xs font-bold text-slate-400">{loading ? 'Se procesează volume mari de date...' : 'Lăsați câmpurile necompletate pentru a include toate înregistrările.'}</span>
+                     <span className="text-xs font-bold text-slate-400">{loading ? 'Processing large data volumes...' : 'Leave fields blank to include all records.'}</span>
                 </div>
                 <button 
                     onClick={handleGenerateReport} 
                     disabled={loading}
                     className="bg-blue-600 text-white px-12 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700 shadow-2xl shadow-blue-100 transition-all flex items-center gap-3"
                 >
-                    <FileText size={18} /> Generează Raport Detaliat
+                    <FileText size={18} /> Generate Detailed Report
                 </button>
            </div>
         </div>
@@ -414,7 +405,7 @@ export default function Centralizer() {
             <table className="min-w-full divide-y divide-slate-100">
               <thead className="bg-slate-50/50">
                 <tr>
-                  {['#', 'Identitate Student', 'Context Academic', 'Disciplină', 'Sem.', 'ECTS', 'Nota', 'Media Generală / Credite Acumulate'].map((h) => (
+                  {['#', 'Student Identity', 'Academic Context', 'Discipline', 'Sem.', 'ECTS', 'Grade', 'GPA / Accumulated Credits'].map((h) => (
                     <th key={h} className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
@@ -462,7 +453,7 @@ export default function Centralizer() {
                       {dIdx === 0 ? (
                         <td rowSpan={student.filteredDisciplines.length} className="px-8 py-6 align-top text-center border-l border-slate-50">
                            <div className="text-xl font-black text-blue-600 mb-1">{student.average_grade || '-'}</div>
-                           <div className="text-[10px] font-black text-slate-400 uppercase bg-slate-50 px-3 py-1 rounded-full">{student.total_ects} PC Acumulate</div>
+                           <div className="text-[10px] font-black text-slate-400 uppercase bg-slate-50 px-3 py-1 rounded-full">{student.total_ects} Credits Accumulated</div>
                         </td>
                       ) : null}
                     </tr>
@@ -475,8 +466,8 @@ export default function Centralizer() {
            !loading && (
             <div className="text-center py-40 bg-white rounded-[3rem] border border-slate-200 border-dashed">
                 <Users className="mx-auto text-slate-100 mb-6" size={80} />
-                <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-sm">Nu există date pentru selecția curentă</p>
-                <p className="text-slate-300 text-xs mt-2">Ajustați filtrele pentru a vizualiza înregistrările.</p>
+                <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-sm">No data found for current selection</p>
+                <p className="text-slate-300 text-xs mt-2">Adjust filters to view records.</p>
             </div>
            )
         )}

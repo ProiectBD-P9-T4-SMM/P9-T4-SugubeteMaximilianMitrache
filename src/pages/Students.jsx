@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database, Plus, Search, Edit, Trash, BookOpen, X, Check, MapPin, Calendar, Users, Save, ChevronRight, Layers } from 'lucide-react';
+import { Database, Plus, Search, Edit, Trash, BookOpen, X, Check, MapPin, Calendar, Users, Save, ChevronRight, Layers, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { academicService, lookupService } from '../services/api';
 
@@ -76,7 +76,7 @@ export default function Students() {
 
   const handleEnrollStudent = async () => {
     if (!selectedCurriculumId || !editingStudent || !enrollmentFormationId) {
-      alert('Te rugăm să completezi toate selecțiile (Plan + Formație).');
+      alert('Please complete all selections (Plan + Formation).');
       return;
     }
     try {
@@ -87,12 +87,12 @@ export default function Students() {
       });
       fetchStudentEnrollments(editingStudent.id);
       resetEnrollmentForm();
-    } catch (err) { alert('Eroare la înrolare.'); }
+    } catch (err) { alert('Enrollment error.'); }
   };
 
   const handleUpdateEnrollment = async (currId) => {
     if (!enrollmentFormationId) {
-        alert('Te rugăm să finalizezi selecția formației.');
+        alert('Please finalize formation selection.');
         return;
     }
     try {
@@ -103,7 +103,7 @@ export default function Students() {
         });
         fetchStudentEnrollments(editingStudent.id);
         resetEnrollmentForm();
-    } catch (err) { alert('Eroare la actualizare.'); }
+    } catch (err) { alert('Update error.'); }
   };
 
   const resetEnrollmentForm = () => {
@@ -116,18 +116,15 @@ export default function Students() {
   };
 
   const handleUnenrollStudent = async (currId) => {
-    if (!window.confirm("Elimini acest plan academic pentru student?")) return;
+    if (!window.confirm("Remove this academic plan for the student?")) return;
     try {
       await academicService.unenrollStudent(editingStudent.id, currId);
       fetchStudentEnrollments(editingStudent.id);
-    } catch (err) { alert('Eroare la eliminarea planului.'); }
+    } catch (err) { alert('Error removing plan.'); }
   };
 
-  // Helper to find spec code from spec ID
   const activeSpec = specializations.find(s => s.id === selectedSpecId);
   const specCode = activeSpec?.code || '';
-
-  // Cascading filters based on selectedSpecId
   const filteredCurricula = curricula.filter(c => c.specialization_id === selectedSpecId);
   
   const filteredEduForms = [...new Set(
@@ -159,7 +156,6 @@ export default function Students() {
   const handleSaveStudent = async (e) => {
     e.preventDefault();
     try {
-
       const payload = {
         first_name: studentForm.first_name,
         last_name: studentForm.last_name,
@@ -171,14 +167,49 @@ export default function Students() {
       setShowModal(false); fetchStudents();
     } catch (err) { 
       const msg = err.response?.data?.message || 'Failed to save student';
-      const suggestion = err.response?.status === 400 ? "\n\n💡 Sugestie: Verifică dacă toate câmpurile obligatorii sunt completate corect și dacă formația de studiu a fost identificată." : "";
-      alert(msg + suggestion); 
+      alert(msg); 
     }
   };
 
   const handleDeleteStudent = async (id) => {
-    if (!window.confirm("Ștergi acest student?")) return;
-    try { await academicService.deleteStudent(id); fetchStudents(); } catch (err) { alert('Eroare la ștergere.'); }
+    if (!window.confirm("Delete this student?")) return;
+    try { await academicService.deleteStudent(id); fetchStudents(); } catch (err) { alert('Delete error.'); }
+  };
+
+  const handleExportExcel = () => {
+    const exportData = [];
+    filteredStudents.forEach(s => {
+      const baseInfo = {
+        'Matriculation No.': s.registration_number,
+        'Last Name': s.last_name,
+        'First Name': s.first_name,
+        'Email': s.email,
+        'Status': s.status
+      };
+
+      if (s.enrollments && s.enrollments.length > 0) {
+        s.enrollments.forEach(enr => {
+          exportData.push({
+            ...baseInfo,
+            'Academic Program': enr.curriculum_name,
+            'Specific Formation': enr.formation_name || 'N/A',
+            'Study Year': enr.study_year || 'N/A'
+          });
+        });
+      } else {
+        exportData.push({
+          ...baseInfo,
+          'Academic Program': 'Not Enrolled',
+          'Specific Formation': 'N/A',
+          'Study Year': 'N/A'
+        });
+      }
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Students");
+    XLSX.writeFile(wb, `Student_Registry_Detailed_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
   const openEditModal = (student) => {
@@ -190,7 +221,6 @@ export default function Students() {
   };
 
   const startEditEnrollment = (enr) => {
-    // Find spec ID from curriculum linked to this enrollment
     const curr = curricula.find(c => c.id === enr.curriculum_id);
     const formation = formations.find(f => f.id === enr.study_formation_id);
     
@@ -218,16 +248,16 @@ export default function Students() {
 
   return (
     <div className="flex-1 container mx-auto px-4 py-8 bg-slate-50 min-h-screen">
-      <div className="flex justify-between items-center mb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 space-y-6 md:space-y-0">
         <div className="space-y-1">
           <h2 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-             Registru Studenți
+             Student Registry
           </h2>
-          <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">Sistem Integrat de Gestiune Academică</p>
+          <p className="text-slate-500 font-bold text-sm uppercase tracking-widest text-center md:text-left">Integrated Academic Management System</p>
         </div>
-        <div className="flex space-x-3">
-          <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-3xl font-black shadow-2xl shadow-emerald-100 transition-all flex items-center space-x-3 cursor-pointer">
-            <Database size={20} />
+        <div className="flex flex-wrap gap-3">
+          <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-black shadow-xl shadow-emerald-100 transition-all flex items-center space-x-2 cursor-pointer text-sm">
+            <Database size={18} />
             <span>Import Excel</span>
             <input type="file" accept=".xlsx, .xls, .csv" className="hidden" onChange={async (e) => {
               const file = e.target.files[0];
@@ -247,7 +277,7 @@ export default function Students() {
                   fetchStudents();
                 } catch (err) {
                   const msg = err.response?.data?.message || 'Failed to import bulk students.';
-                  const suggestion = "\n\n💡 Sugestie: Asigură-te că fișierul Excel are coloanele: first_name, last_name, email și study_formation_id.";
+                  const suggestion = "\n\n💡 Hint: Your Excel file can have columns like: Last Name, First Name, Email, Academic Program, and Specific Formation. The system will auto-detect existing students and update their status.";
                   alert(msg + suggestion);
                 }
               };
@@ -255,9 +285,16 @@ export default function Students() {
               e.target.value = null; // reset
             }} />
           </label>
-          <button onClick={() => { setEditingStudent(null); setStudentForm({ first_name: '', last_name: '', email: '', status: 'ENROLLED' }); setShowModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-3xl font-black shadow-2xl shadow-blue-200 transition-all flex items-center space-x-3">
-            <Plus size={20} />
-            <span>Adaugă Student</span>
+          <button 
+            onClick={handleExportExcel}
+            className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-2xl font-black transition-all flex items-center space-x-2 text-sm"
+          >
+            <Download size={18} />
+            <span>Export Excel</span>
+          </button>
+          <button onClick={() => { setEditingStudent(null); setStudentForm({ first_name: '', last_name: '', email: '', status: 'ENROLLED' }); setShowModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black shadow-xl shadow-blue-200 transition-all flex items-center space-x-2 text-sm">
+            <Plus size={18} />
+            <span>Add Student</span>
           </button>
         </div>
       </div>
@@ -271,7 +308,7 @@ export default function Students() {
                     <Users size={32} />
                 </div>
                 <div>
-                  <h3 className="text-3xl font-black text-slate-900">{editingStudent ? 'Dosar Academic' : 'Înmatriculare Nouă'}</h3>
+                  <h3 className="text-3xl font-black text-slate-900">{editingStudent ? 'Academic File' : 'New Enrollment'}</h3>
                   {editingStudent && (
                     <div className="flex items-center gap-2 mt-1">
                          <span className="bg-slate-900 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{editingStudent.registration_number}</span>
@@ -284,48 +321,46 @@ export default function Students() {
             </div>
             
             <div className="flex-1 overflow-y-auto p-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
-              {/* Left Side: Identity & Status (4 cols) */}
               <div className="lg:col-span-4 space-y-8">
                  <section className="space-y-6">
-                    <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] ml-2">Identitate Student</h4>
+                    <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] ml-2">Student Identity</h4>
                     <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-5">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Nume</label>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Last Name</label>
                                 <input required type="text" value={studentForm.last_name} onChange={e => setStudentForm({...studentForm, last_name: e.target.value})} className="w-full p-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none transition-all font-bold text-slate-700" />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Prenume</label>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">First Name</label>
                                 <input required type="text" value={studentForm.first_name} onChange={e => setStudentForm({...studentForm, first_name: e.target.value})} className="w-full p-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none transition-all font-bold text-slate-700" />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Email Instituțional</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Institutional Email</label>
                             <input required type="email" value={studentForm.email} onChange={e => setStudentForm({...studentForm, email: e.target.value})} className="w-full p-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none transition-all font-bold text-slate-700" />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Status Academic</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Academic Status</label>
                             <select value={studentForm.status} onChange={e => setStudentForm({...studentForm, status: e.target.value})} className="w-full p-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none transition-all font-black text-slate-800">
-                                <option value="ENROLLED">ÎNMATRICULAT</option>
-                                <option value="ACTIVE">ACTIV</option>
-                                <option value="SUSPENDED">SUSPENDAT</option>
-                                <option value="GRADUATED">ABSOLVIT</option>
+                                <option value="ENROLLED">ENROLLED</option>
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="SUSPENDED">SUSPENDED</option>
+                                <option value="GRADUATED">GRADUATED</option>
                             </select>
                         </div>
                     </div>
                  </section>
               </div>
 
-              {/* Right Side: Enrollments (8 cols) */}
               <div className="lg:col-span-8 space-y-8">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-black text-purple-600 uppercase tracking-[0.3em] ml-2">Planuri & Specializări</h4>
+                  <h4 className="text-[10px] font-black text-purple-600 uppercase tracking-[0.3em] ml-2">Plans & Specializations</h4>
                   {editingStudent && !isAddingPlan && !editingEnrollmentId && (
                     <button 
                       onClick={() => { setIsAddingPlan(true); setEditingEnrollmentId(null); }}
                       className="bg-purple-50 text-purple-600 px-6 py-3 rounded-2xl font-black text-xs hover:bg-purple-100 transition-all flex items-center gap-2"
                     >
-                      <Plus size={16} /> Înrolează în Plan Nou
+                      <Plus size={16} /> Enroll in New Plan
                     </button>
                   )}
                 </div>
@@ -336,34 +371,34 @@ export default function Students() {
                       <div className="bg-slate-50 p-10 rounded-[3rem] border border-blue-100 shadow-2xl shadow-blue-50 space-y-8 animate-in zoom-in-95 duration-300">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h5 className="text-xl font-black text-slate-900">{isAddingPlan ? 'Configurare Înrolare Nouă' : 'Actualizare Formație'}</h5>
-                            <p className="text-xs font-bold text-blue-500 uppercase mt-1">Alege Specializarea și Planul de Studiu</p>
+                            <h5 className="text-xl font-black text-slate-900">{isAddingPlan ? 'Configure New Enrollment' : 'Update Formation'}</h5>
+                            <p className="text-xs font-bold text-blue-500 uppercase mt-1">Select Specialization and Study Plan</p>
                           </div>
                           <button onClick={resetEnrollmentForm} className="p-3 hover:bg-white rounded-2xl transition-all text-slate-400"><X size={20} /></button>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">1. Specializare</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">1. Specialization</label>
                             <select 
                               value={selectedSpecId} 
                               disabled={!!editingEnrollmentId}
                               onChange={e => { setSelectedSpecId(e.target.value); setSelectedCurriculumId(''); }}
                               className="w-full p-5 bg-white border border-slate-200 rounded-[1.5rem] font-black text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 disabled:opacity-50"
                             >
-                              <option value="">-- Alege Specializarea --</option>
+                              <option value="">-- Choose Specialization --</option>
                               {specializations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.degree_level})</option>)}
                             </select>
                           </div>
                           <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">2. Plan de Învățământ</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">2. Study Plan</label>
                             <select 
                               value={selectedCurriculumId} 
                               disabled={!selectedSpecId || !!editingEnrollmentId}
                               onChange={e => setSelectedCurriculumId(e.target.value)}
                               className="w-full p-5 bg-white border border-slate-200 rounded-[1.5rem] font-black text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 disabled:opacity-50"
                             >
-                              <option value="">-- Alege Planul --</option>
+                              <option value="">-- Choose Plan --</option>
                               {filteredCurricula.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                           </div>
@@ -372,15 +407,15 @@ export default function Students() {
                         <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
                            <div className="flex items-center gap-2 mb-2">
                                 <MapPin size={16} className="text-blue-600" />
-                                <h6 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">3. Configurare Locală (An & Grupă)</h6>
+                                <h6 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">3. Local Config (Year & Group)</h6>
                            </div>
                            <div className="grid grid-cols-4 gap-4">
                               <select value={formationSel.eduForm} disabled={!selectedCurriculumId} onChange={e => setFormationSel({...formationSel, eduForm: e.target.value, year: '', group: '', sub: ''})} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:ring-4 focus:ring-blue-50">
-                                <option value="">Forma</option>
+                                <option value="">Type</option>
                                 {filteredEduForms.map(f => <option key={f} value={f}>{f}</option>)}
                               </select>
                               <select value={formationSel.year} disabled={!formationSel.eduForm} onChange={e => setFormationSel({...formationSel, year: e.target.value, group: '', sub: ''})} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:ring-4 focus:ring-blue-50">
-                                <option value="">An</option>
+                                <option value="">Year</option>
                                 {filteredYears.map(y => <option key={y} value={y}>{y}</option>)}
                               </select>
                               <select value={formationSel.group} disabled={!formationSel.year} onChange={e => setFormationSel({...formationSel, group: e.target.value, sub: ''})} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:ring-4 focus:ring-blue-50">
@@ -388,19 +423,19 @@ export default function Students() {
                                 {filteredGroups.map(g => <option key={g} value={g}>{g}</option>)}
                               </select>
                               <select value={formationSel.sub} disabled={!formationSel.group} onChange={e => setFormationSel({...formationSel, sub: e.target.value})} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:ring-4 focus:ring-blue-50">
-                                <option value="">Sgr</option>
+                                <option value="">Sub</option>
                                 {filteredSubs.map(s => <option key={s} value={s}>{s}</option>)}
                               </select>
                            </div>
                         </div>
 
                         <div className="flex gap-4">
-                           <button onClick={resetEnrollmentForm} className="flex-1 py-5 bg-white text-slate-400 font-black rounded-3xl hover:bg-slate-100 transition-all uppercase tracking-widest text-[10px]">Anulează</button>
+                           <button onClick={resetEnrollmentForm} className="flex-1 py-5 bg-white text-slate-400 font-black rounded-3xl hover:bg-slate-100 transition-all uppercase tracking-widest text-[10px]">Cancel</button>
                            <button 
                              onClick={() => isAddingPlan ? handleEnrollStudent() : handleUpdateEnrollment(editingEnrollmentId)}
                              className="flex-[3] py-5 bg-blue-600 text-white font-black rounded-3xl hover:bg-blue-700 shadow-2xl shadow-blue-100 transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-3"
                            >
-                             <Check size={18} /> {isAddingPlan ? 'Finalizează Înrolarea' : 'Actualizează Detalii'}
+                             <Check size={18} /> {isAddingPlan ? 'Finalize Enrollment' : 'Update Details'}
                            </button>
                         </div>
                       </div>
@@ -410,7 +445,7 @@ export default function Students() {
                       {studentEnrollments.length === 0 ? (
                         <div className="text-center py-20 bg-slate-50 rounded-[3rem] border border-slate-100 border-dashed">
                           <Layers className="mx-auto text-slate-200 mb-6" size={64} />
-                          <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Dosar Fără Planuri Active</p>
+                          <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No Active Plans Found</p>
                         </div>
                       ) : (
                         studentEnrollments.map(enr => (
@@ -428,9 +463,9 @@ export default function Students() {
                              <div className="flex items-center gap-8">
                                 <div className="text-right">
                                     <div className="flex items-center justify-end gap-1 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                                        <Calendar size={12} /> Progres Curent
+                                        <Calendar size={12} /> Current Progress
                                     </div>
-                                    <p className="text-sm font-black text-slate-800">An {enr.study_year} | {enr.formation_name}</p>
+                                    <p className="text-sm font-black text-slate-800">Year {enr.study_year} | {enr.formation_name}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => startEditEnrollment(enr)} className={`p-4 rounded-2xl transition-all ${editingEnrollmentId === enr.curriculum_id ? 'bg-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-slate-50 text-slate-400 hover:text-blue-600'}`}><Edit size={18} /></button>
@@ -444,26 +479,26 @@ export default function Students() {
                   </div>
                 ) : (
                   <div className="bg-amber-50 p-12 rounded-[3rem] border border-amber-100 text-center">
-                     <p className="text-amber-700 font-bold">⚠️ Salvează profilul studentului înainte de a-l înrola în planuri de învățământ.</p>
+                     <p className="text-amber-700 font-bold">⚠️ Save the student profile before enrolling them in study plans.</p>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="p-10 border-t border-slate-50 bg-white flex justify-end gap-6">
-               <button onClick={() => setShowModal(false)} className="text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-600">Închide</button>
-               <button onClick={handleSaveStudent} className="bg-slate-900 text-white px-12 py-5 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-black shadow-2xl transition-all">Salvează Profil</button>
+               <button onClick={() => setShowModal(false)} className="text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-600">Close</button>
+               <button onClick={handleSaveStudent} className="bg-slate-900 text-white px-12 py-5 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-black shadow-2xl transition-all">Save Profile</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Main Table View */}
-      <div className="bg-white p-10 rounded-[3.5rem] shadow-sm border border-slate-200 mb-10 flex items-center justify-between">
+      <div className="bg-white p-10 rounded-[3.5rem] shadow-sm border border-slate-200 mb-10 flex flex-col lg:flex-row items-center justify-between gap-6">
         <div className="relative w-full max-w-xl">
           <input 
             type="text" 
-            placeholder="Nume, Email, Nr. Matricol..." 
+            placeholder="Name, Email, Matriculation No..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-slate-50 border-none rounded-[2rem] p-6 pl-16 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-bold text-slate-700 text-lg shadow-inner" 
@@ -472,7 +507,7 @@ export default function Students() {
         </div>
         <div className="flex items-center gap-10">
             <div className="text-right">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Studenți înregistrați</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Registered Students</p>
                 <div className="text-3xl font-black text-slate-900">{filteredStudents.length}</div>
             </div>
         </div>
@@ -482,7 +517,7 @@ export default function Students() {
         <table className="min-w-full divide-y divide-slate-100">
           <thead className="bg-slate-50/50">
             <tr>
-              {['Nr. Matricol', 'Identitate Student', 'Program Academic', 'Status', ''].map((h) => (
+              {['Matriculation No.', 'Student Identity', 'Academic Programs', 'Status', ''].map((h) => (
                 <th key={h} className="px-12 py-8 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{h}</th>
               ))}
             </tr>
@@ -505,10 +540,10 @@ export default function Students() {
                             <BookOpen size={16} />
                         </div>
                         <div className="space-y-0.5">
-                            <span className={`text-sm font-black block ${Number(row.plan_count) > 0 ? 'text-slate-800' : 'text-slate-300 italic'}`}>
-                                {Number(row.plan_count) === 1 ? row.first_plan_name : Number(row.plan_count) > 1 ? `Programe Multiple (${row.plan_count})` : 'Neînrolat'}
+                            <span className={`text-sm font-black block truncate max-w-[200px] ${Number(row.plan_count) > 0 ? 'text-slate-800' : 'text-slate-300 italic'}`}>
+                                {row.enrollments?.map(e => e.curriculum_name).join(', ') || 'Not Enrolled'}
                             </span>
-                            {Number(row.plan_count) > 0 && <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Plan Validat</span>}
+                            {Number(row.plan_count) > 0 && <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Validated Plan</span>}
                         </div>
                    </div>
                 </td>
@@ -522,7 +557,7 @@ export default function Students() {
                 <td className="px-12 py-8 text-right opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
                   <div className="flex justify-end gap-3">
                     <button onClick={() => openEditModal(row)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs hover:bg-black shadow-xl shadow-slate-200 transition-all flex items-center gap-2">
-                       <ChevronRight size={18} /> Deschide Dosar
+                       <ChevronRight size={18} /> Open File
                     </button>
                     <button onClick={() => handleDeleteStudent(row.id)} className="p-4 bg-red-50 text-red-400 rounded-2xl hover:bg-red-500 hover:text-white transition-all"><Trash size={18} /></button>
                   </div>

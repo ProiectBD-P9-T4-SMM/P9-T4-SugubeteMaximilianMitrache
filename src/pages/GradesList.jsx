@@ -72,7 +72,7 @@ export default function GradesList() {
     } catch (err) {
       setMessage({ 
         type: 'error', 
-        text: err.response?.data?.message || 'Eroare la încărcarea notelor.' 
+        text: err.response?.data?.message || 'Error loading grades.' 
       });
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ export default function GradesList() {
       student_id: grade.student_id,
       discipline_id: grade.discipline_id,
       value: grade.value,
-      exam_session: grade.exam_session || 'IARNA',
+      exam_session: grade.exam_session || 'WINTER',
       grading_date: grade.grading_date ? new Date(grade.grading_date).toISOString().split('T')[0] : '',
       validated: grade.validated
     });
@@ -116,7 +116,7 @@ export default function GradesList() {
     if (editForm.value === undefined || editForm.value === null || editForm.value === '' || editForm.value < 0 || editForm.value > 10) {
       setMessage({ 
         type: 'error', 
-        text: 'Nota trebuie să fie între 1 și 10 (sau 0 pentru Absent).' 
+        text: 'The grade must be between 1 and 10 (or 0 for Absent).' 
       });
       return;
     }
@@ -131,28 +131,28 @@ export default function GradesList() {
         validated: editForm.validated
       });
       
-      setMessage({ type: 'success', text: 'Nota a fost actualizată complet!' });
+      setMessage({ type: 'success', text: 'Grade updated successfully!' });
       setEditingId(null);
       loadGrades(filters);
     } catch (err) {
       setMessage({ 
         type: 'error', 
-        text: err.response?.data?.message || 'Eroare la actualizarea notei.' 
+        text: err.response?.data?.message || 'Error updating grade.' 
       });
     }
   };
 
   const handleDelete = async (gradeId) => {
-    if (!confirm('Sunteți sigur că doriți să ștergeți această notă?')) return;
+    if (!confirm('Are you sure you want to delete this grade?')) return;
 
     try {
       await api.delete(`/academic/grades/${gradeId}`);
-      setMessage({ type: 'success', text: 'Notă ștearsă cu succes!' });
+      setMessage({ type: 'success', text: 'Grade deleted successfully!' });
       loadGrades(filters);
     } catch (err) {
       setMessage({ 
         type: 'error', 
-        text: err.response?.data?.message || 'Eroare la ștergerea notei.' 
+        text: err.response?.data?.message || 'Error deleting grade.' 
       });
     }
   };
@@ -162,20 +162,20 @@ export default function GradesList() {
       await api.put(`/academic/grades/${gradeId}`, { validated: !currentValidated });
       setMessage({ 
         type: 'success', 
-        text: `Notă ${!currentValidated ? 'validată' : 'invalidată'} cu succes!` 
+        text: `Grade ${!currentValidated ? 'validated' : 'invalidated'} successfully!` 
       });
       loadGrades(filters);
     } catch (err) {
       setMessage({ 
         type: 'error', 
-        text: err.response?.data?.message || 'Eroare la validarea notei.' 
+        text: err.response?.data?.message || 'Error validating grade.' 
       });
     }
   };
 
   return (
     <div className="flex-1 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">Lista Notelor</h2>
+      <h2 className="text-2xl font-bold text-slate-800 mb-6">Grades List</h2>
 
       {message.text && (
         <div className={`p-4 rounded-md mb-6 flex gap-3 ${
@@ -196,14 +196,14 @@ export default function GradesList() {
           onClick={() => setShowFilters(!showFilters)}
           className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition"
         >
-          <Filter size={16} /> {showFilters ? 'Ascunde' : 'Arată'} Filtre
+          <Filter size={16} /> {showFilters ? 'Hide' : 'Show'} Filters
         </button>
         {(filters.student_id || filters.discipline_id || filters.academic_year_id || filters.exam_session || filters.min_date || filters.max_date) && (
           <button
             onClick={handleClearFilters}
             className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition"
           >
-            <X size={16} /> Resetare Filtre
+            <X size={16} /> Reset Filters
           </button>
         )}
       </div>
@@ -219,7 +219,7 @@ export default function GradesList() {
                 onChange={(e) => handleFilterChange('student_id', e.target.value)}
                 className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
               >
-                <option value="">-- Toți --</option>
+                <option value="">-- All --</option>
                 {students.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.last_name} {s.first_name}
@@ -229,13 +229,13 @@ export default function GradesList() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Disciplină</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Discipline</label>
               <select
                 value={filters.discipline_id}
                 onChange={(e) => handleFilterChange('discipline_id', e.target.value)}
                 className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
               >
-                <option value="">-- Toate --</option>
+                <option value="">-- All --</option>
                 {disciplines.map(d => (
                   <option key={d.id} value={d.id}>
                     {d.code} - {d.name}
@@ -245,13 +245,13 @@ export default function GradesList() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">An Academic</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Academic Year</label>
               <select
                 value={filters.academic_year_id}
                 onChange={(e) => handleFilterChange('academic_year_id', e.target.value)}
                 className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
               >
-                <option value="">-- Toți --</option>
+                <option value="">-- All --</option>
                 {academicYears.map(y => (
                   <option key={y.id} value={y.id}>
                     {y.year_start}/{y.year_end}
@@ -261,21 +261,21 @@ export default function GradesList() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Sesiune Examen</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Exam Session</label>
               <select
                 value={filters.exam_session}
                 onChange={(e) => handleFilterChange('exam_session', e.target.value)}
                 className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
               >
-                <option value="">-- Toate --</option>
-                <option value="IARNA">Iarnă (Ianuarie-Februarie)</option>
-                <option value="VARA">Vară (Iunie-Iulie)</option>
-                <option value="RESTANTA">Restanță (August-Septembrie)</option>
+                <option value="">-- All --</option>
+                <option value="WINTER">Winter (January-February)</option>
+                <option value="SUMMER">Summer (June-July)</option>
+                <option value="RETAKE">Retake (August-September)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">De la:</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">From:</label>
               <input
                 type="date"
                 value={filters.min_date}
@@ -285,7 +285,7 @@ export default function GradesList() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Până la:</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">To:</label>
               <input
                 type="date"
                 value={filters.max_date}
@@ -299,7 +299,7 @@ export default function GradesList() {
             onClick={handleApplyFilters}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition"
           >
-            Aplică Filtre
+            Apply Filters
           </button>
         </div>
       )}
@@ -307,22 +307,22 @@ export default function GradesList() {
       {/* Grades Table */}
       <div className="overflow-x-auto">
         {loading ? (
-          <p className="text-center text-gray-500 py-8">Se încarcă...</p>
+          <p className="text-center text-gray-500 py-8">Loading...</p>
         ) : grades.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">Nu sunt note. Ajustați filtrele și încercați din nou.</p>
+          <p className="text-center text-gray-500 py-8">No grades found. Adjust filters and try again.</p>
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 uppercase text-xs tracking-wider">
                 <th className="p-4">#</th>
                 <th className="p-4">Student</th>
-                <th className="p-4">Disciplină</th>
-                <th className="p-4">Notă</th>
-                <th className="p-4">Sesiune</th>
-                <th className="p-4">Data Notării</th>
-                <th className="p-4">Notat de</th>
-                <th className="p-4">Validare</th>
-                <th className="p-4">Acțiuni</th>
+                <th className="p-4">Discipline</th>
+                <th className="p-4">Grade</th>
+                <th className="p-4">Session</th>
+                <th className="p-4">Grading Date</th>
+                <th className="p-4">Graded By</th>
+                <th className="p-4">Validation</th>
+                <th className="p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -394,9 +394,9 @@ export default function GradesList() {
                         onChange={(e) => setEditForm({...editForm, exam_session: e.target.value})}
                         className="w-full p-1 text-sm border border-slate-300 rounded"
                       >
-                        <option value="IARNA">Iarnă</option>
-                        <option value="VARA">Vară</option>
-                        <option value="RESTANTA">Restanță</option>
+                        <option value="WINTER">Winter</option>
+                        <option value="SUMMER">Summer</option>
+                        <option value="RETAKE">Retake</option>
                       </select>
                     ) : (
                       <span className="text-sm">{grade.exam_session || '-'}</span>
@@ -413,11 +413,11 @@ export default function GradesList() {
                         className="w-full p-1 text-xs border border-slate-300 rounded"
                       />
                     ) : (
-                      <span className="text-sm">{new Date(grade.grading_date).toLocaleDateString('ro-RO')}</span>
+                      <span className="text-sm">{new Date(grade.grading_date).toLocaleDateString('en-US')}</span>
                     )}
                   </td>
 
-                  {/* GRADED BY (Read Only usually) */}
+                  {/* GRADED BY */}
                   <td className="p-4 text-sm text-slate-600">
                     {grade.graded_by_name || '-'}
                   </td>
@@ -444,7 +444,7 @@ export default function GradesList() {
                         }`}
                       >
                         <CheckCircle size={14} />
-                        {grade.validated ? 'Validată' : 'Nev.'}
+                        {grade.validated ? 'Validated' : 'Pending'}
                       </button>
                     )}
                   </td>
@@ -456,14 +456,14 @@ export default function GradesList() {
                           <button
                             onClick={() => handleSaveEdit(grade.id)}
                             className="bg-emerald-600 text-white p-1.5 rounded-md hover:bg-emerald-700 transition flex items-center gap-1 shadow-sm"
-                            title="Salvează Tot"
+                            title="Save All"
                           >
-                            <Save size={16} /> <span className="text-xs font-bold px-1">Salvare</span>
+                            <Save size={16} /> <span className="text-xs font-bold px-1">Save</span>
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
                             className="bg-slate-200 text-slate-700 p-1.5 rounded-md hover:bg-slate-300 transition"
-                            title="Anulare"
+                            title="Cancel"
                           >
                             <X size={16} />
                           </button>
@@ -473,14 +473,14 @@ export default function GradesList() {
                           <button
                             onClick={() => handleStartEdit(grade)}
                             className="text-blue-600 hover:text-blue-800 p-2 rounded-md hover:bg-blue-50 transition border border-transparent hover:border-blue-100"
-                            title="Editare Completă"
+                            title="Full Edit"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(grade.id)}
                             className="text-red-600 hover:text-red-800 p-2 rounded-md hover:bg-red-50 transition border border-transparent hover:border-red-100"
-                            title="Ștergere"
+                            title="Delete"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -498,12 +498,12 @@ export default function GradesList() {
       {grades.length > 0 && (
         <div className="mt-6 text-sm text-gray-600 border-t border-gray-200 pt-4 flex justify-between items-center">
           <div className="flex gap-6">
-            <p>Total note: <strong>{grades.length}</strong></p>
-            <p className="text-emerald-600">Validate: <strong>{grades.filter(g => g.validated).length}</strong></p>
-            <p className="text-amber-600">Nevalidate: <strong>{grades.filter(g => !g.validated).length}</strong></p>
+            <p>Total grades: <strong>{grades.length}</strong></p>
+            <p className="text-emerald-600">Validated: <strong>{grades.filter(g => g.validated).length}</strong></p>
+            <p className="text-amber-600">Pending: <strong>{grades.filter(g => !g.validated).length}</strong></p>
           </div>
           <div className="text-xs text-slate-400 italic">
-            * Folosiți butonul de editare pentru a modifica orice câmp al notei.
+            * Use the edit button to modify any field of the grade.
           </div>
         </div>
       )}

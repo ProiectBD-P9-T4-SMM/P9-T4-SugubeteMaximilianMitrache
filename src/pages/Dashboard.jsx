@@ -1,8 +1,23 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, FileText, FileSignature, Clock } from 'lucide-react';
+import { auditService } from '../services/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        const res = await auditService.getLogs();
+        setRecentActivity(res.data.slice(0, 5));
+      } catch (error) {
+        console.error("Failed to load recent activity", error);
+      }
+    };
+    fetchActivity();
+  }, []);
 
   return (
     <div className="flex-1 container mx-auto px-4 py-8">
@@ -58,17 +73,14 @@ export default function Dashboard() {
             <span>Recent Activity</span>
           </h3>
           <ul className="space-y-4">
-            {[
-              { text: 'Approved Document DOC-102', time: '10 mins ago' },
-              { text: 'Generated e-Grade Centralizer (Informatics Y2)', time: '1 hour ago' },
-              { text: 'Updated grades for Student 1001', time: '3 hours ago' },
-              { text: 'Added 5 new students to group 311C', time: '1 day ago' },
-            ].map((act, i) => (
-              <li key={i} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 last:border-0">
-                <span className="text-slate-700">{act.text}</span>
-                <span className="text-slate-400 text-xs">{act.time}</span>
+            {recentActivity.length > 0 ? recentActivity.map((act) => (
+              <li key={act.id} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 last:border-0">
+                <span className="text-slate-700">
+                  {act.action_type} pe {act.entity_type}
+                </span>
+                <span className="text-slate-400 text-xs">{new Date(act.occurred_at).toLocaleString()}</span>
               </li>
-            ))}
+            )) : <li className="text-sm text-slate-500">No recent activity</li>}
           </ul>
         </div>
 

@@ -44,6 +44,11 @@ export const reportsService = {
 export const documentsService = {
   getDocuments: (params) => api.get('/documents', { params }),
   updateStatus: (id, status) => api.put(`/documents/${id}/status`, { status }),
+  uploadDocument: (formData) => api.post('/documents', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  downloadDocument: (id) => api.get(`/documents/download/${id}`, { responseType: 'blob' }),
+  deleteDocument: (id) => api.delete(`/documents/${id}`)
 };
 
 export const notificationsService = {

@@ -239,7 +239,9 @@ CREATE TABLE DOCUMENT (
     type VARCHAR(50) NOT NULL,
     status VARCHAR(50) DEFAULT 'DRAFT',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    content TEXT
+    content TEXT,
+    file_path VARCHAR(500),
+    original_filename VARCHAR(255)
 );
 
 -- ==============================================================================

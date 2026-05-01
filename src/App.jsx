@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, User, LogOut, HelpCircle, FileText, Users, BookOpen, FileBarChart, Settings, Edit, Eye, Trash, Download, CheckCircle, Mail, Clock, Filter, Plus, FileSignature, Database, Activity } from 'lucide-react';
+import { Search, User, LogOut, HelpCircle, FileText, Users, BookOpen, FileBarChart, Settings, Edit, Eye, Trash, Download, CheckCircle, Mail, Clock, Filter, Plus, FileSignature, Database, Activity, FilePlus, XCircle } from 'lucide-react';
 import { authService, academicService, lookupService, reportsService, documentsService, notificationsService, auditService, adminService } from './services/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -360,7 +360,22 @@ export default function App() {
     </div>
   )};
 
-  const ViewDashboard = () => (
+  const ViewDashboard = () => {
+    const [recentActivity, setRecentActivity] = useState([]);
+
+    useEffect(() => {
+      const fetchActivity = async () => {
+        try {
+          const res = await auditService.getLogs();
+          setRecentActivity(res.data.slice(0, 5));
+        } catch (error) {
+          console.error("Failed to load recent activity", error);
+        }
+      };
+      fetchActivity();
+    }, []);
+
+    return (
     <div className="flex-1 container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">Welcome, User!</h2>
       
@@ -414,17 +429,14 @@ export default function App() {
             <span>Recent Activity</span>
           </h3>
           <ul className="space-y-4">
-            {[
-              { text: 'Approved Document DOC-102', time: '10 mins ago' },
-              { text: 'Generated e-Grade Centralizer (Informatics Y2)', time: '1 hour ago' },
-              { text: 'Updated grades for Student 1001', time: '3 hours ago' },
-              { text: 'Added 5 new students to group 311C', time: '1 day ago' },
-            ].map((act, i) => (
-              <li key={i} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 last:border-0">
-                <span className="text-slate-700">{act.text}</span>
-                <span className="text-slate-400 text-xs">{act.time}</span>
+            {recentActivity.length > 0 ? recentActivity.map((act) => (
+              <li key={act.id} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 last:border-0">
+                <span className="text-slate-700">
+                  {act.action_type} pe {act.entity_type}
+                </span>
+                <span className="text-slate-400 text-xs">{new Date(act.occurred_at).toLocaleString()}</span>
               </li>
-            ))}
+            )) : <li className="text-sm text-slate-500">No recent activity</li>}
           </ul>
         </div>
 
@@ -455,7 +467,8 @@ export default function App() {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const ViewStudents = () => {
     const [students, setStudents] = useState([]);
@@ -1155,6 +1168,11 @@ export default function App() {
     const [studyFormations, setStudyFormations] = useState([]);
     const [emailStatus, setEmailStatus] = useState(null);
 
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [uploadForm, setUploadForm] = useState({ title: '', type: '' });
+    const [uploadFile, setUploadFile] = useState(null);
+    const [uploadStatus, setUploadStatus] = useState(null);
+
     useEffect(() => {
       fetchDocuments();
       loadFormations();
@@ -1190,6 +1208,56 @@ export default function App() {
       }
     };
 
+    const handleDeleteDocument = async (id) => {
+      if (!window.confirm("Are you sure you want to completely delete this document?")) return;
+      try {
+        await documentsService.deleteDocument(id);
+        fetchDocuments();
+      } catch (err) {
+        console.error("Failed to delete document", err);
+      }
+    };
+
+    const handleDownloadDocument = async (id, originalName) => {
+      try {
+        const response = await documentsService.downloadDocument(id);
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', originalName || `document-${id}`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+      } catch (error) {
+        console.error('Failed to download document:', error);
+        alert('This document does not have a physical file attached to it (it is a metadata-only record).');
+      }
+    };
+
+    const handleUploadDocument = async (e) => {
+      e.preventDefault();
+      setUploadStatus({ loading: true });
+      try {
+        const formData = new FormData();
+        formData.append('title', uploadForm.title);
+        formData.append('type', uploadForm.type);
+        if (uploadFile) {
+          formData.append('file', uploadFile);
+        }
+        await documentsService.uploadDocument(formData);
+        setUploadStatus({ success: true, message: 'Document uploaded successfully!' });
+        fetchDocuments();
+        setTimeout(() => {
+          setShowUploadModal(false);
+          setUploadForm({ title: '', type: '' });
+          setUploadFile(null);
+          setUploadStatus(null);
+        }, 2000);
+      } catch (err) {
+        setUploadStatus({ success: false, message: err?.response?.data?.message || 'Failed to upload' });
+      }
+    };
+
     const handleSendEmail = async (e) => {
       e.preventDefault();
       setEmailStatus({ loading: true });
@@ -1206,13 +1274,22 @@ export default function App() {
       <div className="flex-1 container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-slate-800">Documents & Workflow</h2>
-          <button 
-            onClick={() => { setShowEmailModal(true); setEmailStatus(null); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center space-x-2"
-          >
-            <Mail className="h-4 w-4" />
-            <span>Send Group Email (Outlook)</span>
-          </button>
+          <div className="flex space-x-3">
+            <button 
+              onClick={() => { setShowUploadModal(true); setUploadStatus(null); }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center space-x-2"
+            >
+              <FilePlus className="h-4 w-4" />
+              <span>Upload Document</span>
+            </button>
+            <button 
+              onClick={() => { setShowEmailModal(true); setEmailStatus(null); }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center space-x-2"
+            >
+              <Mail className="h-4 w-4" />
+              <span>Send Group Email (Outlook)</span>
+            </button>
+          </div>
         </div>
 
         {/* Email Modal */}
@@ -1244,6 +1321,38 @@ export default function App() {
                 <div className="flex justify-end space-x-3 pt-4">
                   <button type="button" onClick={() => setShowEmailModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Cancel</button>
                   <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" disabled={emailStatus?.loading}>Send Email</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Upload Modal */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+              <h3 className="text-xl font-bold text-slate-800 mb-4">Upload Document</h3>
+              {uploadStatus && (
+                <div className={`p-3 rounded mb-4 text-sm ${uploadStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {uploadStatus.loading ? 'Uploading...' : uploadStatus.message}
+                </div>
+              )}
+              <form onSubmit={handleUploadDocument} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                  <input required type="text" value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} className="w-full p-2 border border-slate-300 rounded" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Type (e.g. Cerere bursa)</label>
+                  <input required type="text" value={uploadForm.type} onChange={e => setUploadForm({...uploadForm, type: e.target.value})} className="w-full p-2 border border-slate-300 rounded" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">File</label>
+                  <input type="file" onChange={e => setUploadFile(e.target.files[0])} className="w-full p-2 border border-slate-300 rounded" />
+                </div>
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button type="button" onClick={() => setShowUploadModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Cancel</button>
+                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" disabled={uploadStatus?.loading}>Upload</button>
                 </div>
               </form>
             </div>
@@ -1302,13 +1411,18 @@ export default function App() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-3">
-                    <button className="text-slate-600 hover:text-slate-900" title="View"><Eye className="h-4 w-4" /></button>
+                    {row.file_path ? (
+                      <button onClick={() => handleDownloadDocument(row.id, row.original_filename)} className="text-blue-600 hover:text-blue-900" title="Download Document"><Download className="h-4 w-4" /></button>
+                    ) : (
+                      <button disabled className="text-slate-300 cursor-not-allowed" title="No file attached"><Download className="h-4 w-4" /></button>
+                    )}
                     {row.status !== 'APPROVED' && (
                       <button onClick={() => handleUpdateStatus(row.id, 'APPROVED')} className="text-green-600 hover:text-green-900" title="Approve"><CheckCircle className="h-4 w-4" /></button>
                     )}
                     {row.status !== 'REJECTED' && (
-                      <button onClick={() => handleUpdateStatus(row.id, 'REJECTED')} className="text-red-600 hover:text-red-900" title="Reject"><Trash className="h-4 w-4" /></button>
+                      <button onClick={() => handleUpdateStatus(row.id, 'REJECTED')} className="text-orange-600 hover:text-orange-900" title="Reject"><XCircle className="h-4 w-4" /></button>
                     )}
+                    <button onClick={() => handleDeleteDocument(row.id)} className="text-red-600 hover:text-red-900" title="Delete"><Trash className="h-4 w-4" /></button>
                   </td>
                 </tr>
               ))}

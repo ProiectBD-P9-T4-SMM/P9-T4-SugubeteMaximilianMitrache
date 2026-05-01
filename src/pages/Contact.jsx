@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle, Clock, Users, Shield, Headphones } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle, Clock, Users, Shield, Headphones, AlertCircle } from 'lucide-react';
+import api from '../services/api';
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -11,10 +14,22 @@ export default function Contact() {
     message: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    // In a real app, you would send this to the backend
+    setLoading(true);
+    setError('');
+
+    try {
+      await api.post('/notifications/contact', {
+        subject: formData.subject,
+        message: `Role: ${formData.role}\nName: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError('Failed to send message. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -192,12 +207,20 @@ export default function Contact() {
                 ></textarea>
               </div>
 
+              {error && (
+                <div className="p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-3 text-sm font-bold border border-red-100">
+                  <AlertCircle size={18} />
+                  {error}
+                </div>
+              )}
+
               <button 
                 type="submit"
-                className="w-full py-5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center space-x-2 group"
+                disabled={loading}
+                className="w-full py-5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center space-x-2 group disabled:opacity-50"
               >
-                <span>Send Message</span>
-                <Send className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                <span>{loading ? 'Dispatched Message...' : 'Send Message'}</span>
+                <Send className={`h-5 w-5 transition-transform ${loading ? 'animate-pulse' : 'group-hover:translate-x-1 group-hover:-translate-y-1'}`} />
               </button>
             </form>
           </div>

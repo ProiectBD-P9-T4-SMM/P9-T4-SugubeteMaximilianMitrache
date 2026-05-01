@@ -1,7 +1,29 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Book, GraduationCap, Users, Settings, MessageSquare, Clock, Globe, ExternalLink, HelpCircle, Zap } from 'lucide-react';
+import { Search, Book, GraduationCap, Users, Settings, MessageSquare, Clock, Globe, ExternalLink, HelpCircle, Zap, Send, CheckCircle } from 'lucide-react';
+import api from '../services/api';
 
 export default function Help() {
+  const [contactForm, setContactForm] = useState({ subject: '', message: '' });
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ type: '', text: '' });
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus({ type: '', text: '' });
+
+    try {
+      await api.post('/notifications/contact', contactForm);
+      setStatus({ type: 'success', text: 'Message sent! Our team will contact you soon.' });
+      setContactForm({ subject: '', message: '' });
+    } catch (err) {
+      setStatus({ type: 'error', text: 'Failed to send message. Please try again later.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const roles = [
     {
       title: 'Registrar & Secretariat',
@@ -218,12 +240,48 @@ export default function Help() {
               </div>
             </div>
             
-            <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200 text-center">
-              <h4 className="text-xl font-bold text-slate-900 mb-4">Open a Ticket</h4>
-              <p className="text-sm text-slate-500 mb-8">The fastest way to get support is through our ticketing system.</p>
-              <button className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-                Contact Support
-              </button>
+            <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200">
+              <h4 className="text-xl font-bold text-slate-900 mb-2 text-center">Send us a Message</h4>
+              <p className="text-sm text-slate-500 mb-6 text-center">The fastest way to get support is through our ticketing system.</p>
+              
+              {status.text && (
+                <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 text-sm font-bold ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+                  {status.type === 'success' ? <CheckCircle size={18} /> : <HelpCircle size={18} />}
+                  {status.text}
+                </div>
+              )}
+
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Subject</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={contactForm.subject}
+                    onChange={e => setContactForm({...contactForm, subject: e.target.value})}
+                    placeholder="Brief description of the issue"
+                    className="w-full p-4 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Message</label>
+                  <textarea 
+                    required
+                    rows="4"
+                    value={contactForm.message}
+                    onChange={e => setContactForm({...contactForm, message: e.target.value})}
+                    placeholder="Describe your request or technical problem..."
+                    className="w-full p-4 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 outline-none transition-all resize-none"
+                  ></textarea>
+                </div>
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Send size={16} /> {loading ? 'Transmitting...' : 'Submit Support Ticket'}
+                </button>
+              </form>
             </div>
           </div>
         </section>

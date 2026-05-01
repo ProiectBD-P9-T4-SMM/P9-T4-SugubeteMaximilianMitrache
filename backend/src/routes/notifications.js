@@ -108,4 +108,51 @@ router.post('/send', async (req, res, next) => {
   }
 });
 
+// POST /api/notifications/contact - User Contact Form from Help Page
+router.post('/contact', async (req, res, next) => {
+  try {
+    const { subject, message } = req.body;
+    const userEmail = req.user.email;
+    const userName = req.user.fullName;
+
+    if (!subject || !message) {
+      return res.status(400).json({ error: true, message: 'Subject and message are required.' });
+    }
+
+    const mailOptions = {
+      from: process.env.SMTP_USER || '"AFSMS Support" <support@mock.ucv.ro>',
+      to: process.env.SUPPORT_EMAIL || 'admin@mock.ucv.ro',
+      subject: `[SUPPORT TICKET] ${subject}`,
+      text: `User: ${userName} (${userEmail})\n\nMessage:\n${message}`,
+      html: `
+        <h3>New Support Request</h3>
+        <p><strong>User:</strong> ${userName} (${userEmail})</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <hr />
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, '<br/>')}</p>
+      `
+    };
+
+    let info;
+    if (transporter) {
+      info = await transporter.sendMail(mailOptions);
+      if (!process.env.SMTP_HOST) {
+        console.log('Support Ticket Preview URL: %s', nodemailer.getTestMessageUrl(info));
+      }
+    }
+
+    // Log the interaction
+    await db.query(
+      `INSERT INTO OUTLOOK_NOTIFICATION (sent_by_user_id, recipients, subject, body_preview, delivery_status)
+       VALUES ($1, $2, $3, $4, 'SENT')`,
+      [req.user.userId, 'SYSTEM_ADMIN', `[SUPPORT] ${subject}`, message.substring(0, 500)]
+    );
+
+    res.json({ success: true, message: 'Your message has been sent to the IT Helpdesk.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

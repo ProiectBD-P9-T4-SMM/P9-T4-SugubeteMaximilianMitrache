@@ -186,93 +186,93 @@ export default function Centralizer() {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-end">
+    <div className="flex-1 bg-slate-50 min-h-screen p-6">
+      <div className="w-full space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                e-Grade Centralizer
             </h2>
-            <p className="text-slate-500 font-bold text-sm uppercase tracking-widest mt-1">Academic Reporting & Analysis System</p>
+            <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-0.5">Academic Reporting & Analysis System</p>
           </div>
           {centralizedData && (
-            <div className="flex gap-3">
-                <button onClick={handleExportCSV} className="bg-emerald-50 text-emerald-600 px-6 py-4 rounded-2xl font-black text-xs hover:bg-emerald-100 transition-all flex items-center gap-2">
-                   <FileText size={18} /> CSV
+            <div className="flex flex-wrap gap-2">
+                <button onClick={handleExportCSV} className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-black text-[10px] hover:bg-emerald-100 transition-all flex items-center gap-2">
+                   <FileText size={16} /> CSV
                 </button>
-                <button onClick={handleExportXLSX} className="bg-green-600 text-white px-6 py-4 rounded-2xl font-black text-xs hover:bg-green-700 shadow-xl shadow-green-100 transition-all flex items-center gap-2">
-                   <Download size={18} /> Excel (.xlsx)
+                <button onClick={handleExportXLSX} className="bg-green-600 text-white px-4 py-2 rounded-xl font-black text-[10px] hover:bg-green-700 shadow-lg shadow-green-100 transition-all flex items-center gap-2">
+                   <Download size={16} /> Excel
                 </button>
-                <button onClick={handleExportXML} className="bg-orange-500 text-white px-6 py-4 rounded-2xl font-black text-xs hover:bg-orange-600 shadow-xl shadow-orange-100 transition-all flex items-center gap-2">
-                   <FileText size={18} /> XML
+                <button onClick={handleExportXML} className="bg-orange-500 text-white px-4 py-2 rounded-xl font-black text-[10px] hover:bg-orange-600 shadow-lg shadow-orange-100 transition-all flex items-center gap-2">
+                   <FileText size={16} /> XML
                 </button>
-                <button onClick={handleExportPDF} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs hover:bg-black shadow-xl transition-all flex items-center gap-2">
-                   <Download size={18} /> PDF
+                <button onClick={handleExportPDF} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] hover:bg-black shadow-lg transition-all flex items-center gap-2">
+                   <Download size={16} /> PDF
                 </button>
             </div>
           )}
         </div>
 
         {/* Filter Engine */}
-        <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
-           <div className="flex items-center gap-2 mb-8">
-                <Filter size={20} className="text-blue-600" />
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Dynamic Filter Engine</h3>
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+           <div className="flex items-center gap-2 mb-6">
+                <Filter size={18} className="text-blue-600" />
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dynamic Filter Engine</h3>
            </div>
            
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Required Filter */}
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <Calendar size={12} className="text-blue-600" /> Academic Year
                     </label>
                     <select 
                         value={filters.academic_year_id} 
                         onChange={e => setFilters({...filters, academic_year_id: e.target.value})}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 ring-offset-2 transition-all"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-black text-xs text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
                         <option value="">-- All Years (Transcript) --</option>
                         {academicYears.map(y => <option key={y.id} value={y.id}>{y.year_start}/{y.year_end}</option>)}
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <GraduationCap size={12} /> Specialization
                     </label>
                     <select 
                         value={filters.specialization_id} 
                         onChange={e => setFilters({...filters, specialization_id: e.target.value, curriculum_id: ''})}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
                         <option value="">-- All Specializations --</option>
                         {specializations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.degree_level})</option>)}
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <Layers size={12} /> Study Plan
                     </label>
                     <select 
                         value={filters.curriculum_id} 
                         onChange={e => setFilters({...filters, curriculum_id: e.target.value})}
                         disabled={!filters.specialization_id}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all disabled:opacity-50"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all disabled:opacity-50"
                     >
                         <option value="">-- All Plans --</option>
                         {curricula.filter(c => c.specialization_id === filters.specialization_id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <BookOpen size={12} /> Discipline (Subject)
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                        <BookOpen size={12} /> Discipline
                     </label>
                     <select 
                         value={filters.discipline_id} 
                         onChange={e => setFilters({...filters, discipline_id: e.target.value})}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
                         <option value="">-- All Disciplines --</option>
                         {disciplines
@@ -282,12 +282,12 @@ export default function Centralizer() {
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Degree Level</label>
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Degree Level</label>
                     <select 
                         value={filters.degree_level} 
                         onChange={e => setFilters({...filters, degree_level: e.target.value})}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
                         <option value="">-- All Levels --</option>
                         <option value="Bachelor">Bachelor</option>
@@ -296,10 +296,10 @@ export default function Centralizer() {
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Study Year</label>
-                    <select value={filters.study_year} onChange={e => setFilters({...filters, study_year: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50">
-                        <option value="">-- All Years --</option>
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Study Year</label>
+                    <select value={filters.study_year} onChange={e => setFilters({...filters, study_year: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50">
+                        <option value="">-- All --</option>
                         <option value="1">Year 1</option>
                         <option value="2">Year 2</option>
                         <option value="3">Year 3</option>
@@ -307,41 +307,41 @@ export default function Centralizer() {
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <Users size={12} /> Group (Index)
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                        <Users size={12} /> Group
                     </label>
                     <input 
                         type="number" 
                         placeholder="Ex: 1" 
                         value={filters.group_index}
                         onChange={e => setFilters({...filters, group_index: e.target.value})}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <Hash size={12} /> Semester
                     </label>
                     <select 
                         value={filters.semester} 
                         onChange={e => setFilters({...filters, semester: e.target.value})}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
                         <option value="">-- All --</option>
                         {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <CheckSquare size={12} /> Evaluation Type
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                        <CheckSquare size={12} /> Evaluation
                     </label>
                     <select 
                         value={filters.evaluation_type} 
                         onChange={e => setFilters({...filters, evaluation_type: e.target.value})}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     >
                         <option value="">-- All --</option>
                         <option value="EXAM">Exam</option>
@@ -351,62 +351,62 @@ export default function Centralizer() {
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <Search size={12} /> Search Code
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                        <Search size={12} /> Search
                     </label>
                     <input 
                         type="text"
-                        placeholder="Matricol / Discipline"
+                        placeholder="Registration / Code"
                         value={filters.cod} 
                         onChange={e => setFilters({...filters, cod: e.target.value})}
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
                     />
                 </div>
 
-                <div className="space-y-2 flex flex-col justify-end">
-                    <label className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl cursor-pointer hover:bg-blue-100 transition-all">
+                <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-xl cursor-pointer hover:bg-blue-100 transition-all">
                         <input 
                             type="checkbox" 
                             checked={filters.show_only_graded}
                             onChange={e => setFilters({...filters, show_only_graded: e.target.checked})}
-                            className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Only Graded Subjects</span>
+                        <span className="text-[9px] font-black text-blue-700 uppercase tracking-widest">Only Graded</span>
                     </label>
                 </div>
            </div>
 
-           <div className="mt-10 flex justify-between items-center">
+           <div className="mt-8 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                     {loading && <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
-                     <span className="text-xs font-bold text-slate-400">{loading ? 'Processing large data volumes...' : 'Leave fields blank to include all records.'}</span>
+                     {loading && <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
+                     <span className="text-[10px] font-bold text-slate-400">{loading ? 'Processing data...' : 'Adjust filters to refine records.'}</span>
                 </div>
                 <button 
                     onClick={handleGenerateReport} 
                     disabled={loading}
-                    className="bg-blue-600 text-white px-12 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700 shadow-2xl shadow-blue-100 transition-all flex items-center gap-3"
+                    className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all flex items-center gap-2"
                 >
-                    <FileText size={18} /> Generate Detailed Report
+                    <FileText size={16} /> Generate Report
                 </button>
            </div>
         </div>
 
         {message.text && (
-          <div className={`p-6 rounded-[2rem] flex items-center gap-4 animate-in slide-in-from-top-4 duration-500 ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
-            {message.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle size={20} />}
-            <p className="font-bold">{message.text}</p>
+          <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
+            {message.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
+            <p className="font-bold text-sm">{message.text}</p>
           </div>
         )}
 
         {/* Data Grid */}
         {students.length > 0 ? (
-          <div className="bg-white rounded-[3rem] shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-100">
               <thead className="bg-slate-50/50">
                 <tr>
-                  {['#', 'Student Identity', 'Academic Context', 'Discipline', 'Sem.', 'ECTS', 'Grade', 'GPA / Accumulated Credits'].map((h) => (
-                    <th key={h} className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
+                  {['#', 'Student Identity', 'Context', 'Discipline', 'Sem.', 'ECTS', 'Grade', 'GPA / Credits'].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -422,28 +422,28 @@ export default function Centralizer() {
                     <tr key={`${student.student_id}-${dIdx}`} className="hover:bg-slate-50/30 transition-all">
                       {dIdx === 0 ? (
                         <>
-                          <td rowSpan={student.filteredDisciplines.length} className="px-8 py-6 align-top">
-                            <span className="h-8 w-8 bg-slate-100 rounded-full flex items-center justify-center text-[10px] font-black text-slate-500">{sIdx + 1}</span>
+                          <td rowSpan={student.filteredDisciplines.length} className="px-4 py-3 align-top">
+                            <span className="h-6 w-6 bg-slate-100 rounded-full flex items-center justify-center text-[9px] font-black text-slate-500">{sIdx + 1}</span>
                           </td>
-                          <td rowSpan={student.filteredDisciplines.length} className="px-8 py-6 align-top">
-                            <div className="font-black text-slate-900 leading-none mb-1">{student.last_name} {student.first_name}</div>
-                            <div className="text-[10px] font-mono text-blue-600 font-bold tracking-tighter">{student.registration_number}</div>
+                          <td rowSpan={student.filteredDisciplines.length} className="px-4 py-3 align-top">
+                            <div className="font-black text-slate-900 text-sm leading-none mb-1">{student.last_name} {student.first_name}</div>
+                            <div className="text-[9px] font-mono text-blue-600 font-bold">{student.registration_number}</div>
                           </td>
-                          <td rowSpan={student.filteredDisciplines.length} className="px-8 py-6 align-top">
-                            <div className="text-xs font-bold text-slate-700 truncate max-w-[150px]">{student.spec_name}</div>
-                            <div className="text-[10px] font-black text-slate-400 uppercase">{student.formation_code} • {student.degree_level}</div>
+                          <td rowSpan={student.filteredDisciplines.length} className="px-4 py-3 align-top">
+                            <div className="text-[10px] font-bold text-slate-700 truncate max-w-[120px]">{student.spec_name}</div>
+                            <div className="text-[8px] font-black text-slate-400 uppercase">{student.formation_code}</div>
                           </td>
                         </>
                       ) : null}
-                      <td className="px-8 py-6">
-                        <div className="text-sm font-bold text-slate-700">{discipline.discipline_name}</div>
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{discipline.discipline_code}</div>
+                      <td className="px-4 py-3">
+                        <div className="text-xs font-bold text-slate-700">{discipline.discipline_name}</div>
+                        <div className="text-[9px] font-black text-slate-400 uppercase">{discipline.discipline_code}</div>
                       </td>
-                      <td className="px-8 py-6 text-center font-bold text-slate-500">{discipline.semester}</td>
-                      <td className="px-8 py-6 text-center font-black text-blue-600">{discipline.ects_credits}</td>
-                      <td className="px-8 py-6 text-center">
+                      <td className="px-4 py-3 text-center text-xs font-bold text-slate-500">{discipline.semester}</td>
+                      <td className="px-4 py-3 text-center text-xs font-black text-blue-600">{discipline.ects_credits}</td>
+                      <td className="px-4 py-3 text-center">
                         {discipline.grade !== null ? (
-                          <div className={`text-lg font-black ${parseFloat(discipline.grade) >= 5 ? 'text-emerald-600' : 'text-red-500'}`}>
+                          <div className={`text-base font-black ${parseFloat(discipline.grade) >= 5 ? 'text-emerald-600' : 'text-red-500'}`}>
                             {parseFloat(discipline.grade) === 0 ? 'Abs.' : discipline.grade}
                           </div>
                         ) : (
@@ -451,9 +451,9 @@ export default function Centralizer() {
                         )}
                       </td>
                       {dIdx === 0 ? (
-                        <td rowSpan={student.filteredDisciplines.length} className="px-8 py-6 align-top text-center border-l border-slate-50">
-                           <div className="text-xl font-black text-blue-600 mb-1">{student.average_grade || '-'}</div>
-                           <div className="text-[10px] font-black text-slate-400 uppercase bg-slate-50 px-3 py-1 rounded-full">{student.total_ects} Credits Accumulated</div>
+                        <td rowSpan={student.filteredDisciplines.length} className="px-4 py-3 align-top text-center border-l border-slate-50">
+                           <div className="text-lg font-black text-blue-600 mb-0.5">{student.average_grade || '-'}</div>
+                           <div className="text-[8px] font-black text-slate-400 uppercase bg-slate-50 px-2 py-0.5 rounded-full inline-block">{student.total_ects} ECTS</div>
                         </td>
                       ) : null}
                     </tr>
@@ -464,10 +464,10 @@ export default function Centralizer() {
           </div>
         ) : (
            !loading && (
-            <div className="text-center py-40 bg-white rounded-[3rem] border border-slate-200 border-dashed">
-                <Users className="mx-auto text-slate-100 mb-6" size={80} />
-                <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-sm">No data found for current selection</p>
-                <p className="text-slate-300 text-xs mt-2">Adjust filters to view records.</p>
+            <div className="text-center py-24 bg-white rounded-3xl border border-slate-200 border-dashed">
+                <Users className="mx-auto text-slate-100 mb-4" size={64} />
+                <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No records found</p>
+                <p className="text-slate-300 text-[9px] mt-1">Adjust filters to view data.</p>
             </div>
            )
         )}

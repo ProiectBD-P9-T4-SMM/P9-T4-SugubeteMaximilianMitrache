@@ -18,6 +18,9 @@ import Documents from './pages/Documents';
 import AuditLogs from './pages/AuditLogs';
 import MyGrades from './pages/MyGrades';
 import UserGroups from './pages/UserGroups';
+import Privacy from './pages/Privacy';
+import Contact from './pages/Contact';
+import Help from './pages/Help';
 
 export default function App() {
   return (
@@ -77,6 +80,10 @@ export default function App() {
               path="/audit" 
               element={<RoleRoute allowed={['ADMIN']}><AuditLogs /></RoleRoute>} 
             />
+
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/help" element={<Help />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

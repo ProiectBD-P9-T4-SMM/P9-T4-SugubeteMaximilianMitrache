@@ -43,7 +43,11 @@ export default function Layout() {
                 <User className="h-4 w-4" />
                 <span>{user ? user.fullName || user.role : 'User'}</span>
               </div>
-              <button className="text-slate-300 hover:text-white" title="Help">
+              <button 
+                onClick={() => navigate('/help')}
+                className="text-slate-300 hover:text-white" 
+                title="Help"
+              >
                 <HelpCircle className="h-5 w-5" />
               </button>
               <button 
@@ -83,9 +87,9 @@ export default function Layout() {
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
           <p>&copy; 2026 AFSMS University System. All rights reserved.</p>
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="#" className="hover:text-blue-600">Privacy / GDPR</a>
-            <a href="#" className="hover:text-blue-600">Contact</a>
-            <a href="#" className="hover:text-blue-600">Help</a>
+            <button onClick={() => navigate('/privacy')} className="hover:text-blue-600 cursor-pointer transition-colors">Privacy / GDPR</button>
+            <button onClick={() => navigate('/contact')} className="hover:text-blue-600 cursor-pointer transition-colors">Contact</button>
+            <button onClick={() => navigate('/help')} className="hover:text-blue-600 cursor-pointer transition-colors">Help</button>
           </div>
         </div>
       </footer>

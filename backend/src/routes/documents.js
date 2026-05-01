@@ -31,10 +31,12 @@ router.get('/', async (req, res, next) => {
 
     let query = `
       SELECT d.id, d.title, d.type, d.content, d.status, d.created_at,
-             d.file_path, d.original_filename,
-             u.full_name as author_name
+             d.file_path, d.original_filename, d.assigned_to_user_id,
+             u.full_name as author_name,
+             u2.full_name as assigned_to_user_name
       FROM DOCUMENT d
       LEFT JOIN USER_ACCOUNT u ON d.author_id = u.id
+      LEFT JOIN USER_ACCOUNT u2 ON d.assigned_to_user_id = u2.id
       WHERE 1=1
     `;
     const params = [];
@@ -87,6 +89,26 @@ router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res
       'DOCUMENT',
       id,
       { status }
+    );
+
+    res.json(updatedDocument);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/documents/:id/forward - Forward Document (Workflow)
+router.put('/:id/forward', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body; 
+
+    const updatedDocument = await auditableUpdate(
+      req.user.id,
+      'DOCUMENT_FLOW',
+      'DOCUMENT',
+      id,
+      { assigned_to_user_id: userId || null }
     );
 
     res.json(updatedDocument);

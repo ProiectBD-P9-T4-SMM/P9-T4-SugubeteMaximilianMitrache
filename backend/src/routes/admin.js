@@ -86,6 +86,26 @@ router.get('/queries', async (req, res, next) => {
   }
 });
 
+// GET /api/admin/emails - View Outlook Notifications
+router.get('/emails', async (req, res, next) => {
+  try {
+    const query = `
+      SELECT n.id, n.subject, n.body_preview, n.recipients, n.delivery_status, n.sent_at,
+             u.full_name as sent_by,
+             g.name as group_name
+      FROM OUTLOOK_NOTIFICATION n
+      LEFT JOIN USER_ACCOUNT u ON n.sent_by_user_id = u.id
+      LEFT JOIN USER_GROUP g ON n.user_group_id = g.id
+      ORDER BY n.sent_at DESC
+      LIMIT 100
+    `;
+    const result = await db.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // --- BACKUP & RECOVERY (REQ-AFSMS-55, 56) ---
 const fs = require('fs');
 const path = require('path');

@@ -13,6 +13,7 @@ export default function AuditLogs() {
   const [roles, setRoles] = useState([]);
   const [queries, setQueries] = useState([]);
   const [backups, setBackups] = useState([]);
+  const [emailLogs, setEmailLogs] = useState([]);
 
   useEffect(() => {
     if (adminTab === 'audit') fetchAuditLogs();
@@ -22,7 +23,20 @@ export default function AuditLogs() {
     }
     if (adminTab === 'queries') fetchQueries();
     if (adminTab === 'backups') fetchBackups();
+    if (adminTab === 'emails') fetchEmailLogs();
   }, [adminTab]);
+
+  const fetchEmailLogs = async () => {
+    setLoading(true);
+    try {
+      const res = await adminService.getEmailLogs();
+      setEmailLogs(res.data);
+    } catch (err) {
+      console.error("Failed to fetch email logs", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -172,6 +186,7 @@ export default function AuditLogs() {
         {[
           { id: 'audit', label: 'Audit Log & Rollback' },
           { id: 'users', label: 'Users & Roles' },
+          { id: 'emails', label: 'Email Logs' },
           { id: 'queries', label: 'Query Monitor (DBA)' },
           { id: 'backups', label: 'Backups & Recovery (PITR)' },
         ].map(t => (
@@ -267,6 +282,45 @@ export default function AuditLogs() {
                         <option key={r.id} value={r.id}>{r.name} ({r.code})</option>
                       ))}
                     </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {adminTab === 'emails' && (
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <h3 className="font-semibold text-slate-800">Sent Emails & Notifications</h3>
+            <button onClick={fetchEmailLogs} className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium">
+              Refresh
+            </button>
+          </div>
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50">
+              <tr>{['Sent At', 'Sender', 'Target', 'Subject', 'Preview', 'Status'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-200">
+              {loading && emailLogs.length === 0 ? (
+                <tr><td colSpan="6" className="text-center py-4 text-slate-500">Loading emails...</td></tr>
+              ) : emailLogs.length === 0 ? (
+                <tr><td colSpan="6" className="text-center py-4 text-slate-500">No emails sent yet.</td></tr>
+              ) : emailLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-slate-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-500 text-xs">{new Date(log.sent_at).toLocaleString()}</td>
+                  <td className="px-6 py-4 font-medium">{log.sent_by || 'System'}</td>
+                  <td className="px-6 py-4">
+                    <div className="text-xs font-bold text-blue-700">{log.group_name || 'Study Formation'}</div>
+                    <div className="text-xs text-slate-500 truncate max-w-[150px]" title={log.recipients}>{log.recipients}</div>
+                  </td>
+                  <td className="px-6 py-4 font-medium">{log.subject}</td>
+                  <td className="px-6 py-4 text-xs text-slate-600 truncate max-w-xs">{log.body_preview}</td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      {log.delivery_status}
+                    </span>
                   </td>
                 </tr>
               ))}

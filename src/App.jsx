@@ -17,6 +17,7 @@ import GradesList from './pages/GradesList';
 import Documents from './pages/Documents';
 import AuditLogs from './pages/AuditLogs';
 import MyGrades from './pages/MyGrades';
+import UserGroups from './pages/UserGroups';
 
 export default function App() {
   return (
@@ -65,6 +66,11 @@ export default function App() {
             <Route 
               path="/documents" 
               element={<Documents />} // Documents route handles its own logic, or we can enforce roles here
+            />
+            
+            <Route 
+              path="/groups" 
+              element={<RoleRoute allowed={['SECRETARIAT', 'ADMIN']}><UserGroups /></RoleRoute>} 
             />
             
             <Route 

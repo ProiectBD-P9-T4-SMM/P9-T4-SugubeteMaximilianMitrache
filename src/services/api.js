@@ -49,11 +49,21 @@ export const reportsService = {
 export const documentsService = {
   getDocuments: (params) => api.get('/documents', { params }),
   updateStatus: (id, status) => api.put(`/documents/${id}/status`, { status }),
+  forwardDocument: (id, userId) => api.put(`/documents/${id}/forward`, { userId }),
   uploadDocument: (formData) => api.post('/documents', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   downloadDocument: (id) => api.get(`/documents/download/${id}`, { responseType: 'blob' }),
   deleteDocument: (id) => api.delete(`/documents/${id}`)
+};
+
+export const groupsService = {
+  getGroups: () => api.get('/groups'),
+  createGroup: (data) => api.post('/groups', data),
+  deleteGroup: (id) => api.delete(`/groups/${id}`),
+  getMembers: (id) => api.get(`/groups/${id}/members`),
+  addMember: (id, userId) => api.post(`/groups/${id}/members`, { userId }),
+  removeMember: (id, userId) => api.delete(`/groups/${id}/members/${userId}`),
 };
 
 export const notificationsService = {
@@ -70,6 +80,7 @@ export const adminService = {
   getUsers: () => api.get('/admin/users'),
   updateUserRole: (id, roleId) => api.put(`/admin/users/${id}/role`, { roleId }),
   getActiveQueries: () => api.get('/admin/queries'),
+  getEmailLogs: () => api.get('/admin/emails'),
   getBackups: () => api.get('/admin/backups'),
   createBackup: () => api.post('/admin/backups/create'),
   restoreBackup: (filename) => api.post('/admin/backups/restore', { filename }),

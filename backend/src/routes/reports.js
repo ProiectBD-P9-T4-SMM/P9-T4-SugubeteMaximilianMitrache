@@ -4,6 +4,7 @@ const db = require('../db');
 const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 const Papa = require('papaparse');
 const XLSX = require('xlsx');
+const xml2js = require('xml2js');
 
 router.use(requireAuth);
 
@@ -169,6 +170,30 @@ router.post('/e-grade-centralizer/export/xlsx', requireRole(['SECRETARIAT', 'ADM
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="Centralizator_${new Date().getTime()}.xlsx"`);
         res.send(buffer);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// POST /api/reports/e-grade-centralizer/export/xml
+router.post('/e-grade-centralizer/export/xml', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+    try {
+        const result = await getCentralizerData(req.body);
+        const builder = new xml2js.Builder({ rootName: 'Centralizator', itemName: 'Inregistrare' });
+        // Clean properties to ensure valid XML tags
+        const cleanRows = result.rows.map(row => {
+            const cleanRow = {};
+            for (let key in row) {
+                // Ensure valid XML tag name (no spaces)
+                const validKey = key.replace(/[^a-zA-Z0-9_]/g, '_');
+                cleanRow[validKey] = row[key] !== null ? row[key] : '';
+            }
+            return cleanRow;
+        });
+        const xml = builder.buildObject(cleanRows);
+        res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="Centralizator_${new Date().getTime()}.xml"`);
+        res.send(xml);
     } catch (error) {
         next(error);
     }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save, History } from 'lucide-react';
-import api from '../services/api';
+import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save, History, Download, Upload, FileText } from 'lucide-react';
+import api, { academicService } from '../services/api';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function GradesList() {
@@ -23,6 +23,8 @@ export default function GradesList() {
   const [disciplines, setDisciplines] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [evaluators, setEvaluators] = useState([]);
+  const [studyFormations, setStudyFormations] = useState([]);
+  const [curricula, setCurricula] = useState([]);
   
   const [filters, setFilters] = useState({
     student_id: '',
@@ -50,6 +52,67 @@ export default function GradesList() {
   const [selectedGradeHistory, setSelectedGradeHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateForm, setTemplateForm] = useState({ curriculum_id: '', formation_id: '', discipline_id: '' });
+  const [importFile, setImportFile] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResults, setImportResults] = useState(null);
+
+  const handleExport = async () => {
+    try {
+      const response = await academicService.exportGrades(filters);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `grades-export-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to export grades.' });
+    }
+  };
+
+  const handleImport = async (e) => {
+    e.preventDefault();
+    if (!importFile) return;
+
+    setImportLoading(true);
+    setImportResults(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      const res = await academicService.importGrades(formData);
+      setImportResults(res.data.summary);
+      setMessage({ type: 'success', text: res.data.message });
+      loadGrades(filters);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Import failed.' });
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleGenerateTemplate = async (e) => {
+    e.preventDefault();
+    if (!templateForm.curriculum_id || !templateForm.discipline_id) return;
+
+    try {
+      const response = await academicService.getGradeTemplate(templateForm);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `import-template-${disciplines.find(d => d.id === templateForm.discipline_id)?.code || 'grade'}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      setShowTemplateModal(false);
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to generate template.' });
+    }
+  };
+
   useEffect(() => {
     loadLookupData();
     loadGrades();
@@ -57,17 +120,21 @@ export default function GradesList() {
 
   const loadLookupData = async () => {
     try {
-      const [studentsRes, disciplinesRes, yearsRes, evaluatorsRes] = await Promise.all([
+      const [studentsRes, disciplinesRes, yearsRes, evaluatorsRes, formationsRes, curriculaRes] = await Promise.all([
         api.get('/academic/students-dropdown'),
         api.get('/academic/disciplines'),
         api.get('/academic/academic-years'),
-        api.get('/lookup/evaluators')
+        api.get('/lookup/evaluators'),
+        api.get('/lookup/study-formations'),
+        api.get('/academic/curricula')
       ]);
       
       setStudents(studentsRes.data.success ? studentsRes.data.students : []);
       setDisciplines(disciplinesRes.data.success ? disciplinesRes.data.disciplines : []);
       setAcademicYears(yearsRes.data.success ? yearsRes.data.academicYears : []);
       setEvaluators(evaluatorsRes.data.success ? evaluatorsRes.data.evaluators : []);
+      setStudyFormations(formationsRes.data || []);
+      setCurricula(curriculaRes.data.success ? curriculaRes.data.curricula : []);
     } catch (err) {
       console.error('Failed to load lookup data:', err);
     }
@@ -224,22 +291,45 @@ export default function GradesList() {
         </div>
       )}
 
-      {/* Filter Toggle */}
-      <div className="mb-6 flex gap-2">
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition"
-        >
-          <Filter size={16} /> {showFilters ? 'Hide' : 'Show'} Filters
-        </button>
-        {(filters.student_id || filters.discipline_id || filters.academic_year_id || filters.exam_session || filters.min_date || filters.max_date || filters.graded_by) && (
+      {/* Filter Toggle & Data Actions */}
+      <div className="mb-6 flex justify-between items-center">
+        <div className="flex gap-2">
           <button
-            onClick={handleClearFilters}
-            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition font-bold text-sm"
           >
-            <X size={16} /> Reset Filters
+            <Filter size={16} /> {showFilters ? 'Hide' : 'Show'} Filters
           </button>
-        )}
+          {(filters.student_id || filters.discipline_id || filters.academic_year_id || filters.exam_session || filters.min_date || filters.max_date || filters.graded_by) && (
+            <button
+              onClick={handleClearFilters}
+              className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition font-bold text-sm"
+            >
+              <X size={16} /> Reset
+            </button>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-md hover:bg-emerald-100 transition font-bold text-sm"
+          >
+            <Download size={16} /> Export to CSV
+          </button>
+          <button
+            onClick={() => { setShowImportModal(true); setImportResults(null); }}
+            className="flex items-center gap-2 bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-md hover:bg-indigo-100 transition font-bold text-sm"
+          >
+            <Upload size={16} /> Import
+          </button>
+          <button
+            onClick={() => setShowTemplateModal(true)}
+            className="flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 px-4 py-2 rounded-md hover:bg-amber-100 transition font-bold text-sm"
+          >
+            <FileText size={16} /> Generate Template
+          </button>
+        </div>
       </div>
 
       {/* Filter Panel */}
@@ -606,6 +696,182 @@ export default function GradesList() {
                 Close Traceability Log
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <Upload className="text-indigo-600" size={24} /> Import Grades from CSV
+              </h3>
+              <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition">
+                <X size={20} />
+              </button>
+            </div>
+
+            {!importResults ? (
+              <form onSubmit={handleImport} className="space-y-6">
+                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-4">
+                  <h4 className="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
+                    <FileText size={16} /> CSV Format Requirements
+                  </h4>
+                  <p className="text-xs text-blue-600 leading-relaxed mb-2">
+                    The CSV must contain the following headers (order doesn't matter):
+                  </p>
+                  <code className="text-[10px] bg-white p-2 rounded block border border-blue-100 text-slate-700">
+                    Registration Number, Discipline Code, Grade, Session
+                  </code>
+                  <p className="text-[10px] mt-2 text-blue-500 italic">
+                    * Use 'Abs.' for absent students or 0.
+                  </p>
+                </div>
+
+                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center hover:border-indigo-300 transition-colors bg-slate-50">
+                  <input 
+                    type="file" 
+                    accept=".csv"
+                    onChange={e => setImportFile(e.target.files[0])}
+                    className="hidden"
+                    id="import-file-input"
+                  />
+                  <label htmlFor="import-file-input" className="cursor-pointer">
+                    <Upload size={40} className="mx-auto text-slate-300 mb-4" />
+                    <p className="text-sm font-bold text-slate-600 mb-1">
+                      {importFile ? importFile.name : 'Click to select or drag CSV file'}
+                    </p>
+                    <p className="text-xs text-slate-400">Max size: 5MB</p>
+                  </label>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowImportModal(false)}
+                    className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={importLoading || !importFile}
+                    className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 disabled:opacity-50"
+                  >
+                    {importLoading ? 'Processing Records...' : 'Start Import'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center">
+                    <p className="text-xs font-black uppercase text-emerald-400 mb-1">Successful</p>
+                    <p className="text-3xl font-black text-emerald-600">{importResults.success}</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-100 p-4 rounded-xl text-center">
+                    <p className="text-xs font-black uppercase text-red-400 mb-1">Failed</p>
+                    <p className="text-3xl font-black text-red-600">{importResults.failed}</p>
+                  </div>
+                </div>
+
+                {importResults.details.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs font-black uppercase text-slate-400 mb-2 ml-1">Failure Details</p>
+                    <div className="max-h-[200px] overflow-y-auto bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
+                      {importResults.details.map((detail, idx) => (
+                        <div key={idx} className="text-[11px] flex justify-between gap-4 border-b border-slate-100 pb-1 last:border-0">
+                          <span className="font-mono text-slate-500 truncate max-w-[150px]">
+                            {detail.row['Registration Number'] || detail.row['Nr. Matricol'] || 'Unknown'}
+                          </span>
+                          <span className="text-red-500 font-bold">{detail.error}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => { setShowImportModal(false); setImportResults(null); setImportFile(null); }}
+                  className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition shadow-xl"
+                >
+                  Return to Registry
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Template Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <FileText className="text-amber-600" size={24} /> Generate Import Template
+              </h3>
+              <button onClick={() => setShowTemplateModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleGenerateTemplate} className="space-y-4">
+              <p className="text-sm text-slate-500 mb-4">
+                Generate a pre-filled CSV for all students enrolled in a specific study plan and taking a chosen discipline.
+              </p>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">1. Study Plan (Curriculum)</label>
+                <Select
+                  options={curricula.map(c => ({ value: c.id, label: `${c.code} - ${c.name}` }))}
+                  value={templateForm.curriculum_id ? { value: templateForm.curriculum_id, label: curricula.find(c => c.id === templateForm.curriculum_id)?.code } : null}
+                  onChange={(opt) => setTemplateForm({ ...templateForm, curriculum_id: opt?.value || '', discipline_id: '' })}
+                  placeholder="Select Plan..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">2. Discipline</label>
+                <Select
+                  options={disciplines.filter(d => d.curriculum_id === templateForm.curriculum_id).map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))}
+                  value={templateForm.discipline_id ? { value: templateForm.discipline_id, label: disciplines.find(d => d.id === templateForm.discipline_id)?.name } : null}
+                  onChange={(opt) => setTemplateForm({ ...templateForm, discipline_id: opt?.value || '' })}
+                  placeholder={templateForm.curriculum_id ? "Select Discipline..." : "Select Plan First"}
+                  disabled={!templateForm.curriculum_id}
+                />
+              </div>
+
+              <hr className="my-6 border-slate-100" />
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">3. Specific Group (Optional)</label>
+                <Select
+                  options={studyFormations.map(f => ({ value: f.id, label: `${f.code} - Year ${f.study_year}` }))}
+                  onChange={(opt) => setTemplateForm({ ...templateForm, formation_id: opt?.value || '' })}
+                  placeholder="All Groups"
+                  isClearable
+                />
+                <p className="text-[10px] text-slate-400 mt-1 italic">Leave empty to include all students on this study plan.</p>
+              </div>
+
+              <div className="pt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateModal(false)}
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!templateForm.curriculum_id || !templateForm.discipline_id}
+                  className="flex-1 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition shadow-lg shadow-amber-100 disabled:opacity-50"
+                >
+                  Download CSV Template
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

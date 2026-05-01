@@ -40,6 +40,11 @@ export const academicService = {
   enrollStudent: (data) => api.post('/academic/enroll-student', data),
   updateEnrollmentFormation: (data) => api.post('/academic/update-enrollment-formation', data),
   unenrollStudent: (studentId, curriculumId) => api.delete(`/academic/unenroll-student/${studentId}/${curriculumId}`),
+  exportGrades: (params) => api.get('/academic/grades/export', { params, responseType: 'blob' }),
+  importGrades: (formData) => api.post('/academic/grades/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getGradeTemplate: (params) => api.get('/academic/grades/template', { params, responseType: 'blob' }),
 };
 
 export const reportsService = {

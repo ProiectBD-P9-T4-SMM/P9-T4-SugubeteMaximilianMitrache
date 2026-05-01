@@ -180,10 +180,12 @@ router.get('/grades', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async 
              s.id as student_id, s.first_name, s.last_name, s.registration_number,
              (s.last_name || ' ' || s.first_name) AS student_name,
              d.id as discipline_id, d.code as discipline_code, d.name as discipline_name, d.ects_credits, d.semester,
-             u.full_name as graded_by_name, u.id as graded_by_id
+             u.full_name as graded_by_name, u.id as graded_by_id,
+             ay.year_start || '-' || ay.year_end as academic_year_label
       FROM GRADE g
       JOIN STUDENT s ON g.student_id = s.id
       JOIN DISCIPLINE d ON g.discipline_id = d.id
+      JOIN ACADEMIC_YEAR ay ON g.academic_year_id = ay.id
       LEFT JOIN USER_ACCOUNT u ON g.graded_by_user_id = u.id
       WHERE 1=1
     `;
@@ -222,6 +224,157 @@ router.get('/grades', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async 
 
     const result = await db.query(query, params);
     res.json({ success: true, grades: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/academic/grades/export - Export grades to CSV
+router.get('/grades/export', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
+  try {
+    const { student_id, discipline_id, academic_year_id, exam_session, min_date, max_date, graded_by } = req.query;
+    let query = `
+      SELECT s.registration_number as "Registration Number", 
+             s.last_name || ' ' || s.first_name as "Student Name",
+             d.code as "Discipline Code", 
+             d.name as "Discipline Name",
+             ay.year_start || '-' || ay.year_end as "Academic Year",
+             g.exam_session as "Session", 
+             CASE WHEN g.value = 0 THEN 'Abs.' ELSE g.value::text END as "Grade",
+             g.grading_date as "Date",
+             u.full_name as "Graded By"
+      FROM GRADE g
+      JOIN STUDENT s ON g.student_id = s.id
+      JOIN DISCIPLINE d ON g.discipline_id = d.id
+      JOIN ACADEMIC_YEAR ay ON g.academic_year_id = ay.id
+      LEFT JOIN USER_ACCOUNT u ON g.graded_by_user_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (student_id) { params.push(student_id); query += ` AND g.student_id = $${params.length}`; }
+    if (discipline_id) { params.push(discipline_id); query += ` AND g.discipline_id = $${params.length}`; }
+    if (academic_year_id) { params.push(academic_year_id); query += ` AND g.academic_year_id = $${params.length}`; }
+    if (exam_session) { params.push(exam_session); query += ` AND g.exam_session = $${params.length}`; }
+    if (min_date) { params.push(min_date); query += ` AND g.grading_date >= $${params.length}`; }
+    if (max_date) { params.push(max_date); query += ` AND g.grading_date <= $${params.length}`; }
+    if (graded_by) { params.push(graded_by); query += ` AND g.graded_by_user_id = $${params.length}`; }
+    
+    query += ' ORDER BY s.last_name ASC, d.semester ASC';
+
+    const { rows } = await db.query(query, params);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: true, message: 'No grades found to export.' });
+    }
+
+    const Papa = require('papaparse');
+    const csv = Papa.unparse(rows);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=grades-export.csv');
+    res.status(200).send(csv);
+  } catch (error) {
+    next(error);
+  }
+});
+
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
+// POST /api/academic/grades/import - Bulk Import Grades from CSV
+router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.single('file'), async (req, res, next) => {
+  if (!req.file) {
+    return res.status(400).json({ error: true, message: 'No file uploaded.' });
+  }
+
+  try {
+    const Papa = require('papaparse');
+    const csvData = req.file.buffer.toString('utf8');
+    const { data, errors } = Papa.parse(csvData, { header: true, skipEmptyLines: true });
+
+    if (errors.length > 0) {
+      return res.status(400).json({ error: true, message: 'CSV Parsing Error', details: errors });
+    }
+
+    const results = { success: 0, failed: 0, details: [] };
+    
+    // Active Year and Snapshot for fallback
+    const academicYearRes = await db.query('SELECT id FROM ACADEMIC_YEAR WHERE is_active = TRUE LIMIT 1');
+    const snapshotRes = await db.query("SELECT id FROM CURRICULUM_SNAPSHOT WHERE snapshot_status = 'ACTIVE' LIMIT 1");
+    const activeYearId = academicYearRes.rows[0]?.id;
+    const activeSnapshotId = snapshotRes.rows[0]?.id;
+
+    for (const row of data) {
+      try {
+        const regNum = row['Registration Number'] || row['Nr. Matricol'] || row.registration_number;
+        const discCode = row['Discipline Code'] || row['Cod Disciplină'] || row.discipline_code;
+        const gradeValRaw = row['Grade'] || row['Notă'] || row.grade;
+        const session = row['Session'] || row['Sesiune'] || row.session || 'SUMMER';
+        
+        if (!regNum || !discCode || gradeValRaw === undefined) {
+          results.failed++;
+          results.details.push({ row, error: 'Missing required fields' });
+          continue;
+        }
+
+        // 1. Resolve Student
+        const studentRes = await db.query('SELECT id FROM STUDENT WHERE registration_number = $1', [regNum]);
+        if (studentRes.rows.length === 0) {
+          results.failed++;
+          results.details.push({ row, error: `Student not found: ${regNum}` });
+          continue;
+        }
+        const studentId = studentRes.rows[0].id;
+
+        // 2. Resolve Discipline
+        const discRes = await db.query('SELECT id FROM DISCIPLINE WHERE code = $1', [discCode]);
+        if (discRes.rows.length === 0) {
+          results.failed++;
+          results.details.push({ row, error: `Discipline not found: ${discCode}` });
+          continue;
+        }
+        const disciplineId = discRes.rows[0].id;
+
+        // 3. Parse Grade
+        let gradeValue = gradeValRaw.toLowerCase() === 'abs.' ? 0 : parseFloat(gradeValRaw);
+        if (isNaN(gradeValue)) {
+          results.failed++;
+          results.details.push({ row, error: `Invalid grade value: ${gradeValRaw}` });
+          continue;
+        }
+
+        // 4. Insert/Update Grade
+        await auditableInsert(
+          req.user.userId,
+          'ACADEMIC_DATA',
+          'GRADE',
+          {
+            student_id: studentId,
+            discipline_id: disciplineId,
+            academic_year_id: activeYearId,
+            curriculum_snapshot_id: activeSnapshotId,
+            graded_by_user_id: req.user.userId,
+            value: gradeValue,
+            exam_session: session,
+            grading_date: new Date().toISOString().split('T')[0],
+            validated: true
+          }
+        );
+
+        results.success++;
+      } catch (rowErr) {
+        results.failed++;
+        results.details.push({ row, error: rowErr.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Import complete. Success: ${results.success}, Failed: ${results.failed}`,
+      summary: results
+    });
+
   } catch (error) {
     next(error);
   }
@@ -364,6 +517,59 @@ router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
       academicPlans
     });
 
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/academic/grades/template - Generate Import Template
+router.get('/grades/template', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
+  try {
+    const { curriculum_id, formation_id, discipline_id } = req.query;
+    
+    if (!curriculum_id || !discipline_id) {
+      return res.status(400).json({ error: true, message: 'Curriculum and Discipline are required to generate a template.' });
+    }
+
+    // 1. Fetch Discipline Code
+    const discRes = await db.query('SELECT code FROM DISCIPLINE WHERE id = $1', [discipline_id]);
+    if (discRes.rows.length === 0) {
+      return res.status(404).json({ error: true, message: 'Discipline not found.' });
+    }
+    const disciplineCode = discRes.rows[0].code;
+
+    // 2. Fetch Students enrolled in this Curriculum
+    let query = `
+      SELECT s.registration_number as "Registration Number", 
+             s.last_name || ' ' || s.first_name as "Student Name",
+             $1 as "Discipline Code",
+             '' as "Grade",
+             '' as "Session"
+      FROM STUDENT s
+      JOIN STUDENT_CURRICULUM sc ON s.id = sc.student_id
+      WHERE sc.curriculum_id = $2 AND sc.status = 'ACTIVE'
+    `;
+    const params = [disciplineCode, curriculum_id];
+
+    if (formation_id) {
+      params.push(formation_id);
+      query += ` AND sc.study_formation_id = $${params.length}`;
+    }
+
+    query += ' ORDER BY s.last_name ASC';
+
+    const { rows } = await db.query(query, params);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: true, message: 'No students found for the selected curriculum/formation.' });
+    }
+
+    const Papa = require('papaparse');
+    const csv = Papa.unparse(rows);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=grade-template-${disciplineCode}.csv`);
+    res.status(200).send(csv);
   } catch (error) {
     next(error);
   }

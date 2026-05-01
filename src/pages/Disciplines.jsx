@@ -261,7 +261,7 @@ export default function Disciplines() {
         <div className="bg-blue-600 p-2 rounded-lg text-white">
           <BookOpen size={24} />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Academic Structure & Disciplines</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Curricula & Disciplines</h2>
       </div>
 
       {message.text && (

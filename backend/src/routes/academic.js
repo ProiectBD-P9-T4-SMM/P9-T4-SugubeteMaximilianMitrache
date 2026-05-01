@@ -6,6 +6,111 @@ const { auditableUpdate, auditableInsert } = require('../services/auditService')
 
 router.use(requireAuth);
 
+// GET /api/academic/dashboard/stats - Dashboard statistics based on role
+router.get('/dashboard/stats', requireRole(['STUDENT', 'PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
+  try {
+    const { role, userId } = req.user;
+    let stats = {};
+
+    if (role === 'ADMIN') {
+      const userCount = await db.query('SELECT COUNT(*) FROM USER_ACCOUNT');
+      const studentCount = await db.query('SELECT COUNT(*) FROM STUDENT');
+      const planCount = await db.query('SELECT COUNT(*) FROM CURRICULUM');
+      const auditCount = await db.query('SELECT COUNT(*) FROM AUDIT_LOG_ENTRY WHERE occurred_at > NOW() - INTERVAL \'24 HOURS\'');
+      
+      stats = {
+        totalUsers: parseInt(userCount.rows[0].count),
+        totalStudents: parseInt(studentCount.rows[0].count),
+        activeCurricula: parseInt(planCount.rows[0].count),
+        recentActions: parseInt(auditCount.rows[0].count)
+      };
+    } 
+    else if (role === 'SECRETARIAT') {
+      const studentCount = await db.query('SELECT COUNT(*) FROM STUDENT WHERE status = \'ACTIVE\'');
+      const unassignedCount = await db.query('SELECT COUNT(*) FROM STUDENT WHERE id NOT IN (SELECT student_id FROM STUDENT_CURRICULUM)');
+      const docCount = await db.query('SELECT COUNT(*) FROM DOCUMENT WHERE created_at > NOW() - INTERVAL \'7 DAYS\'');
+      const formationCount = await db.query('SELECT COUNT(*) FROM STUDY_FORMATION');
+      
+      stats = {
+        activeStudents: parseInt(studentCount.rows[0].count),
+        unassignedStudents: parseInt(unassignedCount.rows[0].count),
+        recentDocuments: parseInt(docCount.rows[0].count),
+        totalGroups: parseInt(formationCount.rows[0].count)
+      };
+    }
+    else if (role === 'PROFESSOR') {
+      const gradeCount = await db.query('SELECT COUNT(*) FROM GRADE WHERE graded_by_user_id = $1 AND grading_date > NOW() - INTERVAL \'30 DAYS\'', [userId]);
+      const discCount = await db.query('SELECT COUNT(DISTINCT curriculum_id) FROM DISCIPLINE'); 
+      
+      // Real upcoming exams (disciplines in the current session)
+      const currentMonth = new Date().getMonth() + 1;
+      const targetSem = (currentMonth >= 2 && currentMonth <= 6) ? 2 : 1;
+      const examRes = await db.query('SELECT COUNT(*) FROM DISCIPLINE WHERE semester % 2 = $1 OR semester % 2 = ($1 % 2)', [targetSem % 2 === 0 ? 0 : 1]);
+
+      // Performance trend (last 6 months)
+      const trendRes = await db.query(`
+        SELECT TO_CHAR(grading_date, 'Mon') as month, COUNT(*) as count 
+        FROM GRADE 
+        WHERE graded_by_user_id = $1 AND grading_date > NOW() - INTERVAL '6 MONTHS'
+        GROUP BY TO_CHAR(grading_date, 'Mon'), DATE_TRUNC('month', grading_date)
+        ORDER BY DATE_TRUNC('month', grading_date) ASC
+      `, [userId]);
+
+      stats = {
+        gradesThisMonth: parseInt(gradeCount.rows[0].count),
+        totalDisciplines: parseInt(discCount.rows[0].count),
+        upcomingExams: parseInt(examRes.rows[0].count || 0),
+        performanceTrend: trendRes.rows
+      };
+    }
+    else if (role === 'STUDENT') {
+      const userRes = await db.query('SELECT email FROM USER_ACCOUNT WHERE id = $1', [userId]);
+      if (userRes.rows.length > 0) {
+        const studentRes = await db.query('SELECT id FROM STUDENT WHERE email = $1', [userRes.rows[0].email]);
+        if (studentRes.rows.length > 0) {
+          const studentId = studentRes.rows[0].id;
+          const gpaRes = await db.query('SELECT AVG(value) FROM GRADE WHERE student_id = $1 AND value > 0', [studentId]);
+          const ectsRes = await db.query('SELECT SUM(d.ects_credits) FROM GRADE g JOIN DISCIPLINE d ON g.discipline_id = d.id WHERE g.student_id = $1 AND g.value >= 5', [studentId]);
+          const planCount = await db.query('SELECT COUNT(*) FROM STUDENT_CURRICULUM WHERE student_id = $1', [studentId]);
+          
+          // Rank calculation (Percentile)
+          const allGpas = await db.query(`
+            SELECT AVG(value) as avg_gpa 
+            FROM GRADE 
+            WHERE value > 0 
+            GROUP BY student_id
+          `);
+          const studentGpa = parseFloat(gpaRes.rows[0].avg || 0);
+          const higherGpas = allGpas.rows.filter(r => parseFloat(r.avg_gpa) > studentGpa).length;
+          const percentile = allGpas.rows.length > 0 ? Math.round((1 - (higherGpas / allGpas.rows.length)) * 100) : 100;
+
+          // Timeline (Last 3 events)
+          const timelineRes = await db.query(`
+            (SELECT 'Grade Received' as title, TO_CHAR(grading_date, 'DD Mon YYYY') as date, 'success' as status, grading_date as sort_date
+             FROM GRADE WHERE student_id = $1)
+            UNION ALL
+            (SELECT 'Document Uploaded' as title, TO_CHAR(created_at, 'DD Mon YYYY') as date, 'info' as status, created_at as sort_date
+             FROM DOCUMENT WHERE author_id = $2)
+            ORDER BY sort_date DESC LIMIT 3
+          `, [studentId, userId]);
+
+          stats = {
+            gpa: studentGpa.toFixed(2),
+            totalCredits: parseInt(ectsRes.rows[0].sum || 0),
+            activePlans: parseInt(planCount.rows[0].count),
+            percentile: percentile,
+            timeline: timelineRes.rows
+          };
+        }
+      }
+    }
+
+    res.json({ success: true, stats });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // --- STUDENTS ---
 router.get('/students', async (req, res, next) => {
   try {

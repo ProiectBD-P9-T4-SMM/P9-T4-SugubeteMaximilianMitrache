@@ -537,11 +537,10 @@ router.post('/specializations', requireRole(['ADMIN', 'SECRETARIAT']), async (re
       return res.status(400).json({ error: true, message: 'Lipsesc date obligatorii (Cod, Nume, Ciclu Studii).' });
     }
 
-    const result = await auditableUpdate(
+    const result = await auditableInsert(
       req.user.id,
       'ACADEMIC_DATA',
       'SPECIALIZATION',
-      null, // New record
       { code, name, degree_level, is_active: true }
     );
 
@@ -600,17 +599,16 @@ router.post('/curricula', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res
       return res.status(400).json({ error: true, message: 'Lipsesc date obligatorii (Specializare, Cod, Nume).' });
     }
 
-    const result = await auditableUpdate(
+    const result = await auditableInsert(
       req.user.id,
       'ACADEMIC_DATA',
       'CURRICULUM',
-      null, // New record
       { 
         specialization_id, 
         code, 
         name, 
         status: 'ACTIVE', 
-        valid_from: new Date().toISOString().split('T')[0] 
+        valid_from: req.body.valid_from || new Date().toISOString().split('T')[0] 
       }
     );
 

@@ -956,7 +956,7 @@ router.get('/curricula', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), asy
   try {
     const { specialization_id } = req.query;
     let query = `
-      SELECT c.id, c.code, c.name, c.specialization_id, s.name as specialization_name, c.status
+      SELECT c.id, c.code, c.name, c.specialization_id, s.name as specialization_name, c.status, c.valid_from
       FROM CURRICULUM c
       LEFT JOIN SPECIALIZATION s ON c.specialization_id = s.id
       WHERE 1=1
@@ -1080,6 +1080,7 @@ router.get('/student-enrollments/:studentId', requireRole(['ADMIN', 'SECRETARIAT
         sc.study_formation_id,
         c.name as curriculum_name,
         c.code as curriculum_code,
+        c.specialization_id,
         s.name as specialization_name,
         sf.name as formation_name,
         sf.study_year

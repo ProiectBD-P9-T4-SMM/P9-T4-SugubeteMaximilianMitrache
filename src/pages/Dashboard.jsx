@@ -80,29 +80,32 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 h-full">
-            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
-              <TrendingUp className="text-emerald-500" /> Grading Velocity Trend
-            </h3>
-            <div className="flex items-end justify-between h-48 gap-2 px-4">
-              {stats?.performanceTrend?.length > 0 ? stats.performanceTrend.map((t, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                   <div className="w-full bg-slate-50 rounded-t-lg relative h-full flex items-end">
-                      <div 
-                        className="w-full bg-blue-500 rounded-t-lg transition-all duration-1000 group-hover:bg-blue-600" 
-                        style={{ height: `${Math.min(100, (t.count / (Math.max(...stats.performanceTrend.map(x => x.count)) || 1)) * 100)}%` }}
-                      >
-                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            {t.count} grades
-                         </div>
-                      </div>
-                   </div>
-                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.month}</span>
-                </div>
-              )) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-300 italic font-bold">No grading data found for this period.</div>
-              )}
+          <div className="flex flex-col gap-8">
+            <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+              <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                <TrendingUp className="text-emerald-500" /> Grading Velocity Trend
+              </h3>
+              <div className="flex items-end justify-between h-48 gap-2 px-4">
+                {stats?.performanceTrend?.length > 0 ? stats.performanceTrend.map((t, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                     <div className="w-full bg-slate-50 rounded-t-lg relative h-full flex items-end">
+                        <div 
+                          className="w-full bg-blue-500 rounded-t-lg transition-all duration-1000 group-hover:bg-blue-600" 
+                          style={{ height: `${Math.min(100, (t.count / (Math.max(...stats.performanceTrend.map(x => x.count)) || 1)) * 100)}%` }}
+                        >
+                           <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                              {t.count} grades
+                           </div>
+                        </div>
+                     </div>
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.month}</span>
+                  </div>
+                )) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 italic font-bold">No grading data found for this period.</div>
+                )}
+              </div>
             </div>
+            <ActivityFeed activities={recentActivity} />
           </div>
         </div>
         <div className="space-y-6">
@@ -111,6 +114,7 @@ export default function Dashboard() {
             { label: 'Student Files', icon: Users, path: '/students', color: 'text-indigo-600 bg-indigo-50' },
             { label: 'Official Requests', icon: FileSignature, path: '/documents', color: 'text-purple-600 bg-purple-50' },
           ]} />
+          <SystemStatusCard />
         </div>
       </div>
     </div>
@@ -136,6 +140,7 @@ export default function Dashboard() {
             { label: 'Module Config', icon: List, path: '/disciplines', color: 'text-indigo-600 bg-indigo-50' },
             { label: 'Workflow Mgr', icon: FileSignature, path: '/documents', color: 'text-purple-600 bg-purple-50' },
           ]} />
+          <SystemStatusCard />
         </div>
       </div>
     </div>
@@ -186,7 +191,7 @@ export default function Dashboard() {
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
-            Hello, {user?.fullName.split(' ')[0]}!
+            Hello, {user?.fullName?.split(' ')[0]}!
           </h1>
           <div className="flex items-center gap-3">
             <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{user?.role}</span>
@@ -200,7 +205,7 @@ export default function Dashboard() {
           <div className="text-right hidden md:block">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Academic Status</p>
             <p className="text-emerald-500 font-black text-sm flex items-center justify-end gap-1">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> SYSTEM ONLINE
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> SYSTEM ONLINE
             </p>
           </div>
         </div>
@@ -234,7 +239,7 @@ function StatCard({ title, value, icon: Icon, color, trend }) {
 
 function ActivityFeed({ activities }) {
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-50 h-full">
+    <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 h-full">
       <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
         <Clock className="text-blue-500" /> Recent System Activity
       </h3>

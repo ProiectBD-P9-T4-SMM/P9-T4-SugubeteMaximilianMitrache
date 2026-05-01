@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const nodemailer = require('nodemailer');
-const { verifyToken } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 
-router.use(verifyToken);
+router.use(requireAuth);
 
 let transporter;
 
@@ -35,7 +35,7 @@ if (process.env.SMTP_HOST) {
 }
 
 // POST /api/notifications/send - Send Mass Email via Mock Outlook
-router.post('/send', async (req, res, next) => {
+router.post('/send', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async (req, res, next) => {
   try {
     const { groupId, targetType, subject, body } = req.body;
 

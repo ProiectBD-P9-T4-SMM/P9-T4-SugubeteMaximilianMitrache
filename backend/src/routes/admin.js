@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 const { auditableUpdate, auditableInsert, auditableDelete } = require('../services/auditService');
 const fs = require('fs');
 const path = require('path');
 
-router.use(verifyToken);
+router.use(requireAuth);
+
 // GET /api/admin/roles - Fetch available roles
-router.get('/roles', async (req, res, next) => {
+router.get('/roles', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const result = await db.query('SELECT * FROM ROLE ORDER BY name ASC');
     res.json(result.rows);
@@ -18,7 +19,7 @@ router.get('/roles', async (req, res, next) => {
 });
 
 // POST /api/admin/roles - Create a new role
-router.post('/roles', async (req, res, next) => {
+router.post('/roles', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const { code, name, description } = req.body;
     const result = await auditableInsert(req.user.userId, 'ADMINISTRATION', 'ROLE', { code, name, description });
@@ -29,7 +30,7 @@ router.post('/roles', async (req, res, next) => {
 });
 
 // PUT /api/admin/roles/:id - Update a role
-router.put('/roles/:id', async (req, res, next) => {
+router.put('/roles/:id', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const { code, name, description } = req.body;
     const result = await auditableUpdate(req.user.userId, 'ADMINISTRATION', 'ROLE', req.params.id, { code, name, description });
@@ -40,7 +41,7 @@ router.put('/roles/:id', async (req, res, next) => {
 });
 
 // DELETE /api/admin/roles/:id - Delete a role
-router.delete('/roles/:id', async (req, res, next) => {
+router.delete('/roles/:id', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     await auditableDelete(req.user.userId, 'ADMINISTRATION', 'ROLE', req.params.id);
     res.json({ success: true, message: 'Role deleted successfully' });
@@ -50,7 +51,7 @@ router.delete('/roles/:id', async (req, res, next) => {
 });
 
 // GET /api/admin/users - Fetch all users and their assigned role
-router.get('/users', async (req, res, next) => {
+router.get('/users', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async (req, res, next) => {
   try {
     const query = `
       SELECT u.id, u.sso_subject, u.username, u.email, u.full_name, u.account_status,
@@ -68,7 +69,7 @@ router.get('/users', async (req, res, next) => {
 });
 
 // POST /api/admin/users - Create a new user (local admin creation)
-router.post('/users', async (req, res, next) => {
+router.post('/users', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const { sso_subject, username, email, full_name, account_status } = req.body;
     const result = await auditableInsert(req.user.userId, 'ADMINISTRATION', 'USER_ACCOUNT', { 
@@ -81,7 +82,7 @@ router.post('/users', async (req, res, next) => {
 });
 
 // PUT /api/admin/users/:id - Update user details
-router.put('/users/:id', async (req, res, next) => {
+router.put('/users/:id', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const { full_name, email, account_status, username } = req.body;
     const updateFields = {};
@@ -98,7 +99,7 @@ router.put('/users/:id', async (req, res, next) => {
 });
 
 // DELETE /api/admin/users/:id - Delete a user
-router.delete('/users/:id', async (req, res, next) => {
+router.delete('/users/:id', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     await auditableDelete(req.user.userId, 'ADMINISTRATION', 'USER_ACCOUNT', req.params.id);
     res.json({ success: true, message: 'User deleted successfully' });
@@ -108,7 +109,7 @@ router.delete('/users/:id', async (req, res, next) => {
 });
 
 // PUT /api/admin/users/:id/role - Update user's role
-router.put('/users/:id/role', async (req, res, next) => {
+router.put('/users/:id/role', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const userId = req.params.id;
     const { roleId } = req.body;
@@ -129,7 +130,7 @@ router.put('/users/:id/role', async (req, res, next) => {
 });
 
 // GET /api/admin/queries - DBA Query Monitor
-router.get('/queries', async (req, res, next) => {
+router.get('/queries', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     // Only fetch queries for the current database, excluding idle connections to keep it clean
     const query = `
@@ -147,7 +148,7 @@ router.get('/queries', async (req, res, next) => {
 });
 
 // GET /api/admin/emails - View Outlook Notifications
-router.get('/emails', async (req, res, next) => {
+router.get('/emails', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async (req, res, next) => {
   try {
     const query = `
       SELECT n.id, n.subject, n.body_preview, n.recipients, n.delivery_status, n.sent_at,
@@ -169,7 +170,7 @@ router.get('/emails', async (req, res, next) => {
 const { createBackup, BACKUP_DIR, TABLES_TO_BACKUP } = require('../services/backupService');
 
 // GET /api/admin/backups - List all backups
-router.get('/backups', async (req, res, next) => {
+router.get('/backups', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const files = fs.readdirSync(BACKUP_DIR)
       .filter(f => f.endsWith('.json'))
@@ -185,7 +186,7 @@ router.get('/backups', async (req, res, next) => {
 });
 
 // POST /api/admin/backups/create - Create a new backup (REQ-AFSMS-56)
-router.post('/backups/create', async (req, res, next) => {
+router.post('/backups/create', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const result = await createBackup(req.user.userId, 'MANUAL');
     res.json({ success: true, message: 'Backup created successfully', filename: result.filename });
@@ -198,7 +199,7 @@ router.post('/backups/create', async (req, res, next) => {
 const { updateSchedule } = require('../services/schedulerService');
 
 // GET /api/admin/backups/config - Get current backup configuration
-router.get('/backups/config', async (req, res, next) => {
+router.get('/backups/config', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const result = await db.query('SELECT * FROM BACKUP_CONFIG LIMIT 1');
     res.json(result.rows[0]);
@@ -208,7 +209,7 @@ router.get('/backups/config', async (req, res, next) => {
 });
 
 // PUT /api/admin/backups/config - Update backup configuration
-router.put('/backups/config', async (req, res, next) => {
+router.put('/backups/config', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const { cronExpression, enabled } = req.body;
     await updateSchedule(cronExpression, enabled);
@@ -219,7 +220,7 @@ router.put('/backups/config', async (req, res, next) => {
 });
 
 // POST /api/admin/backups/restore - Restore from a backup (REQ-AFSMS-55)
-router.post('/backups/restore', async (req, res, next) => {
+router.post('/backups/restore', requireRole(['ADMIN']), async (req, res, next) => {
   const { filename } = req.body;
   if (!filename) return res.status(400).json({ message: 'Filename required' });
 
@@ -264,7 +265,7 @@ router.post('/backups/restore', async (req, res, next) => {
 });
 
 // GET /api/admin/backups/download/:filename - Download backup file
-router.get('/backups/download/:filename', async (req, res) => {
+router.get('/backups/download/:filename', requireRole(['ADMIN']), async (req, res) => {
   const filePath = path.join(BACKUP_DIR, req.params.filename);
   if (fs.existsSync(filePath)) {
     res.download(filePath);

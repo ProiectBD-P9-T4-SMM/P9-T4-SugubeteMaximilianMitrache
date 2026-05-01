@@ -6,7 +6,7 @@ const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 router.use(requireAuth);
 
 // GET /api/groups - Get all groups
-router.get('/', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+router.get('/', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const result = await db.query('SELECT * FROM USER_GROUP ORDER BY name ASC');
     res.json(result.rows);
@@ -63,7 +63,7 @@ router.delete('/:id', requireRole(['ADMIN']), async (req, res, next) => {
 });
 
 // GET /api/groups/:id/members - Get members of a group
-router.get('/:id/members', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+router.get('/:id/members', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const result = await db.query(`
       SELECT gm.user_account_id, u.full_name, u.email, u.username, gm.joined_at

@@ -91,7 +91,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // PUT /api/documents/:id/status - Update Status (Workflow)
-router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // e.g. APPROVED, REJECTED
@@ -112,7 +112,7 @@ router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res
 });
 
 // PUT /api/documents/:id/forward - Forward Document (Workflow)
-router.put('/:id/forward', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+router.put('/:id/forward', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId } = req.body; 

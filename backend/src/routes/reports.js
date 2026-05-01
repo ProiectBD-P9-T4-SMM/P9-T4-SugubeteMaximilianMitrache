@@ -56,8 +56,6 @@ async function getCentralizerData(filters) {
     if (discipline_id) { query += ` AND d.id = $${pIdx++}`; params.push(discipline_id); }
     if (group_index) { query += ` AND sf.group_index = $${pIdx++}`; params.push(parseInt(group_index)); }
     if (academic_year_id) { 
-        // Logic: Filter disciplines that belong to the selected academic year based on curriculum start
-        // Formula: StartYear + (DisciplineYear - 1) = SelectedYear
         query += ` 
             AND EXISTS (
                 SELECT 1 FROM ACADEMIC_YEAR ay 
@@ -80,10 +78,7 @@ async function getCentralizerData(filters) {
 
     query += ` ORDER BY s.last_name ASC, s.first_name ASC, d.semester ASC, d.name ASC`;
 
-    const startTime = Date.now();
     const result = await db.query(query, params);
-    const duration = Date.now() - startTime;
-    console.log(`[BENCHMARK] Centralizer generated in ${duration}ms for ${result.rows.length} records.`);
     return result;
 }
 
@@ -91,7 +86,6 @@ async function getCentralizerData(filters) {
 router.post('/e-grade-centralizer', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
     try {
         const result = await getCentralizerData(req.body);
-
         const studentsMap = new Map();
         result.rows.forEach(row => {
             if (!studentsMap.has(row.student_id)) {
@@ -103,14 +97,11 @@ router.post('/e-grade-centralizer', requireRole(['SECRETARIAT', 'ADMIN']), async
                     formation_code: row.formation_code,
                     spec_name: row.spec_name,
                     degree_level: row.degree_level,
-                    disciplines: {} // Use object for deduplication
+                    disciplines: {}
                 });
             }
-            
             const student = studentsMap.get(row.student_id);
             const dKey = row.discipline_code;
-            
-            // Keep best grade
             if (!student.disciplines[dKey] || (row.grade && (!student.disciplines[dKey].grade || parseFloat(row.grade) > parseFloat(student.disciplines[dKey].grade)))) {
                 student.disciplines[dKey] = {
                     discipline_code: row.discipline_code,
@@ -122,7 +113,6 @@ router.post('/e-grade-centralizer', requireRole(['SECRETARIAT', 'ADMIN']), async
                 };
             }
         });
-
         const students = Array.from(studentsMap.values()).map(s => {
             const disciplineList = Object.values(s.disciplines);
             return {
@@ -134,16 +124,8 @@ router.post('/e-grade-centralizer', requireRole(['SECRETARIAT', 'ADMIN']), async
                     : null
             };
         });
-
-        res.json({
-            success: true,
-            student_count: students.length,
-            students,
-            generated_at: new Date().toISOString()
-        });
-    } catch (error) {
-        next(error);
-    }
+        res.json({ success: true, student_count: students.length, students, generated_at: new Date().toISOString() });
+    } catch (error) { next(error); }
 });
 
 // POST /api/reports/e-grade-centralizer/export/csv
@@ -154,9 +136,7 @@ router.post('/e-grade-centralizer/export/csv', requireRole(['SECRETARIAT', 'ADMI
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="Centralizer_${new Date().getTime()}.csv"`);
         res.send(csv);
-    } catch (error) {
-        next(error);
-    }
+    } catch (error) { next(error); }
 });
 
 // POST /api/reports/e-grade-centralizer/export/xlsx
@@ -170,9 +150,7 @@ router.post('/e-grade-centralizer/export/xlsx', requireRole(['SECRETARIAT', 'ADM
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="Centralizer_${new Date().getTime()}.xlsx"`);
         res.send(buffer);
-    } catch (error) {
-        next(error);
-    }
+    } catch (error) { next(error); }
 });
 
 // POST /api/reports/e-grade-centralizer/export/xml
@@ -180,11 +158,9 @@ router.post('/e-grade-centralizer/export/xml', requireRole(['SECRETARIAT', 'ADMI
     try {
         const result = await getCentralizerData(req.body);
         const builder = new xml2js.Builder({ rootName: 'Centralizer', itemName: 'Record' });
-        // Clean properties to ensure valid XML tags
         const cleanRows = result.rows.map(row => {
             const cleanRow = {};
             for (let key in row) {
-                // Ensure valid XML tag name (no spaces)
                 const validKey = key.replace(/[^a-zA-Z0-9_]/g, '_');
                 cleanRow[validKey] = row[key] !== null ? row[key] : '';
             }
@@ -194,7 +170,48 @@ router.post('/e-grade-centralizer/export/xml', requireRole(['SECRETARIAT', 'ADMI
         res.setHeader('Content-Type', 'application/xml; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="Centralizer_${new Date().getTime()}.xml"`);
         res.send(xml);
+    } catch (error) { next(error); }
+});
+
+// GET /api/reports/template/grades-csv
+router.get('/template/grades-csv', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
+    try {
+        const { discipline_id } = req.query;
+        if (!discipline_id) return res.status(400).json({ error: true, message: 'Discipline ID is required.' });
+
+        const discRes = await db.query('SELECT code, curriculum_id FROM DISCIPLINE WHERE id = $1', [discipline_id]);
+        if (discRes.rows.length === 0) {
+            return res.status(404).json({ error: true, message: 'Discipline not found.' });
+        }
+        const { code: disciplineCode, curriculum_id } = discRes.rows[0];
+
+        const query = `
+            SELECT s.registration_number as "Registration Number", 
+                   $1 as "Discipline Code", 
+                   '' as "Grade", 
+                   'WINTER' as "Session"
+            FROM STUDENT s
+            JOIN STUDENT_CURRICULUM sc ON s.id = sc.student_id
+            WHERE sc.curriculum_id = $2 AND sc.status = 'ACTIVE'
+            ORDER BY s.last_name ASC, s.first_name ASC
+        `;
+        const { rows } = await db.query(query, [disciplineCode, curriculum_id]);
+        
+        if (rows.length === 0) {
+            rows.push({ 
+                "Registration Number": 'TEMPLATE_EXAMPLE', 
+                "Discipline Code": disciplineCode, 
+                "Grade": '', 
+                "Session": 'WINTER' 
+            });
+        }
+
+        const csv = Papa.unparse(rows);
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="Grade_Template_${disciplineCode}.csv"`);
+        res.send(csv);
     } catch (error) {
+        console.error('[TEMPLATE ERROR]', error);
         next(error);
     }
 });

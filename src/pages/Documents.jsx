@@ -129,6 +129,20 @@ export default function Documents() {
 
   const handleUploadDocument = async (e) => {
     e.preventDefault();
+    
+    const allowedExtensions = ['pdf', 'xls', 'xlsx', 'csv', 'xml', 'txt', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'rar', 'mp4', 'mov'];
+    
+    if (uploadFile) {
+      const ext = uploadFile.name.split('.').pop().toLowerCase();
+      if (!allowedExtensions.includes(ext)) {
+        setUploadStatus({ 
+          success: false, 
+          message: `File type not allowed. Allowed: ${allowedExtensions.join(', ')}` 
+        });
+        return;
+      }
+    }
+
     setUploadStatus({ loading: true });
     try {
       const formData = new FormData();
@@ -232,7 +246,15 @@ export default function Documents() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Select File (Optional)</label>
-                <input type="file" onChange={e => setUploadFile(e.target.files[0])} className="w-full p-2 border border-slate-300 rounded text-sm" />
+                <input 
+                  type="file" 
+                  accept=".pdf,.xls,.xlsx,.csv,.xml,.txt,.jpg,.jpeg,.png,.doc,.docx,.ppt,.pptx,.zip,.rar,.mp4,.mov"
+                  onChange={e => setUploadFile(e.target.files[0])} 
+                  className="w-full p-2 border border-slate-300 rounded text-sm mb-1" 
+                />
+                <p className="text-[10px] text-slate-500 italic leading-tight">
+                  Allowed: PDF, Excel, CSV, XML, TXT, Images (JPG, PNG), Word/PPT (DOCX, PPTX), Archives (ZIP, RAR), Video (MP4, MOV).
+                </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button type="button" onClick={() => setShowUploadModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Cancel</button>

@@ -39,10 +39,10 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Handle custom application errors
-  if (err.status && err.customMessage) {
+  if (err.status) {
     statusCode = err.status;
     response.code = err.customCode || 'APP_ERROR';
-    response.message = err.customMessage;
+    response.message = err.customMessage || err.message;
     if (err.resolutionHint) response.resolutionHint = err.resolutionHint;
   }
 

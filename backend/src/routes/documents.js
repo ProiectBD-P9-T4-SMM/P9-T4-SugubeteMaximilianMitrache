@@ -21,7 +21,21 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedExtensions = ['.pdf', '.xls', '.xlsx', '.csv', '.xml', '.txt', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.ppt', '.pptx', '.zip', '.rar', '.mp4', '.mov'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      const err = new Error('Invalid file type. Allowed extensions: ' + allowedExtensions.join(', '));
+      err.status = 400;
+      cb(err, false);
+    }
+  }
+});
 router.use(requireAuth);
 
 // GET /api/documents - Advanced Search

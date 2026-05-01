@@ -68,12 +68,24 @@ export default function Students() {
 
   const handleSaveStudent = async (e) => {
     e.preventDefault();
-    if (!studentForm.study_formation_id) {
+    // When adding, formation is required. When editing, it's optional (user may only change name/email/status).
+    if (!editingStudent && !studentForm.study_formation_id) {
       alert('Please complete the Study Formation selection (all 6 fields).');
       return;
     }
     try {
-      if (editingStudent) { await academicService.updateStudent(editingStudent.id, studentForm); }
+      // Build only the fields that are actually set (avoid sending undefined/null study_formation_id when not changed)
+      const payload = {
+        first_name: studentForm.first_name,
+        last_name: studentForm.last_name,
+        email: studentForm.email,
+        status: studentForm.status,
+      };
+      if (studentForm.study_formation_id) {
+        payload.study_formation_id = studentForm.study_formation_id;
+      }
+
+      if (editingStudent) { await academicService.updateStudent(editingStudent.id, payload); }
       else { await academicService.addStudent(studentForm); }
       setShowModal(false); fetchStudents();
     } catch (err) { alert(err.response?.data?.message || 'Failed to save student'); }

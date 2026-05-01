@@ -25,7 +25,8 @@ export default function Disciplines() {
   const [showCurriculumForm, setShowCurriculumForm] = useState(false);
   const [curriculumFormData, setCurriculumFormData] = useState({
     code: '',
-    name: ''
+    name: '',
+    startYear: new Date().getFullYear().toString()
   });
 
   // Discipline Form State
@@ -145,12 +146,13 @@ export default function Disciplines() {
       const res = await api.post('/academic/curricula', {
         specialization_id: selectedSpecialization,
         code: curriculumFormData.code,
-        name: curriculumFormData.name
+        name: curriculumFormData.name,
+        valid_from: `${curriculumFormData.startYear}-09-01`
       });
       if (res.data.success) {
         setMessage({ type: 'success', text: 'Plan de învățământ creat cu succes!' });
         setShowCurriculumForm(false);
-        setCurriculumFormData({ code: '', name: '' });
+        setCurriculumFormData({ code: '', name: '', startYear: new Date().getFullYear().toString() });
         loadCurriculaForSpecialization(selectedSpecialization);
       }
     } catch (err) {
@@ -328,7 +330,7 @@ export default function Disciplines() {
 
         {showCurriculumForm ? (
           <form onSubmit={handleCreateCurriculum} className="bg-white p-5 rounded-xl border border-blue-200 shadow-lg shadow-blue-50 animate-in zoom-in-95 duration-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cod Plan</label>
                 <input required type="text" value={curriculumFormData.code} onChange={e => setCurriculumFormData({...curriculumFormData, code: e.target.value})} placeholder="ex: CURR-2024-AC" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
@@ -336,6 +338,10 @@ export default function Disciplines() {
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nume Plan</label>
                 <input required type="text" value={curriculumFormData.name} onChange={e => setCurriculumFormData({...curriculumFormData, name: e.target.value})} placeholder="ex: Plan de studii 2024" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">An Început (Start)</label>
+                <input required type="number" min="2000" max="2100" value={curriculumFormData.startYear} onChange={e => setCurriculumFormData({...curriculumFormData, startYear: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2">

@@ -86,4 +86,113 @@ router.get('/queries', async (req, res, next) => {
   }
 });
 
+// --- BACKUP & RECOVERY (REQ-AFSMS-55, 56) ---
+const fs = require('fs');
+const path = require('path');
+
+const BACKUP_DIR = path.join(__dirname, '../../backups');
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+
+const TABLES_TO_BACKUP = [
+  'role', 'permission', 'role_permission',
+  'user_account', 'user_role',
+  'academic_year', 'specialization', 'curriculum', 'curriculum_snapshot', 
+  'discipline', 'study_formation', 'student', 'grade',
+  'document', 'audit_log_entry', 'user_group'
+];
+
+// GET /api/admin/backups - List all backups
+router.get('/backups', async (req, res, next) => {
+  try {
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.endsWith('.json'))
+      .map(f => {
+        const stats = fs.statSync(path.join(BACKUP_DIR, f));
+        return { filename: f, size: stats.size, createdAt: stats.birthtime };
+      })
+      .sort((a, b) => b.createdAt - a.createdAt);
+    res.json(files);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/admin/backups/create - Create a new backup (REQ-AFSMS-56)
+router.post('/backups/create', async (req, res, next) => {
+  try {
+    const snapshot = {
+      timestamp: new Date().toISOString(),
+      version: '1.0',
+      data: {}
+    };
+
+    for (const table of TABLES_TO_BACKUP) {
+      const result = await db.query(`SELECT * FROM ${table.toUpperCase()}`);
+      snapshot.data[table] = result.rows;
+    }
+
+    const filename = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    fs.writeFileSync(path.join(BACKUP_DIR, filename), JSON.stringify(snapshot, null, 2));
+
+    res.json({ success: true, message: 'Backup created successfully', filename });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/admin/backups/restore - Restore from a backup (REQ-AFSMS-55)
+router.post('/backups/restore', async (req, res, next) => {
+  const { filename } = req.body;
+  if (!filename) return res.status(400).json({ message: 'Filename required' });
+
+  try {
+    const filePath = path.join(BACKUP_DIR, filename);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'Backup not found' });
+
+    const snapshot = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    
+    await db.transaction(async (client) => {
+      // 1. Disable triggers and truncate in reverse order
+      // Using CASCADE to handle dependencies
+      const tableNames = TABLES_TO_BACKUP.map(t => t.toUpperCase()).join(', ');
+      await client.query(`TRUNCATE ${tableNames} CASCADE`);
+
+      // 2. Insert data in correct order (same as TABLES_TO_BACKUP)
+      for (const table of TABLES_TO_BACKUP) {
+        const rows = snapshot.data[table];
+        if (!rows || rows.length === 0) continue;
+
+        const cols = Object.keys(rows[0]);
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+        const insertQuery = `INSERT INTO ${table.toUpperCase()} (${cols.join(', ')}) VALUES (${placeholders})`;
+
+        for (const row of rows) {
+          const values = cols.map(c => row[c]);
+          await client.query(insertQuery, values);
+        }
+      }
+      
+      // Log the recovery action
+      await client.query(`
+        INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, after_snapshot_json)
+        VALUES ($1, 'RECOVERY', 'ADMIN_SYSTEM', 'DATABASE', 0, $2)
+      `, [req.user.id, JSON.stringify({ restored_file: filename })]);
+    });
+
+    res.json({ success: true, message: 'Database restored successfully' });
+  } catch (error) {
+    res.status(500).json({ error: true, message: error.message });
+  }
+});
+
+// GET /api/admin/backups/download/:filename - Download backup file
+router.get('/backups/download/:filename', async (req, res) => {
+  const filePath = path.join(BACKUP_DIR, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.download(filePath);
+  } else {
+    res.status(404).send('File not found');
+  }
+});
+
 module.exports = router;

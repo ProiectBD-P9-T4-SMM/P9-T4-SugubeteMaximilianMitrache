@@ -6,7 +6,7 @@ export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
-    type: '', author_id: '', startDate: '', endDate: '', contentKeyword: ''
+    type: '', authorKeyword: '', startDate: '', endDate: '', contentKeyword: ''
   });
 
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -70,7 +70,9 @@ export default function Documents() {
       fetchDocuments();
       setTimeout(() => setShowUploadModal(false), 1500);
     } catch (err) {
-      setUploadStatus({ success: false, message: err.response?.data?.message || 'Failed to upload' });
+      const msg = err.response?.data?.message || 'Failed to upload';
+      const suggestion = "\n\n💡 Sugestie: Verifică dacă fișierul nu depășește 10MB și dacă titlul nu conține caractere speciale interzise.";
+      setUploadStatus({ success: false, message: msg + suggestion });
     }
   };
 
@@ -108,7 +110,9 @@ export default function Documents() {
       setEmailStatus({ success: true, message: res.data.message });
       setTimeout(() => setShowEmailModal(false), 2000);
     } catch (err) {
-      setEmailStatus({ success: false, message: err.response?.data?.message || 'Failed to send' });
+      const msg = err.response?.data?.message || 'Failed to send';
+      const suggestion = "\n\n💡 Sugestie: Asigură-te că grupul selectat are studenți cu adrese de email valide în baza de date.";
+      setEmailStatus({ success: false, message: msg + suggestion });
     }
   };
 
@@ -202,10 +206,14 @@ export default function Documents() {
         </div>
       )}
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
         <div>
           <label className="block text-xs font-medium text-slate-500 mb-1">Document type</label>
-          <input type="text" placeholder="e.g. Cerere bursa" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})} className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
+          <input type="text" placeholder="e.g. Cerere" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})} className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-500 mb-1">Author Name</label>
+          <input type="text" placeholder="e.g. Popescu" value={filters.authorKeyword} onChange={e => setFilters({...filters, authorKeyword: e.target.value})} className="w-full border-slate-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 text-sm" />
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 mb-1">Start Date</label>

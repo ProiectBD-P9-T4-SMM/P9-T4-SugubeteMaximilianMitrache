@@ -159,6 +159,7 @@ export default function Students() {
   const handleSaveStudent = async (e) => {
     e.preventDefault();
     try {
+>>>>>>> upstream/main
       const payload = {
         first_name: studentForm.first_name,
         last_name: studentForm.last_name,
@@ -168,7 +169,11 @@ export default function Students() {
       if (editingStudent) { await academicService.updateStudent(editingStudent.id, payload); }
       else { await academicService.addStudent(studentForm); }
       setShowModal(false); fetchStudents();
-    } catch (err) { alert('Eroare la salvare.'); }
+    } catch (err) { 
+      const msg = err.response?.data?.message || 'Failed to save student';
+      const suggestion = err.response?.status === 400 ? "\n\n💡 Sugestie: Verifică dacă toate câmpurile obligatorii sunt completate corect și dacă formația de studiu a fost identificată." : "";
+      alert(msg + suggestion); 
+    }
   };
 
   const handleDeleteStudent = async (id) => {
@@ -221,7 +226,36 @@ export default function Students() {
           <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">Sistem Integrat de Gestiune Academică</p>
         </div>
         <div className="flex space-x-3">
-          <button onClick={() => setShowModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-3xl font-black shadow-2xl shadow-blue-200 transition-all flex items-center space-x-3">
+          <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-3xl font-black shadow-2xl shadow-emerald-100 transition-all flex items-center space-x-3 cursor-pointer">
+            <Database size={20} />
+            <span>Import Excel</span>
+            <input type="file" accept=".xlsx, .xls, .csv" className="hidden" onChange={async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              
+              const reader = new FileReader();
+              reader.onload = async (evt) => {
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+                
+                try {
+                  const res = await academicService.addStudentsBulk(data);
+                  alert(res.data.message);
+                  fetchStudents();
+                } catch (err) {
+                  const msg = err.response?.data?.message || 'Failed to import bulk students.';
+                  const suggestion = "\n\n💡 Sugestie: Asigură-te că fișierul Excel are coloanele: first_name, last_name, email și study_formation_id.";
+                  alert(msg + suggestion);
+                }
+              };
+              reader.readAsBinaryString(file);
+              e.target.value = null; // reset
+            }} />
+          </label>
+          <button onClick={() => { setEditingStudent(null); setStudentForm({ first_name: '', last_name: '', email: '', status: 'ENROLLED' }); setShowModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-3xl font-black shadow-2xl shadow-blue-200 transition-all flex items-center space-x-3">
             <Plus size={20} />
             <span>Adaugă Student</span>
           </button>

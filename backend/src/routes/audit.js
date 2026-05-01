@@ -25,7 +25,7 @@ router.get('/', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res, next) =>
   }
 });
 
-// POST /api/audit/rollback/:logId - Perform Rollback
+// POST /api/audit/rollback/:logId - Perform Rollback (REQ-AFSMS-54)
 router.post('/rollback/:logId', requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const { logId } = req.params;
@@ -37,67 +37,88 @@ router.post('/rollback/:logId', requireRole(['ADMIN']), async (req, res, next) =
     }
 
     const log = logRes.rows[0];
-
-    // We only support rollback for UPDATE in this demo
-    if (log.action_type !== 'UPDATE') {
-      return res.status(400).json({ error: true, message: 'Rollback is currently only supported for UPDATE operations.' });
-    }
-
-    if (!log.before_snapshot_json) {
-      return res.status(400).json({ error: true, message: 'No before_snapshot_json available for rollback.' });
-    }
-
-    const snapshot = log.before_snapshot_json;
     const entityType = log.entity_type;
     const entityId = log.entity_id;
+    const actionType = log.action_type;
 
     // Validate table name to prevent SQL injection
-    const validTables = ['STUDENT', 'GRADE', 'USER_ACCOUNT', 'DOCUMENT'];
+    const validTables = ['STUDENT', 'GRADE', 'USER_ACCOUNT', 'DOCUMENT', 'STUDY_FORMATION', 'DISCIPLINE'];
     const uppercaseEntityType = entityType.toUpperCase();
     if (!validTables.includes(uppercaseEntityType)) {
-      return res.status(400).json({ error: true, message: 'Invalid entity type for rollback' });
+      return res.status(400).json({ error: true, message: `Invalid entity type '${entityType}' for rollback` });
     }
 
-    // 2. Generate dynamic UPDATE statement
-    // We filter out 'id' and tracking columns from the snapshot
-    const columnsToUpdate = Object.keys(snapshot).filter(
-      key => key !== 'id' && key !== 'created_at' && key !== 'updated_at'
-    );
-
-    if (columnsToUpdate.length === 0) {
-      return res.status(400).json({ error: true, message: 'No valid columns to restore.' });
-    }
-
-    const setClauses = columnsToUpdate.map((col, index) => `${col} = $${index + 1}`).join(', ');
-    const params = columnsToUpdate.map(col => snapshot[col]);
-    
-    // Add entity_id as the last parameter for the WHERE clause
-    params.push(entityId);
-
-    const rollbackQuery = `UPDATE ${uppercaseEntityType} SET ${setClauses} WHERE id = $${params.length} RETURNING *`;
-
-    // 3. Execute rollback and log it as a new audit action
     let result;
-    await db.transaction(async (client) => {
-      // Perform the restoration
-      const updateRes = await client.query(rollbackQuery, params);
-      result = updateRes.rows[0];
+    let message = '';
 
-      // Insert an audit log specifically mentioning this was a ROLLBACK
-      await client.query(`
-        INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, before_snapshot_json, after_snapshot_json)
-        VALUES ($1, 'ROLLBACK_UPDATE', 'AUDIT_SYSTEM', $2, $3, $4, $5)
-      `, [req.user.id, uppercaseEntityType, entityId, log.after_snapshot_json, log.before_snapshot_json]);
+    await db.transaction(async (client) => {
+      if (actionType === 'INSERT') {
+        // UNDO INSERT = DELETE the record
+        const deleteQuery = `DELETE FROM ${uppercaseEntityType} WHERE id = $1 RETURNING *`;
+        const delRes = await client.query(deleteQuery, [entityId]);
+        
+        if (delRes.rows.length === 0) {
+           throw new Error('Record already deleted or not found');
+        }
+        
+        result = delRes.rows[0];
+        message = `Successfully rolled back INSERT by DELETING record ${entityId} from ${uppercaseEntityType}.`;
+        
+        // Log the UNDO action
+        await client.query(`
+          INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, before_snapshot_json, after_snapshot_json)
+          VALUES ($1, 'ROLLBACK_INSERT', 'AUDIT_SYSTEM', $2, $3, $4, NULL)
+        `, [req.user.id, uppercaseEntityType, entityId, JSON.stringify(result)]);
+
+      } else if (actionType === 'UPDATE') {
+        // UNDO UPDATE = RESTORE before_snapshot_json
+        if (!log.before_snapshot_json) {
+          throw new Error('No before_snapshot_json available for rollback.');
+        }
+
+        const snapshot = log.before_snapshot_json;
+        
+        // Filter out tracking columns and ID
+        const columnsToUpdate = Object.keys(snapshot).filter(
+          key => key !== 'id' && key !== 'created_at' && key !== 'updated_at' && key !== 'registration_number'
+        );
+
+        if (columnsToUpdate.length === 0) {
+          throw new Error('No valid columns to restore.');
+        }
+
+        const setClauses = columnsToUpdate.map((col, index) => `${col} = $${index + 1}`).join(', ');
+        const params = columnsToUpdate.map(col => snapshot[col]);
+        params.push(entityId);
+
+        const rollbackQuery = `UPDATE ${uppercaseEntityType} SET ${setClauses} WHERE id = $${params.length} RETURNING *`;
+        const updateRes = await client.query(rollbackQuery, params);
+        
+        if (updateRes.rows.length === 0) {
+          throw new Error('Record not found to update');
+        }
+
+        result = updateRes.rows[0];
+        message = `Successfully rolled back UPDATE on ${uppercaseEntityType}.`;
+
+        // Log the UNDO action
+        await client.query(`
+          INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, before_snapshot_json, after_snapshot_json)
+          VALUES ($1, 'ROLLBACK_UPDATE', 'AUDIT_SYSTEM', $2, $3, $4, $5)
+        `, [req.user.id, uppercaseEntityType, entityId, JSON.stringify(log.after_snapshot_json), JSON.stringify(log.before_snapshot_json)]);
+      } else {
+        throw new Error(`Rollback for '${actionType}' is not yet supported.`);
+      }
     });
 
     res.json({
       success: true,
-      message: `Successfully rolled back ${uppercaseEntityType} to previous state.`,
+      message,
       restoredData: result
     });
 
   } catch (error) {
-    next(error);
+    res.status(500).json({ error: true, message: error.message });
   }
 });
 

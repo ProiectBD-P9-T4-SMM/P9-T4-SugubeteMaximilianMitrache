@@ -79,13 +79,16 @@ async function getCentralizerData(filters) {
 
     query += ` ORDER BY s.last_name ASC, s.first_name ASC, d.semester ASC, d.name ASC`;
 
-    return await db.query(query, params);
+    const startTime = Date.now();
+    const result = await db.query(query, params);
+    const duration = Date.now() - startTime;
+    console.log(`[BENCHMARK] Centralizer generated in ${duration}ms for ${result.rows.length} records.`);
+    return result;
 }
 
 // POST /api/reports/e-grade-centralizer
 router.post('/e-grade-centralizer', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
     try {
-
         const result = await getCentralizerData(req.body);
 
         const studentsMap = new Map();

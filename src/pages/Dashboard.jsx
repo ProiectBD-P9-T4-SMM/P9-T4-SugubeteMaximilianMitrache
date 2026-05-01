@@ -75,12 +75,19 @@ export default function Dashboard() {
           <ul className="space-y-4">
             {recentActivity.length > 0 ? recentActivity.map((act) => (
               <li key={act.id} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 last:border-0">
-                <span className="text-slate-700">
-                  {act.action_type} pe {act.entity_type}
-                </span>
-                <span className="text-slate-400 text-xs">{new Date(act.occurred_at).toLocaleString()}</span>
+                <div className="flex flex-col">
+                  <span className="text-slate-700 font-medium">
+                    {act.action_type === 'UPDATE' ? 'Actualizare' : act.action_type === 'INSERT' ? 'Adăugare' : act.action_type === 'DELETE' ? 'Ștergere' : act.action_type} {act.entity_type === 'STUDENT' ? 'Student' : act.entity_type === 'GRADE' ? 'Notă' : act.entity_type === 'DOCUMENT' ? 'Document' : act.entity_type}
+                  </span>
+                  <span className="text-slate-400 text-xs">de către {act.actor_name || act.actor_username || 'Sistem'}</span>
+                </div>
+                <span className="text-slate-400 text-xs">{new Date(act.occurred_at).toLocaleString('ro-RO')}</span>
               </li>
-            )) : <li className="text-sm text-slate-500">No recent activity</li>}
+            )) : (
+              <li className="text-sm text-slate-500 py-4 text-center italic">
+                Nu există activitate recentă sau nu aveți permisiunea de a o vizualiza.
+              </li>
+            )}
           </ul>
         </div>
 

@@ -7,7 +7,7 @@ const { auditableUpdate } = require('../services/auditService');
 router.use(requireAuth);
 
 // GET /api/audit - Fetch Audit Logs
-router.get('/', requireRole(['ADMIN']), async (req, res, next) => {
+router.get('/', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res, next) => {
   try {
     const query = `
       SELECT a.id, a.action_type, a.module, a.entity_type, a.entity_id, 

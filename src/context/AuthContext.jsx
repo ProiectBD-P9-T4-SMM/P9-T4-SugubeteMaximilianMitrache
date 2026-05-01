@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({ id: payload.userId, role: payload.role });
+        setUser({ id: payload.userId, role: payload.role, fullName: payload.fullName });
       } catch (e) {
         logout();
       }

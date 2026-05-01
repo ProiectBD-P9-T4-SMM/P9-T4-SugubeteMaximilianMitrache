@@ -113,8 +113,40 @@ const auditableInsert = async (actorUserId, moduleName, tableName, insertFields)
   });
 };
 
+// Generic function to perform an auditable delete
+const auditableDelete = async (actorUserId, moduleName, tableName, id, idColumn = 'id') => {
+  return db.transaction(async (client) => {
+    // 1. Fetch before snapshot
+    const beforeResult = await client.query(`SELECT * FROM ${tableName} WHERE ${idColumn} = $1`, [id]);
+    if (beforeResult.rows.length === 0) {
+      const err = new Error('Entity not found');
+      err.status = 404;
+      throw err;
+    }
+    const beforeSnapshot = beforeResult.rows[0];
+
+    // 2. Perform Delete
+    await client.query(`DELETE FROM ${tableName} WHERE ${idColumn} = $1`, [id]);
+
+    // 3. Log Audit
+    await logAudit(
+      client, 
+      actorUserId, 
+      'DELETE', 
+      moduleName, 
+      tableName.toUpperCase(), 
+      id, 
+      beforeSnapshot, 
+      null
+    );
+
+    return { success: true };
+  });
+};
+
 module.exports = {
   logAudit,
   auditableUpdate,
-  auditableInsert
+  auditableInsert,
+  auditableDelete
 };

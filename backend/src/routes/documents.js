@@ -21,7 +21,21 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedExtensions = ['.pdf', '.xls', '.xlsx', '.csv', '.xml', '.txt', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.ppt', '.pptx', '.zip', '.rar', '.mp4', '.mov'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      const err = new Error('Invalid file type. Allowed extensions: ' + allowedExtensions.join(', '));
+      err.status = 400;
+      cb(err, false);
+    }
+  }
+});
 router.use(requireAuth);
 
 // GET /api/documents - Advanced Search
@@ -77,14 +91,14 @@ router.get('/', async (req, res, next) => {
 });
 
 // PUT /api/documents/:id/status - Update Status (Workflow)
-router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // e.g. APPROVED, REJECTED
 
     // Audit the document status update
     const updatedDocument = await auditableUpdate(
-      req.user.id,
+      req.user.userId,
       'DOCUMENT_FLOW',
       'DOCUMENT',
       id,
@@ -98,13 +112,13 @@ router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res
 });
 
 // PUT /api/documents/:id/forward - Forward Document (Workflow)
-router.put('/:id/forward', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+router.put('/:id/forward', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const { id } = req.params;
     const { userId } = req.body; 
 
     const updatedDocument = await auditableUpdate(
-      req.user.id,
+      req.user.userId,
       'DOCUMENT_FLOW',
       'DOCUMENT',
       id,
@@ -139,7 +153,7 @@ router.post('/', upload.single('file'), async (req, res, next) => {
       title,
       type,
       status: 'DRAFT',
-      author_id: req.user.id,
+      author_id: req.user.userId,
       created_at: new Date().toISOString()
     };
 
@@ -150,7 +164,7 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     }
 
     const newDoc = await auditableInsert(
-      req.user.id,
+      req.user.userId,
       'DOCUMENT_FLOW',
       'DOCUMENT',
       insertFields

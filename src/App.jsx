@@ -10,7 +10,6 @@ import Register from './pages/Register';
 import PublicPortal from './pages/PublicPortal';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
-import AddGrades from './pages/AddGrades';
 import Disciplines from './pages/Disciplines';
 import Centralizer from './pages/Centralizer';
 import GradesList from './pages/GradesList';
@@ -18,6 +17,10 @@ import Documents from './pages/Documents';
 import AuditLogs from './pages/AuditLogs';
 import MyGrades from './pages/MyGrades';
 import UserGroups from './pages/UserGroups';
+import Privacy from './pages/Privacy';
+import Contact from './pages/Contact';
+import Help from './pages/Help';
+import Shortcuts from './pages/Shortcuts';
 
 export default function App() {
   return (
@@ -49,11 +52,6 @@ export default function App() {
             />
             
             <Route 
-              path="/grades/add" 
-              element={<RoleRoute allowed={['PROFESSOR', 'ADMIN']}><AddGrades /></RoleRoute>} 
-            />
-            
-            <Route 
               path="/grades/list" 
               element={<RoleRoute allowed={['PROFESSOR', 'ADMIN', 'SECRETARIAT']}><GradesList /></RoleRoute>} 
             />
@@ -77,6 +75,11 @@ export default function App() {
               path="/audit" 
               element={<RoleRoute allowed={['ADMIN']}><AuditLogs /></RoleRoute>} 
             />
+
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/shortcuts" element={<Shortcuts />} />
+            <Route path="/help" element={<Help />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

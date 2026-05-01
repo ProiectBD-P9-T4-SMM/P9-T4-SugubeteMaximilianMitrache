@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const nodemailer = require('nodemailer');
-const { verifyToken } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 
-router.use(verifyToken);
+router.use(requireAuth);
 
 let transporter;
 
@@ -35,7 +35,7 @@ if (process.env.SMTP_HOST) {
 }
 
 // POST /api/notifications/send - Send Mass Email via Mock Outlook
-router.post('/send', async (req, res, next) => {
+router.post('/send', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async (req, res, next) => {
   try {
     const { groupId, targetType, subject, body } = req.body;
 
@@ -92,8 +92,8 @@ router.post('/send', async (req, res, next) => {
          VALUES ($1, $3, $4, $5, 'SENT')`;
 
     const insertParams = targetType === 'GROUP'
-      ? [req.user.id, groupId, emails.join(', '), subject, body.substring(0, 500)]
-      : [req.user.id, null, emails.join(', '), subject, body.substring(0, 500)];
+      ? [req.user.userId, groupId, emails.join(', '), subject, body.substring(0, 500)]
+      : [req.user.userId, null, emails.join(', '), subject, body.substring(0, 500)];
 
     await db.query(insertQuery, insertParams);
 
@@ -103,6 +103,53 @@ router.post('/send', async (req, res, next) => {
       previewUrl: info ? nodemailer.getTestMessageUrl(info) : null
     });
 
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/notifications/contact - User Contact Form from Help Page
+router.post('/contact', async (req, res, next) => {
+  try {
+    const { subject, message } = req.body;
+    const userEmail = req.user.email;
+    const userName = req.user.fullName;
+
+    if (!subject || !message) {
+      return res.status(400).json({ error: true, message: 'Subject and message are required.' });
+    }
+
+    const mailOptions = {
+      from: process.env.SMTP_USER || '"AFSMS Support" <support@mock.ucv.ro>',
+      to: process.env.SUPPORT_EMAIL || 'admin@mock.ucv.ro',
+      subject: `[SUPPORT TICKET] ${subject}`,
+      text: `User: ${userName} (${userEmail})\n\nMessage:\n${message}`,
+      html: `
+        <h3>New Support Request</h3>
+        <p><strong>User:</strong> ${userName} (${userEmail})</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <hr />
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, '<br/>')}</p>
+      `
+    };
+
+    let info;
+    if (transporter) {
+      info = await transporter.sendMail(mailOptions);
+      if (!process.env.SMTP_HOST) {
+        console.log('Support Ticket Preview URL: %s', nodemailer.getTestMessageUrl(info));
+      }
+    }
+
+    // Log the interaction
+    await db.query(
+      `INSERT INTO OUTLOOK_NOTIFICATION (sent_by_user_id, recipients, subject, body_preview, delivery_status)
+       VALUES ($1, $2, $3, $4, 'SENT')`,
+      [req.user.userId, 'SYSTEM_ADMIN', `[SUPPORT] ${subject}`, message.substring(0, 500)]
+    );
+
+    res.json({ success: true, message: 'Your message has been sent to the IT Helpdesk.' });
   } catch (error) {
     next(error);
   }

@@ -40,6 +40,11 @@ export const academicService = {
   enrollStudent: (data) => api.post('/academic/enroll-student', data),
   updateEnrollmentFormation: (data) => api.post('/academic/update-enrollment-formation', data),
   unenrollStudent: (studentId, curriculumId) => api.delete(`/academic/unenroll-student/${studentId}/${curriculumId}`),
+  exportGrades: (params) => api.get('/academic/grades/export', { params, responseType: 'blob' }),
+  importGrades: (formData) => api.post('/academic/grades/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getGradeTemplate: (params) => api.get('/academic/grades/template', { params, responseType: 'blob' }),
 };
 
 export const reportsService = {
@@ -60,6 +65,7 @@ export const documentsService = {
 export const groupsService = {
   getGroups: () => api.get('/groups'),
   createGroup: (data) => api.post('/groups', data),
+  updateGroup: (id, data) => api.put(`/groups/${id}`, data),
   deleteGroup: (id) => api.delete(`/groups/${id}`),
   getMembers: (id) => api.get(`/groups/${id}/members`),
   addMember: (id, userId) => api.post(`/groups/${id}/members`, { userId }),
@@ -77,11 +83,21 @@ export const auditService = {
 
 export const adminService = {
   getRoles: () => api.get('/admin/roles'),
+  createRole: (data) => api.post('/admin/roles', data),
+  updateRole: (id, data) => api.put(`/admin/roles/${id}`, data),
+  deleteRole: (id) => api.delete(`/admin/roles/${id}`),
+  
   getUsers: () => api.get('/admin/users'),
+  createUser: (data) => api.post('/admin/users', data),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
   updateUserRole: (id, roleId) => api.put(`/admin/users/${id}/role`, { roleId }),
+  
   getActiveQueries: () => api.get('/admin/queries'),
   getEmailLogs: () => api.get('/admin/emails'),
   getBackups: () => api.get('/admin/backups'),
+  getBackupConfig: () => api.get('/admin/backups/config'),
+  updateBackupConfig: (data) => api.put('/admin/backups/config', data),
   createBackup: () => api.post('/admin/backups/create'),
   restoreBackup: (filename) => api.post('/admin/backups/restore', { filename }),
   downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' })

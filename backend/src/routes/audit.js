@@ -7,7 +7,7 @@ const { auditableUpdate } = require('../services/auditService');
 router.use(requireAuth);
 
 // GET /api/audit - Fetch Audit Logs
-router.get('/', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res, next) => {
+router.get('/', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async (req, res, next) => {
   try {
     const query = `
       SELECT a.id, a.action_type, a.module, a.entity_type, a.entity_id, 
@@ -68,7 +68,7 @@ router.post('/rollback/:logId', requireRole(['ADMIN']), async (req, res, next) =
         await client.query(`
           INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, before_snapshot_json, after_snapshot_json)
           VALUES ($1, 'ROLLBACK_INSERT', 'AUDIT_SYSTEM', $2, $3, $4, NULL)
-        `, [req.user.id, uppercaseEntityType, entityId, JSON.stringify(result)]);
+        `, [req.user.userId, uppercaseEntityType, entityId, JSON.stringify(result)]);
 
       } else if (actionType === 'UPDATE') {
         // UNDO UPDATE = RESTORE before_snapshot_json
@@ -105,7 +105,7 @@ router.post('/rollback/:logId', requireRole(['ADMIN']), async (req, res, next) =
         await client.query(`
           INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, before_snapshot_json, after_snapshot_json)
           VALUES ($1, 'ROLLBACK_UPDATE', 'AUDIT_SYSTEM', $2, $3, $4, $5)
-        `, [req.user.id, uppercaseEntityType, entityId, JSON.stringify(log.after_snapshot_json), JSON.stringify(log.before_snapshot_json)]);
+        `, [req.user.userId, uppercaseEntityType, entityId, JSON.stringify(log.after_snapshot_json), JSON.stringify(log.before_snapshot_json)]);
       } else {
         throw new Error(`Rollback for '${actionType}' is not yet supported.`);
       }

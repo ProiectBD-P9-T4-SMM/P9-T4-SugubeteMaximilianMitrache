@@ -6,7 +6,7 @@ const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 router.use(requireAuth);
 
 // GET /api/groups - Get all groups
-router.get('/', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+router.get('/', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const result = await db.query('SELECT * FROM USER_GROUP ORDER BY name ASC');
     res.json(result.rows);
@@ -31,6 +31,27 @@ router.post('/', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) =
   }
 });
 
+// PUT /api/groups/:id - Update a group
+router.put('/:id', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+  try {
+    const { name, description } = req.body;
+    if (!name) return res.status(400).json({ message: 'Name is required' });
+
+    const result = await db.query(
+      'UPDATE USER_GROUP SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
+      [name, description, req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // DELETE /api/groups/:id - Delete a group
 router.delete('/:id', requireRole(['ADMIN']), async (req, res, next) => {
   try {
@@ -42,7 +63,7 @@ router.delete('/:id', requireRole(['ADMIN']), async (req, res, next) => {
 });
 
 // GET /api/groups/:id/members - Get members of a group
-router.get('/:id/members', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+router.get('/:id/members', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const result = await db.query(`
       SELECT gm.user_account_id, u.full_name, u.email, u.username, gm.joined_at

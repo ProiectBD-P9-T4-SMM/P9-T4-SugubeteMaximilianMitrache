@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Activity } from 'lucide-react';
+import Select from 'react-select';
+import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save } from 'lucide-react';
 import { auditService, adminService } from '../services/api';
 
 export default function AuditLogs() {
@@ -14,6 +15,16 @@ export default function AuditLogs() {
   const [queries, setQueries] = useState([]);
   const [backups, setBackups] = useState([]);
   const [emailLogs, setEmailLogs] = useState([]);
+  const [backupConfig, setBackupConfig] = useState({ cron_expression: '0 0 * * *', enabled: false });
+
+  // Modals / Forms state
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userForm, setUserForm] = useState({ sso_subject: '', username: '', email: '', full_name: '', account_status: 'ACTIVE' });
+
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [roleForm, setRoleForm] = useState({ code: '', name: '', description: '' });
 
   useEffect(() => {
     if (adminTab === 'audit') fetchAuditLogs();
@@ -22,9 +33,35 @@ export default function AuditLogs() {
       fetchRoles();
     }
     if (adminTab === 'queries') fetchQueries();
-    if (adminTab === 'backups') fetchBackups();
+    if (adminTab === 'backups') {
+      fetchBackups();
+      fetchBackupConfig();
+    }
     if (adminTab === 'emails') fetchEmailLogs();
   }, [adminTab]);
+
+  const fetchBackupConfig = async () => {
+    try {
+      const res = await adminService.getBackupConfig();
+      if (res.data) setBackupConfig(res.data);
+    } catch (err) {
+      console.error("Failed to fetch backup config", err);
+    }
+  };
+
+  const handleUpdateBackupConfig = async (e) => {
+    e.preventDefault();
+    try {
+      await adminService.updateBackupConfig({
+        cronExpression: backupConfig.cron_expression,
+        enabled: backupConfig.enabled
+      });
+      setRollbackStatus({ success: true, message: 'Backup schedule updated!' });
+      setTimeout(() => setRollbackStatus(null), 3000);
+    } catch (err) {
+      alert('Failed to update schedule');
+    }
+  };
 
   const fetchEmailLogs = async () => {
     setLoading(true);
@@ -86,7 +123,7 @@ export default function AuditLogs() {
   const handleRoleChange = async (userId, roleId) => {
     try {
       await adminService.updateUserRole(userId, roleId);
-      fetchUsers(); // Refresh to reflect change
+      fetchUsers();
     } catch (err) {
       alert('Failed to update role');
     }
@@ -115,7 +152,7 @@ export default function AuditLogs() {
     try {
       const res = await auditService.rollback(log.id);
       setRollbackStatus({ success: true, message: res.data.message });
-      fetchAuditLogs(); // refresh
+      fetchAuditLogs(); 
       setTimeout(() => setRollbackStatus(null), 3000);
     } catch (err) {
       setRollbackStatus({ success: false, message: err.response?.data?.message || 'Rollback failed' });
@@ -130,6 +167,7 @@ export default function AuditLogs() {
       fetchBackups();
       setRollbackStatus({ success: true, message: 'Database snapshot created successfully!' });
     } catch (err) {
+      console.error("Backup trigger failed:", err);
       setRollbackStatus({ success: false, message: 'Failed to create snapshot' });
     } finally {
       setLoading(false);
@@ -168,262 +206,461 @@ export default function AuditLogs() {
     }
   };
 
+  // User CRUD
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingUser) {
+        await adminService.updateUser(editingUser.id, userForm);
+      } else {
+        await adminService.createUser(userForm);
+      }
+      setShowUserModal(false);
+      fetchUsers();
+    } catch (err) {
+      alert('Failed to save user');
+    }
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this user account?')) return;
+    try {
+      await adminService.deleteUser(id);
+      fetchUsers();
+    } catch (err) {
+      alert('Failed to delete user');
+    }
+  };
+
+  // Role CRUD
+  const handleSaveRole = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingRole) {
+        await adminService.updateRole(editingRole.id, roleForm);
+      } else {
+        await adminService.createRole(roleForm);
+      }
+      setShowRoleModal(false);
+      fetchRoles();
+    } catch (err) {
+      alert('Failed to save role');
+    }
+  };
+
+  const handleDeleteRole = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this role?')) return;
+    try {
+      await adminService.deleteRole(id);
+      fetchRoles();
+    } catch (err) {
+      alert('Failed to delete role');
+    }
+  };
+
   return (
-    <div className="flex-1 container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">Administration & Audit</h2>
-
-      {rollbackStatus && (
-        <div className={`p-4 rounded-md mb-4 flex items-center justify-between ${rollbackStatus.success ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
-          <div className="flex items-center space-x-2">
-            <span className="font-bold">{rollbackStatus.success ? '✓' : '⚠'}</span>
-            <span>{rollbackStatus.message}</span>
-          </div>
+    <div className="flex-1 w-full bg-slate-50 min-h-screen p-6">
+      <div className="w-full space-y-6">
+        <div className="flex justify-between items-end">
+            <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                    <Shield className="text-blue-600" size={32} /> Administration & Audit
+                </h2>
+                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-1">System Governance & Traceability Engine</p>
+            </div>
+            {rollbackStatus && (
+                <div className={`px-4 py-2 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 ${rollbackStatus.success ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+                    <span className="font-black text-xs">{rollbackStatus.success ? 'SYSTEM OK:' : 'SYSTEM ALERT:'}</span>
+                    <span className="text-xs font-bold">{rollbackStatus.message}</span>
+                </div>
+            )}
         </div>
-      )}
 
-      {/* Inner Tabs */}
-      <div className="flex border-b border-slate-200 mb-6 overflow-x-auto">
-        {[
-          { id: 'audit', label: 'Audit Log & Rollback' },
-          { id: 'users', label: 'Users & Roles' },
-          { id: 'emails', label: 'Email Logs' },
-          { id: 'queries', label: 'Query Monitor (DBA)' },
-          { id: 'backups', label: 'Backups & Recovery (PITR)' },
-        ].map(t => (
-          <button 
-            key={t.id}
-            onClick={() => setAdminTab(t.id)}
-            className={`px-6 py-3 font-medium text-sm whitespace-nowrap ${adminTab === t.id ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            {t.label}
-          </button>
-        ))}
+        {/* Navigation Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+            {[
+                { id: 'audit', label: 'Audit Logs', icon: Activity },
+                { id: 'users', label: 'Users & Roles', icon: Users },
+                { id: 'emails', label: 'Notifications', icon: Mail },
+                { id: 'queries', label: 'DB Monitor', icon: Terminal },
+                { id: 'backups', label: 'Recovery', icon: Database },
+            ].map(t => (
+                <button 
+                    key={t.id}
+                    onClick={() => setAdminTab(t.id)}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${adminTab === t.id ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'}`}
+                >
+                    <t.icon size={16} />
+                    {t.label}
+                </button>
+            ))}
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            {adminTab === 'audit' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Operations Traceability Ledger</h3>
+                        <button onClick={fetchAuditLogs} className="text-blue-600 font-black text-[10px] uppercase">Refresh Logs</button>
+                    </div>
+                    <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                        <table className="min-w-full divide-y divide-slate-100 text-sm">
+                            <thead className="bg-slate-50/50">
+                                <tr>{['Timestamp', 'Identity', 'Operation', 'Module / Entity', 'Snapshots', 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-slate-50">
+                                {auditLogs.map((row) => (
+                                    <tr key={row.id} className="hover:bg-slate-50/50 transition-all">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="font-black text-slate-700 text-xs">{new Date(row.occurred_at).toLocaleDateString()}</div>
+                                            <div className="text-[10px] font-bold text-slate-400">{new Date(row.occurred_at).toLocaleTimeString()}</div>
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-slate-600 text-xs">{row.actor_name || 'System'}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest ${
+                                                row.action_type === 'INSERT' ? 'bg-blue-50 text-blue-600' :
+                                                row.action_type === 'UPDATE' ? 'bg-amber-50 text-amber-600' :
+                                                row.action_type === 'DELETE' ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-600'
+                                            }`}>{row.action_type}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-black text-slate-800 text-[10px]">{row.module}</div>
+                                            <div className="text-[9px] font-bold text-slate-400">{row.entity_type}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex gap-2">
+                                                {row.before_snapshot_json && <span className="bg-red-50 text-red-500 p-1.5 rounded-lg font-black text-[8px] uppercase">Before</span>}
+                                                {row.after_snapshot_json && <span className="bg-emerald-50 text-emerald-500 p-1.5 rounded-lg font-black text-[8px] uppercase">After</span>}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {(row.action_type === 'UPDATE' || row.action_type === 'INSERT') && (
+                                                <button onClick={() => handleRollback(row)} className="bg-slate-900 text-white px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-black transition-all">Rollback</button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {adminTab === 'users' && (
+                <div className="space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Roles Section */}
+                        <div className="lg:col-span-4 space-y-4">
+                            <div className="flex items-center justify-between px-2">
+                                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Permission Profiles</h3>
+                                <button onClick={() => { setEditingRole(null); setRoleForm({ code: '', name: '', description: '' }); setShowRoleModal(true); }} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Plus size={14} /> Add Role</button>
+                            </div>
+                            <div className="space-y-2">
+                                {roles.map(role => (
+                                    <div key={role.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-between items-center group">
+                                        <div>
+                                            <div className="font-black text-slate-800 text-sm">{role.name}</div>
+                                            <div className="text-[10px] font-bold text-blue-600 font-mono uppercase tracking-tighter">{role.code}</div>
+                                        </div>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                            <button onClick={() => { setEditingRole(role); setRoleForm({ code: role.code, name: role.name, description: role.description }); setShowRoleModal(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all"><Edit2 size={14} /></button>
+                                            <button onClick={() => handleDeleteRole(role.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-white rounded-xl transition-all"><Trash2 size={14} /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Users Section */}
+                        <div className="lg:col-span-8 space-y-4">
+                             <div className="flex items-center justify-between px-2">
+                                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Active Accounts</h3>
+                                <button onClick={() => { setEditingUser(null); setUserForm({ sso_subject: '', username: '', email: '', full_name: '', account_status: 'ACTIVE' }); setShowUserModal(true); }} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Plus size={14} /> New User</button>
+                            </div>
+                            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                                <table className="min-w-full divide-y divide-slate-100 text-sm">
+                                    <thead className="bg-slate-50/50">
+                                        <tr>{['User Identity', 'SSO Context', 'Status', 'Assigned Role', 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-slate-50">
+                                        {users.map(u => (
+                                            <tr key={u.id} className="hover:bg-slate-50/50 transition-all group">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-black text-slate-800 text-sm">{u.full_name}</div>
+                                                    <div className="text-[10px] font-bold text-slate-400">{u.email}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-mono text-[9px] font-black text-blue-600 uppercase">{u.username}</div>
+                                                    <div className="text-[8px] font-bold text-slate-300 truncate max-w-[80px]" title={u.sso_subject}>{u.sso_subject}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                     <span className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest uppercase ${u.account_status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>{u.account_status}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Select 
+                                                        options={roles.map(r => ({ value: r.id, label: r.name }))}
+                                                        value={u.role_id ? { value: u.role_id, label: roles.find(r => r.id === u.role_id)?.name } : null}
+                                                        onChange={(option) => handleRoleChange(u.id, option ? option.value : '')}
+                                                        placeholder="-- Role --"
+                                                        styles={{
+                                                            control: (base) => ({
+                                                                ...base,
+                                                                borderRadius: '0.75rem',
+                                                                border: '1px solid #e2e8f0',
+                                                                fontSize: '10px',
+                                                                fontWeight: '900',
+                                                                boxShadow: 'none',
+                                                                minWidth: '120px'
+                                                            })
+                                                        }}
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => { setEditingUser(u); setUserForm({ sso_subject: u.sso_subject, username: u.username, email: u.email, full_name: u.full_name, account_status: u.account_status }); setShowUserModal(true); }} className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={14} /></button>
+                                                        <button onClick={() => handleDeleteUser(u.id)} className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={14} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {adminTab === 'emails' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Communication Logs</h3>
+                        <button onClick={fetchEmailLogs} className="text-blue-600 font-black text-[10px] uppercase">Refresh</button>
+                    </div>
+                    <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                        <table className="min-w-full divide-y divide-slate-100 text-sm">
+                            <thead className="bg-slate-50/50">
+                                <tr>{['Sent At', 'Sender', 'Target', 'Subject', 'Status'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-slate-50">
+                                {emailLogs.map(log => (
+                                    <tr key={log.id} className="hover:bg-slate-50/50 transition-all">
+                                        <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-slate-400">{new Date(log.sent_at).toLocaleString()}</td>
+                                        <td className="px-6 py-4 font-black text-slate-700 text-xs">{log.sent_by || 'System'}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-black text-blue-600 text-[10px] uppercase">{log.group_name || 'Academic Formation'}</div>
+                                            <div className="text-[9px] font-bold text-slate-400 truncate max-w-[150px]" title={log.recipients}>{log.recipients}</div>
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-slate-600 text-xs">{log.subject}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase">{log.delivery_status}</span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {adminTab === 'queries' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Live Database Activity</h3>
+                        <button onClick={fetchQueries} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Activity size={14} /> Refresh Monitor</button>
+                    </div>
+                    <div className="overflow-x-auto rounded-2xl border border-slate-100 bg-slate-900">
+                        <table className="min-w-full divide-y divide-slate-800 text-sm">
+                            <thead className="bg-slate-800/50">
+                                <tr>{['PID', 'User', 'State', 'Query Context'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-500 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800">
+                                {queries.map(q => (
+                                    <tr key={q.pid} className="hover:bg-slate-800 transition-all">
+                                        <td className="px-6 py-4 font-mono text-[10px] font-black text-blue-400">{q.pid}</td>
+                                        <td className="px-6 py-4 font-black text-slate-300 text-xs">{q.username}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest uppercase ${q.state === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'}`}>{q.state}</span>
+                                        </td>
+                                        <td className="px-6 py-4 font-mono text-[9px] text-slate-500 max-w-xl truncate" title={q.query}>{q.query}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {adminTab === 'backups' && (
+                <div className="space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Manual Backup Card */}
+                        <div className="bg-slate-900 rounded-3xl p-8 flex flex-col justify-between shadow-2xl shadow-slate-200 border border-slate-800">
+                            <div>
+                                <h3 className="text-xl font-black text-white mb-2">Manual Snapshot</h3>
+                                <p className="text-slate-400 text-[10px] font-black leading-relaxed uppercase tracking-widest mb-6">Immediate point-in-time recovery system. Trigger an instant encrypted database snapshot.</p>
+                            </div>
+                            <button onClick={handleCreateBackup} disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all flex items-center justify-center gap-3">
+                                <Database size={20} /> Create Manual Snapshot
+                            </button>
+                        </div>
+
+                        {/* Automatic Backup Card */}
+                        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <form onSubmit={handleUpdateBackupConfig} className="space-y-6">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 mb-1">Timed Automation</h3>
+                                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Scheduled CRON-based Backup Protocol</p>
+                                    </div>
+                                    <label className={`relative inline-flex items-center cursor-pointer p-1 rounded-xl transition-all ${backupConfig.enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                                        <input type="checkbox" className="hidden" checked={backupConfig.enabled} onChange={e => setBackupConfig({...backupConfig, enabled: e.target.checked})} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest px-2">{backupConfig.enabled ? 'Enabled' : 'Disabled'}</span>
+                                    </label>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">CRON Expression</label>
+                                        <div className="flex gap-2">
+                                            <input 
+                                                required 
+                                                type="text" 
+                                                value={backupConfig.cron_expression} 
+                                                onChange={e => setBackupConfig({...backupConfig, cron_expression: e.target.value})} 
+                                                className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" 
+                                                placeholder="e.g. 0 0 * * *" 
+                                            />
+                                            <button type="submit" className="bg-slate-900 text-white px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all">Update</button>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button type="button" onClick={() => setBackupConfig({...backupConfig, cron_expression: '0 0 * * *'})} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-100 transition-all">Midnight Daily</button>
+                                        <button type="button" onClick={() => setBackupConfig({...backupConfig, cron_expression: '0 0 * * 0'})} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-100 transition-all">Weekly (Sun)</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px] px-2">Encryption-Verified Snapshots</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {backups.map(b => (
+                                <div key={b.filename} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all group">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="bg-slate-50 p-3 rounded-2xl text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                                            <Database size={24} />
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[10px] font-black text-slate-300 uppercase">Size</div>
+                                            <div className="text-xs font-black text-slate-600">{(b.size / 1024).toFixed(2)} KB</div>
+                                        </div>
+                                    </div>
+                                    <div className="font-mono text-[10px] font-black text-slate-800 mb-1 truncate" title={b.filename}>{b.filename}</div>
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-6">{new Date(b.createdAt).toLocaleString()}</div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleDownloadBackup(b.filename)} className="flex-1 bg-slate-50 text-slate-600 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-100 transition-all">Download</button>
+                                        <button onClick={() => handleRestoreBackup(b.filename)} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">Restore</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
       </div>
 
-      {/* Tab Content */}
-      {adminTab === 'audit' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
-              <tr>{['Timestamp', 'User', 'Action', 'Entity', 'Before', 'After', 'Rollback'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {loading && auditLogs.length === 0 ? (
-                <tr><td colSpan="7" className="text-center py-4">Loading...</td></tr>
-              ) : auditLogs.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{new Date(row.occurred_at).toLocaleString()}</td>
-                  <td className="px-6 py-4 font-mono text-xs">{row.actor_name || 'System'}</td>
-                  <td className="px-6 py-4 font-medium">{row.action_type}</td>
-                  <td className="px-6 py-4">{row.entity_type}</td>
-                  <td className="px-6 py-4 text-red-500 text-xs align-top">
-                    {row.before_snapshot_json ? (
-                      <pre className="whitespace-pre-wrap overflow-x-auto p-2 bg-slate-50 rounded border border-red-100 max-w-xs max-h-32">
-                        {JSON.stringify(row.before_snapshot_json, null, 2)}
-                      </pre>
-                    ) : '-'}
-                  </td>
-                  <td className="px-6 py-4 text-green-600 text-xs align-top">
-                    {row.after_snapshot_json ? (
-                      <pre className="whitespace-pre-wrap overflow-x-auto p-2 bg-slate-50 rounded border border-green-100 max-w-xs max-h-32">
-                        {JSON.stringify(row.after_snapshot_json, null, 2)}
-                      </pre>
-                    ) : '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    {(row.action_type === 'UPDATE' || row.action_type === 'INSERT') && (
-                      <button 
-                        onClick={() => handleRollback(row)}
-                        className={`hover:text-white border px-2 py-1 rounded text-xs transition ${
-                          row.action_type === 'INSERT' 
-                            ? 'text-orange-600 border-orange-200 bg-orange-50 hover:bg-orange-600' 
-                            : 'text-red-600 border-red-200 bg-red-50 hover:bg-red-600'
-                        }`}
-                        title={row.action_type === 'INSERT' ? 'Undo creation (Delete)' : 'Restore previous values'}
-                      >
-                        {row.action_type === 'INSERT' ? 'Undo Insert' : 'Rollback'}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* User Modal */}
+      {showUserModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+                  <div className="flex justify-between items-center mb-6">
+                      <div>
+                          <h3 className="text-xl font-black text-slate-900">{editingUser ? 'Account Modification' : 'New Account Provisioning'}</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Identity Management Protocol</p>
+                      </div>
+                      <button onClick={() => setShowUserModal(false)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
+                  </div>
+                  <form onSubmit={handleSaveUser} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                            <input required type="text" value={userForm.full_name} onChange={e => setUserForm({...userForm, full_name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
+                            <input required type="text" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                            <input required type="email" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                      </div>
+                      <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SSO Subject (Unique Identifier)</label>
+                            <input required type="text" value={userForm.sso_subject} onChange={e => setUserForm({...userForm, sso_subject: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" placeholder="e.g. auth0|..." />
+                      </div>
+                      <div className="space-y-1 pt-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Status</label>
+                            <div className="flex gap-4">
+                                <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl border cursor-pointer transition-all font-black text-[10px] uppercase tracking-widest ${userForm.account_status === 'ACTIVE' ? 'bg-emerald-50 border-emerald-500 text-emerald-600 shadow-lg shadow-emerald-50' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}">
+                                    <input type="radio" className="hidden" checked={userForm.account_status === 'ACTIVE'} onChange={() => setUserForm({...userForm, account_status: 'ACTIVE'})} />
+                                    {userForm.account_status === 'ACTIVE' && <Check size={14} />} Active
+                                </label>
+                                <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl border cursor-pointer transition-all font-black text-[10px] uppercase tracking-widest ${userForm.account_status === 'SUSPENDED' ? 'bg-red-50 border-red-500 text-red-600 shadow-lg shadow-red-50' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}">
+                                    <input type="radio" className="hidden" checked={userForm.account_status === 'SUSPENDED'} onChange={() => setUserForm({...userForm, account_status: 'SUSPENDED'})} />
+                                    {userForm.account_status === 'SUSPENDED' && <Check size={14} />} Suspended
+                                </label>
+                            </div>
+                      </div>
+                      <div className="flex gap-3 pt-6">
+                          <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Cancel</button>
+                          <button type="submit" className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2">
+                              <Save size={18} /> {editingUser ? 'Update Profile' : 'Create Account'}
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
       )}
 
-      {adminTab === 'users' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
-              <tr>{['Name', 'Email', 'SSO Subject', 'Status', 'Role'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {loading && users.length === 0 ? (
-                <tr><td colSpan="5" className="text-center py-4 text-slate-500">Loading users...</td></tr>
-              ) : users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-4 font-medium">{user.full_name}</td>
-                  <td className="px-6 py-4 text-slate-500">{user.email}</td>
-                  <td className="px-6 py-4 font-mono text-xs">{user.sso_subject}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.account_status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {user.account_status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <select 
-                      className="border border-slate-300 rounded p-1 text-sm bg-white focus:ring-blue-500"
-                      value={user.role_id || ''}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                    >
-                      <option value="" disabled>-- Select Role --</option>
-                      {roles.map(r => (
-                        <option key={r.id} value={r.id}>{r.name} ({r.code})</option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Role Modal */}
+      {showRoleModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+                  <div className="flex justify-between items-center mb-6">
+                      <div>
+                          <h3 className="text-xl font-black text-slate-900">{editingRole ? 'Role Refinement' : 'New Profile Definition'}</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Access Control Configuration</p>
+                      </div>
+                      <button onClick={() => setShowRoleModal(false)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
+                  </div>
+                  <form onSubmit={handleSaveRole} className="space-y-4">
+                      <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Role Label (Display Name)</label>
+                            <input required type="text" value={roleForm.name} onChange={e => setRoleForm({...roleForm, name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" placeholder="e.g. Dean" />
+                      </div>
+                      <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">System Code (Immutable Key)</label>
+                            <input required type="text" value={roleForm.code} onChange={e => setRoleForm({...roleForm, code: e.target.value.toUpperCase()})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" placeholder="E.G. DEAN_OFFICE" />
+                      </div>
+                      <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Responsibility Scope</label>
+                            <textarea rows="3" value={roleForm.description} onChange={e => setRoleForm({...roleForm, description: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all resize-none" placeholder="Describe the permissions and access level..."></textarea>
+                      </div>
+                      <div className="flex gap-3 pt-6">
+                          <button type="button" onClick={() => setShowRoleModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Cancel</button>
+                          <button type="submit" className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2">
+                              <Save size={18} /> {editingRole ? 'Update Profile' : 'Initialize Role'}
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
       )}
-
-      {adminTab === 'emails' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-            <h3 className="font-semibold text-slate-800">Sent Emails & Notifications</h3>
-            <button onClick={fetchEmailLogs} className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium">
-              Refresh
-            </button>
-          </div>
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
-              <tr>{['Sent At', 'Sender', 'Target', 'Subject', 'Preview', 'Status'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {loading && emailLogs.length === 0 ? (
-                <tr><td colSpan="6" className="text-center py-4 text-slate-500">Loading emails...</td></tr>
-              ) : emailLogs.length === 0 ? (
-                <tr><td colSpan="6" className="text-center py-4 text-slate-500">No emails sent yet.</td></tr>
-              ) : emailLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-slate-500 text-xs">{new Date(log.sent_at).toLocaleString()}</td>
-                  <td className="px-6 py-4 font-medium">{log.sent_by || 'System'}</td>
-                  <td className="px-6 py-4">
-                    <div className="text-xs font-bold text-blue-700">{log.group_name || 'Study Formation'}</div>
-                    <div className="text-xs text-slate-500 truncate max-w-[150px]" title={log.recipients}>{log.recipients}</div>
-                  </td>
-                  <td className="px-6 py-4 font-medium">{log.subject}</td>
-                  <td className="px-6 py-4 text-xs text-slate-600 truncate max-w-xs">{log.body_preview}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      {log.delivery_status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {adminTab === 'queries' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-            <h3 className="font-semibold text-slate-800">Active PostgreSQL Queries</h3>
-            <button onClick={fetchQueries} className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium flex items-center space-x-1">
-              <Activity className="h-3 w-3" />
-              <span>Refresh Monitor</span>
-            </button>
-          </div>
-          <div className="overflow-x-auto max-w-full">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50">
-                <tr>{['PID', 'User', 'State', 'Last Change', 'Query'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {loading && queries.length === 0 ? (
-                  <tr><td colSpan="5" className="text-center py-4 text-slate-500">Loading queries...</td></tr>
-                ) : queries.length === 0 ? (
-                  <tr><td colSpan="5" className="text-center py-4 text-slate-500">No active queries.</td></tr>
-                ) : queries.map((q) => (
-                  <tr key={q.pid} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 font-mono text-xs">{q.pid}</td>
-                    <td className="px-6 py-4">{q.username}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${q.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}`}>
-                        {q.state}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-slate-500">{new Date(q.state_change).toLocaleTimeString()}</td>
-                    <td className="px-6 py-4 font-mono text-xs max-w-md truncate text-slate-700" title={q.query}>
-                      {q.query}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {adminTab === 'backups' && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center bg-blue-50 border border-blue-100 p-6 rounded-lg">
-            <div>
-              <h3 className="text-lg font-bold text-blue-900 mb-1">Manual Database Snapshots</h3>
-              <p className="text-sm text-blue-700">Create point-in-time snapshots for recovery or offline archiving (REQ-AFSMS-55/56).</p>
-            </div>
-            <button 
-              onClick={handleCreateBackup}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-bold shadow-lg transition disabled:opacity-50 flex items-center space-x-2"
-            >
-              <Activity className="h-5 w-5" />
-              <span>Create Snapshot</span>
-            </button>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 font-semibold text-slate-700">Available Recovery Points</div>
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50">
-                <tr>{['Filename', 'Size', 'Created At', 'Actions'].map(h => <th key={h} className="px-6 py-3 text-left font-semibold text-slate-600 uppercase tracking-wider">{h}</th>)}</tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {loading && backups.length === 0 ? (
-                  <tr><td colSpan="4" className="text-center py-4">Loading backups...</td></tr>
-                ) : backups.length === 0 ? (
-                  <tr><td colSpan="4" className="text-center py-4 text-slate-500">No snapshots found.</td></tr>
-                ) : backups.map((b) => (
-                  <tr key={b.filename} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 font-mono text-xs font-bold text-slate-700">{b.filename}</td>
-                    <td className="px-6 py-4 text-slate-500">{(b.size / 1024).toFixed(2)} KB</td>
-                    <td className="px-6 py-4 text-slate-500">{new Date(b.createdAt).toLocaleString()}</td>
-                    <td className="px-6 py-4 flex space-x-3">
-                      <button 
-                        onClick={() => handleDownloadBackup(b.filename)}
-                        className="text-emerald-600 hover:text-emerald-800 font-bold flex items-center space-x-1"
-                      >
-                        Download
-                      </button>
-                      <button 
-                        onClick={() => handleRestoreBackup(b.filename)}
-                        className="text-red-600 hover:text-red-800 font-bold border border-red-200 px-2 py-1 rounded bg-red-50 hover:bg-red-100"
-                      >
-                        Restore DB
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

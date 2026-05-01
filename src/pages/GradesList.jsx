@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { Trash2, Edit2, CheckCircle, AlertCircle, Filter, X, Save } from 'lucide-react';
 import api from '../services/api';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -224,64 +225,54 @@ export default function GradesList() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Student</label>
-              <select
-                value={filters.student_id}
-                onChange={(e) => handleFilterChange('student_id', e.target.value)}
-                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
-              >
-                <option value="">-- All --</option>
-                {students.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.last_name} {s.first_name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={students.map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name}` }))}
+                value={filters.student_id ? { value: filters.student_id, label: students.find(s => s.id === filters.student_id)?.last_name + ' ' + students.find(s => s.id === filters.student_id)?.first_name } : null}
+                onChange={(option) => handleFilterChange('student_id', option ? option.value : '')}
+                placeholder="-- All Students --"
+                isClearable
+                className="text-sm"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Discipline</label>
-              <select
-                value={filters.discipline_id}
-                onChange={(e) => handleFilterChange('discipline_id', e.target.value)}
-                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
-              >
-                <option value="">-- All --</option>
-                {disciplines.map(d => (
-                  <option key={d.id} value={d.id}>
-                    {d.code} - {d.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={disciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))}
+                value={filters.discipline_id ? { value: filters.discipline_id, label: disciplines.find(d => d.id === filters.discipline_id)?.name } : null}
+                onChange={(option) => handleFilterChange('discipline_id', option ? option.value : '')}
+                placeholder="-- All Disciplines --"
+                isClearable
+                className="text-sm"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Academic Year</label>
-              <select
-                value={filters.academic_year_id}
-                onChange={(e) => handleFilterChange('academic_year_id', e.target.value)}
-                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
-              >
-                <option value="">-- All --</option>
-                {academicYears.map(y => (
-                  <option key={y.id} value={y.id}>
-                    {y.year_start}/{y.year_end}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={academicYears.map(y => ({ value: y.id, label: `${y.year_start}/${y.year_end}` }))}
+                value={filters.academic_year_id ? { value: filters.academic_year_id, label: academicYears.find(y => y.id === filters.academic_year_id)?.year_start + '/' + academicYears.find(y => y.id === filters.academic_year_id)?.year_end } : null}
+                onChange={(option) => handleFilterChange('academic_year_id', option ? option.value : '')}
+                placeholder="-- All Years --"
+                isClearable
+                className="text-sm"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Exam Session</label>
-              <select
-                value={filters.exam_session}
-                onChange={(e) => handleFilterChange('exam_session', e.target.value)}
-                className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
-              >
-                <option value="">-- All --</option>
-                <option value="WINTER">Winter (January-February)</option>
-                <option value="SUMMER">Summer (June-July)</option>
-                <option value="RETAKE">Retake (August-September)</option>
-              </select>
+              <Select
+                options={[
+                  { value: 'WINTER', label: 'Winter (January-February)' },
+                  { value: 'SUMMER', label: 'Summer (June-July)' },
+                  { value: 'RETAKE', label: 'Retake (August-September)' }
+                ]}
+                value={filters.exam_session ? { value: filters.exam_session, label: filters.exam_session } : null}
+                onChange={(option) => handleFilterChange('exam_session', option ? option.value : '')}
+                placeholder="-- All Sessions --"
+                isClearable
+                className="text-sm"
+              />
             </div>
 
             <div>
@@ -343,13 +334,12 @@ export default function GradesList() {
                   {/* STUDENT EDIT */}
                   <td className="p-4">
                     {editingId === grade.id ? (
-                      <select 
-                        value={editForm.student_id}
-                        onChange={(e) => setEditForm({...editForm, student_id: e.target.value})}
-                        className="w-full p-1 text-sm border border-slate-300 rounded"
-                      >
-                        {students.map(s => <option key={s.id} value={s.id}>{s.last_name} {s.first_name}</option>)}
-                      </select>
+                      <Select 
+                        options={students.map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name}` }))}
+                        value={{ value: editForm.student_id, label: students.find(s => s.id === editForm.student_id)?.last_name + ' ' + students.find(s => s.id === editForm.student_id)?.first_name }}
+                        onChange={(option) => setEditForm({...editForm, student_id: option ? option.value : ''})}
+                        className="text-xs min-w-[150px]"
+                      />
                     ) : (
                       <>
                         <div className="font-mono text-xs text-blue-600 font-bold">{grade.registration_number}</div>
@@ -361,13 +351,12 @@ export default function GradesList() {
                   {/* DISCIPLINE EDIT */}
                   <td className="p-4">
                     {editingId === grade.id ? (
-                      <select 
-                        value={editForm.discipline_id}
-                        onChange={(e) => setEditForm({...editForm, discipline_id: e.target.value})}
-                        className="w-full p-1 text-sm border border-slate-300 rounded"
-                      >
-                        {disciplines.map(d => <option key={d.id} value={d.id}>{d.code} - {d.name}</option>)}
-                      </select>
+                      <Select 
+                        options={disciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))}
+                        value={{ value: editForm.discipline_id, label: disciplines.find(d => d.id === editForm.discipline_id)?.name }}
+                        onChange={(option) => setEditForm({...editForm, discipline_id: option ? option.value : ''})}
+                        className="text-xs min-w-[150px]"
+                      />
                     ) : (
                       <>
                         <div className="font-medium">{grade.discipline_name}</div>
@@ -399,15 +388,16 @@ export default function GradesList() {
                   {/* SESSION EDIT */}
                   <td className="p-4">
                     {editingId === grade.id ? (
-                      <select 
-                        value={editForm.exam_session}
-                        onChange={(e) => setEditForm({...editForm, exam_session: e.target.value})}
-                        className="w-full p-1 text-sm border border-slate-300 rounded"
-                      >
-                        <option value="WINTER">Winter</option>
-                        <option value="SUMMER">Summer</option>
-                        <option value="RETAKE">Retake</option>
-                      </select>
+                      <Select 
+                        options={[
+                          { value: 'WINTER', label: 'Winter' },
+                          { value: 'SUMMER', label: 'Summer' },
+                          { value: 'RETAKE', label: 'Retake' }
+                        ]}
+                        value={{ value: editForm.exam_session, label: editForm.exam_session }}
+                        onChange={(option) => setEditForm({...editForm, exam_session: option ? option.value : 'WINTER'})}
+                        className="text-xs min-w-[100px]"
+                      />
                     ) : (
                       <span className="text-sm">{grade.exam_session || '-'}</span>
                     )}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { Download, AlertCircle, CheckCircle, FileText, Filter, Users, BookOpen, GraduationCap, Calendar, Layers, Hash, CheckSquare, Search } from 'lucide-react';
 import api from '../services/api';
 import jsPDF from 'jspdf';
@@ -226,85 +227,92 @@ export default function Centralizer() {
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <Calendar size={12} className="text-blue-600" /> Academic Year
                     </label>
-                    <select 
-                        value={filters.academic_year_id} 
-                        onChange={e => setFilters({...filters, academic_year_id: e.target.value})}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-black text-xs text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
-                    >
-                        <option value="">-- All Years (Transcript) --</option>
-                        {academicYears.map(y => <option key={y.id} value={y.id}>{y.year_start}/{y.year_end}</option>)}
-                    </select>
+                    <Select 
+                        options={academicYears.map(y => ({ value: y.id, label: `${y.year_start}/${y.year_end}` }))}
+                        value={filters.academic_year_id ? { value: filters.academic_year_id, label: academicYears.find(y => y.id === filters.academic_year_id)?.year_start + '/' + academicYears.find(y => y.id === filters.academic_year_id)?.year_end } : null}
+                        onChange={option => setFilters({...filters, academic_year_id: option ? option.value : ''})}
+                        placeholder="-- All Years --"
+                        isClearable
+                        styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '12px' }) }}
+                    />
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <GraduationCap size={12} /> Specialization
                     </label>
-                    <select 
-                        value={filters.specialization_id} 
-                        onChange={e => setFilters({...filters, specialization_id: e.target.value, curriculum_id: ''})}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
-                    >
-                        <option value="">-- All Specializations --</option>
-                        {specializations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.degree_level})</option>)}
-                    </select>
+                    <Select 
+                        options={specializations.map(s => ({ value: s.id, label: `${s.name} (${s.degree_level})` }))}
+                        value={filters.specialization_id ? { value: filters.specialization_id, label: specializations.find(s => s.id === filters.specialization_id)?.name } : null}
+                        onChange={option => setFilters({...filters, specialization_id: option ? option.value : '', curriculum_id: ''})}
+                        placeholder="-- All Specializations --"
+                        isClearable
+                        styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '12px' }) }}
+                    />
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <Layers size={12} /> Study Plan
                     </label>
-                    <select 
-                        value={filters.curriculum_id} 
-                        onChange={e => setFilters({...filters, curriculum_id: e.target.value})}
-                        disabled={!filters.specialization_id}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all disabled:opacity-50"
-                    >
-                        <option value="">-- All Plans --</option>
-                        {curricula.filter(c => c.specialization_id === filters.specialization_id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    <Select 
+                        options={curricula.filter(c => c.specialization_id === filters.specialization_id).map(c => ({ value: c.id, label: c.name }))}
+                        value={filters.curriculum_id ? { value: filters.curriculum_id, label: curricula.find(c => c.id === filters.curriculum_id)?.name } : null}
+                        onChange={option => setFilters({...filters, curriculum_id: option ? option.value : ''})}
+                        isDisabled={!filters.specialization_id}
+                        placeholder="-- All Plans --"
+                        isClearable
+                        styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '12px' }) }}
+                    />
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <BookOpen size={12} /> Discipline
                     </label>
-                    <select 
-                        value={filters.discipline_id} 
-                        onChange={e => setFilters({...filters, discipline_id: e.target.value})}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
-                    >
-                        <option value="">-- All Disciplines --</option>
-                        {disciplines
+                    <Select 
+                        options={disciplines
                             .filter(d => !filters.curriculum_id || d.curriculum_id === filters.curriculum_id)
-                            .map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)
-                        }
-                    </select>
+                            .map(d => ({ value: d.id, label: `${d.name} (${d.code})` }))}
+                        value={filters.discipline_id ? { value: filters.discipline_id, label: disciplines.find(d => d.id === filters.discipline_id)?.name } : null}
+                        onChange={option => setFilters({...filters, discipline_id: option ? option.value : ''})}
+                        placeholder="-- All Disciplines --"
+                        isClearable
+                        styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '12px' }) }}
+                    />
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Degree Level</label>
-                    <select 
-                        value={filters.degree_level} 
-                        onChange={e => setFilters({...filters, degree_level: e.target.value})}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
-                    >
-                        <option value="">-- All Levels --</option>
-                        <option value="Bachelor">Bachelor</option>
-                        <option value="Master">Master</option>
-                        <option value="PhD">PhD</option>
-                    </select>
+                    <Select 
+                        options={[
+                            { value: 'Bachelor', label: 'Bachelor' },
+                            { value: 'Master', label: 'Master' },
+                            { value: 'PhD', label: 'PhD' }
+                        ]}
+                        value={filters.degree_level ? { value: filters.degree_level, label: filters.degree_level } : null}
+                        onChange={option => setFilters({...filters, degree_level: option ? option.value : ''})}
+                        placeholder="-- All Levels --"
+                        isClearable
+                        styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '12px' }) }}
+                    />
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Study Year</label>
-                    <select value={filters.study_year} onChange={e => setFilters({...filters, study_year: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50">
-                        <option value="">-- All --</option>
-                        <option value="1">Year 1</option>
-                        <option value="2">Year 2</option>
-                        <option value="3">Year 3</option>
-                        <option value="4">Year 4</option>
-                    </select>
+                    <Select 
+                        options={[
+                            { value: '1', label: 'Year 1' },
+                            { value: '2', label: 'Year 2' },
+                            { value: '3', label: 'Year 3' },
+                            { value: '4', label: 'Year 4' }
+                        ]}
+                        value={filters.study_year ? { value: filters.study_year, label: `Year ${filters.study_year}` } : null}
+                        onChange={option => setFilters({...filters, study_year: option ? option.value : ''})}
+                        placeholder="-- All --"
+                        isClearable
+                        styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '12px' }) }}
+                    />
                 </div>
 
                 <div className="space-y-1.5">
@@ -324,31 +332,33 @@ export default function Centralizer() {
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <Hash size={12} /> Semester
                     </label>
-                    <select 
-                        value={filters.semester} 
-                        onChange={e => setFilters({...filters, semester: e.target.value})}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
-                    >
-                        <option value="">-- All --</option>
-                        {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
-                    </select>
+                    <Select 
+                        options={[1,2,3,4,5,6,7,8].map(s => ({ value: String(s), label: `Semester ${s}` }))}
+                        value={filters.semester ? { value: filters.semester, label: `Semester ${filters.semester}` } : null}
+                        onChange={option => setFilters({...filters, semester: option ? option.value : ''})}
+                        placeholder="-- All --"
+                        isClearable
+                        styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '12px' }) }}
+                    />
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1">
                         <CheckSquare size={12} /> Evaluation
                     </label>
-                    <select 
-                        value={filters.evaluation_type} 
-                        onChange={e => setFilters({...filters, evaluation_type: e.target.value})}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
-                    >
-                        <option value="">-- All --</option>
-                        <option value="EXAM">Exam</option>
-                        <option value="COLLOQUIUM">Colloquium</option>
-                        <option value="PROJECT">Project</option>
-                        <option value="VERIFICATION">Verification</option>
-                    </select>
+                    <Select 
+                        options={[
+                            { value: 'EXAM', label: 'Exam' },
+                            { value: 'COLLOQUIUM', label: 'Colloquium' },
+                            { value: 'PROJECT', label: 'Project' },
+                            { value: 'VERIFICATION', label: 'Verification' }
+                        ]}
+                        value={filters.evaluation_type ? { value: filters.evaluation_type, label: filters.evaluation_type } : null}
+                        onChange={option => setFilters({...filters, evaluation_type: option ? option.value : ''})}
+                        placeholder="-- All --"
+                        isClearable
+                        styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '12px' }) }}
+                    />
                 </div>
 
                 <div className="space-y-1.5">

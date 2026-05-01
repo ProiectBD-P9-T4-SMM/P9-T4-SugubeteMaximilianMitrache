@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Select from 'react-select';
 import api from '../services/api';
 import { Trash2, Edit2, Plus, X, AlertCircle, CheckCircle, BookOpen, Layers, GraduationCap } from 'lucide-react';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -307,11 +308,24 @@ export default function Disciplines() {
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Degree Level</label>
-                <select value={specFormData.degree_level} onChange={e => setSpecFormData({...specFormData, degree_level: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none">
-                   <option value="BACHELOR">Bachelor</option>
-                   <option value="MASTER">Master</option>
-                   <option value="PHD">PhD</option>
-                </select>
+                <Select 
+                  options={[
+                    { value: 'BACHELOR', label: 'Bachelor' },
+                    { value: 'MASTER', label: 'Master' },
+                    { value: 'PHD', label: 'PhD' }
+                  ]}
+                  value={{ value: specFormData.degree_level, label: specFormData.degree_level.charAt(0) + specFormData.degree_level.slice(1).toLowerCase() }}
+                  onChange={option => setSpecFormData({...specFormData, degree_level: option ? option.value : 'BACHELOR'})}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderRadius: '0.5rem',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: 'none',
+                      '&:hover': { border: '1px solid #3b82f6' }
+                    })
+                  }}
+                />
               </div>
             </div>
             <div className="flex justify-end gap-2">
@@ -320,15 +334,30 @@ export default function Disciplines() {
             </div>
           </form>
         ) : (
-          <select
-            value={selectedSpecialization}
+          <Select
             ref={specRef}
-            onChange={(e) => setSelectedSpecialization(e.target.value)}
-            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
-          >
-            <option value="">-- Choose Specialization --</option>
-            {specializations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code}) - {s.degree_level}</option>)}
-          </select>
+            options={specializations.map(s => ({ 
+              value: s.id, 
+              label: `${s.name} (${s.code}) - ${s.degree_level}` 
+            }))}
+            value={selectedSpecialization ? { 
+              value: selectedSpecialization, 
+              label: specializations.find(s => s.id === selectedSpecialization)?.name + ' (' + specializations.find(s => s.id === selectedSpecialization)?.code + ')' 
+            } : null}
+            onChange={(option) => setSelectedSpecialization(option ? option.value : '')}
+            placeholder="-- Search Specialization --"
+            isClearable
+            styles={{
+              control: (base) => ({
+                ...base,
+                borderRadius: '0.75rem',
+                padding: '0.25rem',
+                border: '1px solid #e2e8f0',
+                boxShadow: 'none',
+                '&:hover': { border: '1px solid #cbd5e1' }
+              })
+            }}
+          />
         )}
       </div>
 
@@ -371,15 +400,27 @@ export default function Disciplines() {
             </div>
           </form>
         ) : (
-          <select
-            value={selectedCurriculum}
+          <Select
             ref={planRef}
-            onChange={(e) => setSelectedCurriculum(e.target.value)}
-            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
-          >
-            <option value="">-- Choose an existing Study Plan --</option>
-            {curricula.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
-          </select>
+            options={curricula.map(c => ({ value: c.id, label: `${c.name} (${c.code})` }))}
+            value={selectedCurriculum ? { 
+              value: selectedCurriculum, 
+              label: curricula.find(c => c.id === selectedCurriculum)?.name + ' (' + curricula.find(c => c.id === selectedCurriculum)?.code + ')' 
+            } : null}
+            onChange={(option) => setSelectedCurriculum(option ? option.value : '')}
+            placeholder="-- Search Study Plan --"
+            isClearable
+            styles={{
+              control: (base) => ({
+                ...base,
+                borderRadius: '0.75rem',
+                padding: '0.25rem',
+                border: '1px solid #e2e8f0',
+                boxShadow: 'none',
+                '&:hover': { border: '1px solid #cbd5e1' }
+              })
+            }}
+          />
         )}
       </div>
 
@@ -420,19 +461,45 @@ export default function Disciplines() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Study Year</label>
-                  <select value={disciplineFormData.year} onChange={e => setDisciplineFormData({...disciplineFormData, year: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none">
-                    <option value="1">Year 1</option>
-                    <option value="2">Year 2</option>
-                    <option value="3">Year 3</option>
-                    <option value="4">Year 4</option>
-                  </select>
+                  <Select
+                    options={[
+                      { value: '1', label: 'Year 1' },
+                      { value: '2', label: 'Year 2' },
+                      { value: '3', label: 'Year 3' },
+                      { value: '4', label: 'Year 4' }
+                    ]}
+                    value={{ value: disciplineFormData.year, label: `Year ${disciplineFormData.year}` }}
+                    onChange={option => setDisciplineFormData({...disciplineFormData, year: option ? option.value : '1'})}
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderRadius: '0.75rem',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: 'none',
+                        '&:hover': { border: '1px solid #3b82f6' }
+                      })
+                    }}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Semester</label>
-                  <select value={disciplineFormData.semester_in_year} onChange={e => setDisciplineFormData({...disciplineFormData, semester_in_year: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm focus:border-blue-500 outline-none">
-                    <option value="1">Semester 1</option>
-                    <option value="2">Semester 2</option>
-                  </select>
+                  <Select
+                    options={[
+                      { value: '1', label: 'Semester 1' },
+                      { value: '2', label: 'Semester 2' }
+                    ]}
+                    value={{ value: disciplineFormData.semester_in_year, label: `Semester ${disciplineFormData.semester_in_year}` }}
+                    onChange={option => setDisciplineFormData({...disciplineFormData, semester_in_year: option ? option.value : '1'})}
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderRadius: '0.75rem',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: 'none',
+                        '&:hover': { border: '1px solid #3b82f6' }
+                      })
+                    }}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Credits (ECTS)</label>

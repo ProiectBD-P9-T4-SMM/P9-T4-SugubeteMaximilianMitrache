@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Select from 'react-select';
 import { Database, Plus, Search, Edit, Trash, BookOpen, X, Check, MapPin, Calendar, Users, Save, ChevronRight, Layers, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { academicService, lookupService } from '../services/api';
@@ -359,12 +360,26 @@ export default function Students() {
                         </div>
                         <div>
                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">Academic Status</label>
-                            <select value={studentForm.status} onChange={e => setStudentForm({...studentForm, status: e.target.value})} className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all font-black text-sm text-slate-800">
-                                <option value="ENROLLED">ENROLLED</option>
-                                <option value="ACTIVE">ACTIVE</option>
-                                <option value="SUSPENDED">SUSPENDED</option>
-                                <option value="GRADUATED">GRADUATED</option>
-                            </select>
+                            <Select
+                                options={[
+                                    { value: 'ENROLLED', label: 'ENROLLED' },
+                                    { value: 'ACTIVE', label: 'ACTIVE' },
+                                    { value: 'SUSPENDED', label: 'SUSPENDED' },
+                                    { value: 'GRADUATED', label: 'GRADUATED' }
+                                ]}
+                                value={{ value: studentForm.status, label: studentForm.status }}
+                                onChange={option => setStudentForm({...studentForm, status: option ? option.value : 'ENROLLED'})}
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        borderRadius: '0.75rem',
+                                        padding: '0.25rem',
+                                        border: '1px solid #e2e8f0',
+                                        boxShadow: 'none',
+                                        '&:hover': { border: '1px solid #cbd5e1' }
+                                    })
+                                }}
+                            />
                         </div>
                     </div>
                  </section>
@@ -398,27 +413,45 @@ export default function Students() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">1. Specialization</label>
-                            <select 
-                              value={selectedSpecId} 
-                              disabled={!!editingEnrollmentId}
-                              onChange={e => { setSelectedSpecId(e.target.value); setSelectedCurriculumId(''); }}
-                              className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-sm text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 disabled:opacity-50"
-                            >
-                              <option value="">-- Choose Specialization --</option>
-                              {specializations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.degree_level})</option>)}
-                            </select>
+                            <Select 
+                              options={specializations.map(s => ({ value: s.id, label: `${s.name} (${s.degree_level})` }))}
+                              value={selectedSpecId ? { value: selectedSpecId, label: specializations.find(s => s.id === selectedSpecId)?.name } : null}
+                              isDisabled={!!editingEnrollmentId}
+                              onChange={option => { setSelectedSpecId(option ? option.value : ''); setSelectedCurriculumId(''); }}
+                              placeholder="-- Search Specialization --"
+                              isClearable
+                              styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    borderRadius: '0.75rem',
+                                    padding: '0.25rem',
+                                    border: '1px solid #e2e8f0',
+                                    boxShadow: 'none',
+                                    '&:hover': { border: '1px solid #cbd5e1' }
+                                })
+                              }}
+                            />
                           </div>
                           <div>
                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">2. Study Plan</label>
-                            <select 
-                              value={selectedCurriculumId} 
-                              disabled={!selectedSpecId || !!editingEnrollmentId}
-                              onChange={e => setSelectedCurriculumId(e.target.value)}
-                              className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-sm text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 disabled:opacity-50"
-                            >
-                              <option value="">-- Choose Plan --</option>
-                              {filteredCurricula.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
+                            <Select 
+                              options={filteredCurricula.map(c => ({ value: c.id, label: c.name }))}
+                              value={selectedCurriculumId ? { value: selectedCurriculumId, label: filteredCurricula.find(c => c.id === selectedCurriculumId)?.name } : null}
+                              isDisabled={!selectedSpecId || !!editingEnrollmentId}
+                              onChange={option => setSelectedCurriculumId(option ? option.value : '')}
+                              placeholder="-- Search Plan --"
+                              isClearable
+                              styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    borderRadius: '0.75rem',
+                                    padding: '0.25rem',
+                                    border: '1px solid #e2e8f0',
+                                    boxShadow: 'none',
+                                    '&:hover': { border: '1px solid #cbd5e1' }
+                                })
+                              }}
+                            />
                           </div>
                         </div>
 
@@ -428,22 +461,38 @@ export default function Students() {
                                 <h6 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">3. Local Config (Year & Group)</h6>
                            </div>
                            <div className="grid grid-cols-4 gap-3">
-                              <select value={formationSel.eduForm} disabled={!selectedCurriculumId} onChange={e => setFormationSel({...formationSel, eduForm: e.target.value, year: '', group: '', sub: ''})} className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black outline-none focus:ring-4 focus:ring-blue-50">
-                                <option value="">Type</option>
-                                {filteredEduForms.map(f => <option key={f} value={f}>{f}</option>)}
-                              </select>
-                              <select value={formationSel.year} disabled={!formationSel.eduForm} onChange={e => setFormationSel({...formationSel, year: e.target.value, group: '', sub: ''})} className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black outline-none focus:ring-4 focus:ring-blue-50">
-                                <option value="">Year</option>
-                                {filteredYears.map(y => <option key={y} value={y}>{y}</option>)}
-                              </select>
-                              <select value={formationSel.group} disabled={!formationSel.year} onChange={e => setFormationSel({...formationSel, group: e.target.value, sub: ''})} className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black outline-none focus:ring-4 focus:ring-blue-50">
-                                <option value="">Gr</option>
-                                {filteredGroups.map(g => <option key={g} value={g}>{g}</option>)}
-                              </select>
-                              <select value={formationSel.sub} disabled={!formationSel.group} onChange={e => setFormationSel({...formationSel, sub: e.target.value})} className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black outline-none focus:ring-4 focus:ring-blue-50">
-                                <option value="">Sub</option>
-                                {filteredSubs.map(s => <option key={s} value={s}>{s}</option>)}
-                              </select>
+                              <Select 
+                                options={filteredEduForms.map(f => ({ value: f, label: f }))}
+                                value={formationSel.eduForm ? { value: formationSel.eduForm, label: formationSel.eduForm } : null}
+                                isDisabled={!selectedCurriculumId}
+                                onChange={option => setFormationSel({...formationSel, eduForm: option ? option.value : '', year: '', group: '', sub: ''})}
+                                placeholder="Type"
+                                styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '10px' }) }}
+                              />
+                              <Select 
+                                options={filteredYears.map(y => ({ value: String(y), label: `Year ${y}` }))}
+                                value={formationSel.year ? { value: formationSel.year, label: `Year ${formationSel.year}` } : null}
+                                isDisabled={!formationSel.eduForm}
+                                onChange={option => setFormationSel({...formationSel, year: option ? option.value : '', group: '', sub: ''})}
+                                placeholder="Year"
+                                styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '10px' }) }}
+                              />
+                              <Select 
+                                options={filteredGroups.map(g => ({ value: String(g), label: `Group ${g}` }))}
+                                value={formationSel.group ? { value: formationSel.group, label: `Group ${formationSel.group}` } : null}
+                                isDisabled={!formationSel.year}
+                                onChange={option => setFormationSel({...formationSel, group: option ? option.value : '', sub: ''})}
+                                placeholder="Group"
+                                styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '10px' }) }}
+                              />
+                              <Select 
+                                options={filteredSubs.map(s => ({ value: s, label: `Sub ${s}` }))}
+                                value={formationSel.sub ? { value: formationSel.sub, label: `Sub ${formationSel.sub}` } : null}
+                                isDisabled={!formationSel.group}
+                                onChange={option => setFormationSel({...formationSel, sub: option ? option.value : ''})}
+                                placeholder="Sub"
+                                styles={{ control: base => ({ ...base, borderRadius: '0.75rem', border: '1px solid #f1f5f9', fontSize: '10px' }) }}
+                              />
                            </div>
                         </div>
 

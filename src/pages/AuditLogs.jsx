@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save } from 'lucide-react';
 import { auditService, adminService } from '../services/api';
 
@@ -397,14 +398,23 @@ export default function AuditLogs() {
                                                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest uppercase ${u.account_status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>{u.account_status}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <select 
-                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-black text-slate-700 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
-                                                        value={u.role_id || ''}
-                                                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                                    >
-                                                        <option value="" disabled>-- UNASSIGNED --</option>
-                                                        {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                                    </select>
+                                                    <Select 
+                                                        options={roles.map(r => ({ value: r.id, label: r.name }))}
+                                                        value={u.role_id ? { value: u.role_id, label: roles.find(r => r.id === u.role_id)?.name } : null}
+                                                        onChange={(option) => handleRoleChange(u.id, option ? option.value : '')}
+                                                        placeholder="-- Role --"
+                                                        styles={{
+                                                            control: (base) => ({
+                                                                ...base,
+                                                                borderRadius: '0.75rem',
+                                                                border: '1px solid #e2e8f0',
+                                                                fontSize: '10px',
+                                                                fontWeight: '900',
+                                                                boxShadow: 'none',
+                                                                minWidth: '120px'
+                                                            })
+                                                        }}
+                                                    />
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex gap-2">

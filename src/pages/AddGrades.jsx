@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Select from 'react-select';
 import api from '../services/api';
 import { AlertCircle, CheckCircle, X } from 'lucide-react';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -146,24 +147,30 @@ export default function AddGrades() {
                   <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">Filtered by discipline</span>
                 )}
               </div>
-              <select 
-                required
+              <Select 
                 ref={studentRef}
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border"
-                value={formData.studentId}
-                onChange={(e) => setFormData({...formData, studentId: e.target.value})}
-              >
-                <option value="">-- Choose a student --</option>
-                {(formData.disciplineId 
+                options={(formData.disciplineId 
                   ? students.filter(s => {
                       const disc = disciplines.find(d => d.id === formData.disciplineId);
                       return s.curriculum_ids && s.curriculum_ids.includes(disc?.curriculum_id);
                     })
                   : students
-                ).map(s => (
-                  <option key={s.id} value={s.id}>{s.last_name} {s.first_name} ({s.registration_number} - {s.group_code})</option>
-                ))}
-              </select>
+                ).map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name} (${s.registration_number} - ${s.group_code})` }))}
+                value={formData.studentId ? { value: formData.studentId, label: students.find(s => s.id === formData.studentId)?.last_name + ' ' + students.find(s => s.id === formData.studentId)?.first_name } : null}
+                onChange={(option) => setFormData({...formData, studentId: option ? option.value : ''})}
+                placeholder="-- Search Student --"
+                isClearable
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderRadius: '0.5rem',
+                    padding: '0.25rem',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: 'none',
+                    '&:hover': { border: '1px solid #cbd5e1' }
+                  })
+                }}
+              />
             </div>
 
             {/* Discipline Dropdown (BR-AFSMS-05) */}
@@ -174,24 +181,30 @@ export default function AddGrades() {
                   <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-bold">Filtered by student plan</span>
                 )}
               </div>
-              <select 
-                required
+              <Select 
                 ref={disciplineRef}
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border"
-                value={formData.disciplineId}
-                onChange={(e) => setFormData({...formData, disciplineId: e.target.value})}
-              >
-                <option value="">-- Choose discipline --</option>
-                {(formData.studentId
+                options={(formData.studentId
                   ? disciplines.filter(d => {
                       const student = students.find(s => s.id === formData.studentId);
                       return student?.curriculum_ids && student.curriculum_ids.includes(d.curriculum_id);
                     })
                   : disciplines
-                ).map(d => (
-                  <option key={d.id} value={d.id}>{d.name} (Sem. {d.semester})</option>
-                ))}
-              </select>
+                ).map(d => ({ value: d.id, label: `${d.name} (Sem. ${d.semester})` }))}
+                value={formData.disciplineId ? { value: formData.disciplineId, label: disciplines.find(d => d.id === formData.disciplineId)?.name } : null}
+                onChange={(option) => setFormData({...formData, disciplineId: option ? option.value : ''})}
+                placeholder="-- Search Discipline --"
+                isClearable
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderRadius: '0.5rem',
+                    padding: '0.25rem',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: 'none',
+                    '&:hover': { border: '1px solid #cbd5e1' }
+                  })
+                }}
+              />
               {(formData.studentId || formData.disciplineId) && (
                 <button 
                   type="button"
@@ -206,15 +219,25 @@ export default function AddGrades() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Session *</label>
-                <select 
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border"
-                  value={formData.examSession}
-                  onChange={(e) => setFormData({...formData, examSession: e.target.value})}
-                >
-                  <option value="WINTER">Winter (Regular)</option>
-                  <option value="SUMMER">Summer (Regular)</option>
-                  <option value="RETAKE">Retake</option>
-                </select>
+                <Select 
+                  options={[
+                    { value: 'WINTER', label: 'Winter (Regular)' },
+                    { value: 'SUMMER', label: 'Summer (Regular)' },
+                    { value: 'RETAKE', label: 'Retake' }
+                  ]}
+                  value={{ value: formData.examSession, label: formData.examSession }}
+                  onChange={(option) => setFormData({...formData, examSession: option ? option.value : 'WINTER'})}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderRadius: '0.5rem',
+                      padding: '0.25rem',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: 'none',
+                      '&:hover': { border: '1px solid #cbd5e1' }
+                    })
+                  }}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Grade (1 - 10) or 0 for Absent *</label>

@@ -60,6 +60,7 @@ export const documentsService = {
 export const groupsService = {
   getGroups: () => api.get('/groups'),
   createGroup: (data) => api.post('/groups', data),
+  updateGroup: (id, data) => api.put(`/groups/${id}`, data),
   deleteGroup: (id) => api.delete(`/groups/${id}`),
   getMembers: (id) => api.get(`/groups/${id}/members`),
   addMember: (id, userId) => api.post(`/groups/${id}/members`, { userId }),

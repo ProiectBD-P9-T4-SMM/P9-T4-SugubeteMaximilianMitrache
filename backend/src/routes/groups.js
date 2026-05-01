@@ -31,6 +31,27 @@ router.post('/', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) =
   }
 });
 
+// PUT /api/groups/:id - Update a group
+router.put('/:id', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+  try {
+    const { name, description } = req.body;
+    if (!name) return res.status(400).json({ message: 'Name is required' });
+
+    const result = await db.query(
+      'UPDATE USER_GROUP SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
+      [name, description, req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // DELETE /api/groups/:id - Delete a group
 router.delete('/:id', requireRole(['ADMIN']), async (req, res, next) => {
   try {

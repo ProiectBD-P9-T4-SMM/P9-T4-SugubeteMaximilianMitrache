@@ -7,19 +7,19 @@
 > <p>Maximilian Andrei CR3.2B</p>
 > <p>Mitrache Marian Nicușor CR3.2B</p>
 
-[![LaTeX](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/actions/workflows/latex-release.yml/badge.svg)](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/actions/workflows/latex-release.yml) [![Website](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/actions/workflows/deploy.yml/badge.svg)](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/actions/workflows/deploy.yml)
+[![LaTeX](https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache/actions/workflows/latex-release.yml/badge.svg)](https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache/actions/workflows/latex-release.yml) [![Website](https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache/actions/workflows/deploy.yml/badge.svg)](https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache/actions/workflows/deploy.yml)
 
 ---
 
-🌐 **[Visit the Website](https://andreisugu.github.io/P9-T4-SugubeteMaximilianMitrache/)**
+🌐 **[Visit the Website](https://ProiectBD-P9-T4-SMM.github.io/P9-T4-SugubeteMaximilianMitrache/)**
 
 ### 📚 Documentation
 
 | Link | Description |
 |---|---|
-| [View Latest Releases](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/releases) | All compiled PDF versions |
-| [Download main.pdf](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/releases/latest/download/main.pdf) | Complete system specification |
-| [Download main_revised.pdf](https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache/releases/latest/download/main_revised.pdf) | Revised documentation |
+| [View Latest Releases](https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache/releases) | All compiled PDF versions |
+| [Download main.pdf](https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache/releases/latest/download/main.pdf) | Complete system specification |
+| [Download main_revised.pdf](https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache/releases/latest/download/main_revised.pdf) | Revised documentation |
 
 ---
 
@@ -83,12 +83,18 @@ Moving away from manual paperwork, AFSMS provides centralized management of acad
 
 AFSMS uses a scalable client-server architecture designed to handle concurrent user spikes during peak exam sessions while strictly adhering to EU GDPR regulations.
 
-* **Frontend / Client:** Responsive Web Application built with **React** + **Vite** + **Tailwind CSS v4**. Optimized with dropdowns (selection lists) to minimize manual data entry errors.
-* **Authentication:** Institutional Single Sign-On (SAML 2.0 / OAuth 2.0).
-* **Database (DBMS):** Relational Database (e.g., MySQL 8.0+ or PostgreSQL 15+) supporting robust transaction logging, complex queries, and point-in-time recovery.
+* **Frontend / Client:** Responsive Web Application built with **React 19** + **Vite** + **Tailwind CSS v4**. Optimized with dropdowns (selection lists) to minimize manual data entry errors.
+* **Backend / API:** **Node.js** + **Express 5** REST API server (default port `3000`). Connects to the database via the `pg` driver.
+* **Authentication:** **Mock SSO (JWT-based)** for development and testing (built-in, no external provider required). Designed to be replaced with institutional SSO in production.
+* **Database (DBMS):** **PostgreSQL 15+** — supports robust transaction logging, complex queries, and point-in-time recovery.
+* **Email Notifications:** Configurable via `EMAIL_PROVIDER` environment variable — three supported modes:
+  * `mock` (default, Ethereal) — captures emails locally without sending real messages.
+  * `graph` — Microsoft Graph API for production bulk email (requires Azure AD app registration).
+  * `smtp` — classic SMTP fallback (compatible with Office 365, Gmail, on-premise servers).
 * **Integrations:**
-  * Microsoft Graph API (Excel/Outlook)
-  * PDF Rendering Engine (e.g., iText or TCPDF)
+  * Microsoft Graph API (bulk email via `$batch`)
+  * PDF generation (jsPDF + jsPDF-AutoTable)
+  * CSV / XLS import & export (PapaParse, xlsx)
 
 ## ⚡ Performance & Quality Assurance
 
@@ -103,7 +109,7 @@ To meet the rigorous standards of the university environment, AFSMS v1.0 impleme
 ### Testing & Coverage
 AFSMS uses **Jest** for automated unit and integration testing.
 * **Mandated Coverage:** Minimum 80% (per SRS NFR-AFSMS-QUAL-005).
-* **Current Coverage:** **~90%** of core business logic (Audit, RBAC, Academic Services).
+* **Current Coverage:** **~90%** statements and lines (83% branches/functions) — covering the Audit Service and Auth Middleware (`backend/tests/core.test.js`).
 * **Verify Tests:**
   ```bash
   cd backend && npm test -- --coverage
@@ -128,32 +134,52 @@ The project adheres to strict coding standards (**CODE-01 to CODE-10**):
 
 ### Prerequisites
 
-* [Node.js](https://nodejs.org/) v18+ and npm
+* [Node.js](https://nodejs.org/) v20+ and npm
 * Modern web browser (Chrome 100+, Firefox 100+, Safari, Edge)
-* Relational Database Management System (MySQL/PostgreSQL)
-* Access to Institutional SSO Provider (for local testing, an SSO mock can be used)
-* Microsoft API Keys (if testing Outlook/Excel integrations)
+* [PostgreSQL 15+](https://www.postgresql.org/) database server
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/andreisugu/P9-T4-SugubeteMaximilianMitrache.git
-   ```
-
-2. Navigate to the project directory and install dependencies:
-   ```bash
+   git clone https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache.git
    cd P9-T4-SugubeteMaximilianMitrache
-   npm install
    ```
 
-3. Start the development server:
+2. **Frontend** — install dependencies and start the dev server:
    ```bash
+   npm install
    npm run dev
    ```
-   The app will be available at `http://localhost:5173/`.
+   The frontend will be available at `http://localhost:5173/P9-T4-SugubeteMaximilianMitrache/`.
 
-4. Build for production:
+3. **Backend** — install dependencies and start the API server:
+   ```bash
+   cd backend
+   npm install
+   ```
+   Create a `.env` file in the `backend/` directory (see `docs/Email_Configuration_Guide.md` for email options):
+   ```env
+   PORT=3000
+   DATABASE_URL=postgresql://user:password@localhost:5432/afsms
+   JWT_SECRET=your_jwt_secret
+   EMAIL_PROVIDER=mock
+   ```
+   Then start the server:
+   ```bash
+   npm run dev   # development (nodemon)
+   # or
+   npm start     # production
+   ```
+   The API will be available at `http://localhost:3000/`.
+
+4. **Database** — apply the schema and seed data:
+   ```bash
+   psql -d afsms -f src/schema.sql
+   psql -d afsms -f src/seed.sql
+   ```
+
+5. Build the frontend for production:
    ```bash
    npm run build
    ```
@@ -162,7 +188,7 @@ The project adheres to strict coding standards (**CODE-01 to CODE-10**):
 
 The latest `main` branch is automatically deployed via GitHub Actions to GitHub Pages:
 
-🔗 **https://andreisugu.github.io/P9-T4-SugubeteMaximilianMitrache/**
+🔗 **https://ProiectBD-P9-T4-SMM.github.io/P9-T4-SugubeteMaximilianMitrache/**
 
 ## 📚 Documentation
 

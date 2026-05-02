@@ -79,6 +79,7 @@ export const notificationsService = {
 export const auditService = {
   getLogs: () => api.get('/audit'),
   rollback: (logId) => api.post(`/audit/rollback/${logId}`),
+  pitr: (targetTimestamp) => api.post('/audit/pitr', { targetTimestamp }),
 };
 
 export const adminService = {

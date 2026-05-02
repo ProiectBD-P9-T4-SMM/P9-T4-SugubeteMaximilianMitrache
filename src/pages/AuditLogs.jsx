@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save } from 'lucide-react';
+import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save, Clock } from 'lucide-react';
 import { auditService, adminService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -18,6 +18,7 @@ export default function AuditLogs() {
   const [backups, setBackups] = useState([]);
   const [emailLogs, setEmailLogs] = useState([]);
   const [backupConfig, setBackupConfig] = useState({ cron_expression: '0 0 * * *', enabled: false });
+  const [pitrTimestamp, setPitrTimestamp] = useState('');
 
   // Modals / Forms state
   const [showUserModal, setShowUserModal] = useState(false);
@@ -209,6 +210,25 @@ export default function AuditLogs() {
     }
   };
 
+  const handlePITR = async () => {
+    if (!pitrTimestamp) return;
+    if (!window.confirm(language === 'ro' 
+      ? `⚠️ ATENȚIE: Aceasta va REVENI TOATE modificările de sistem la starea din ${new Date(pitrTimestamp).toLocaleString()}. Continuați?` 
+      : `⚠️ CAUTION: This will REVERT ALL system changes to the state at ${new Date(pitrTimestamp).toLocaleString()}. Proceed?`)) return;
+
+    setLoading(true);
+    try {
+      const res = await auditService.pitr(pitrTimestamp);
+      setRollbackStatus({ success: true, message: res.data.message });
+      fetchAuditLogs();
+    } catch (err) {
+      setRollbackStatus({ success: false, message: err.response?.data?.message || (language === 'ro' ? 'PITR a eșuat' : 'PITR failed') });
+    } finally {
+      setLoading(false);
+      setTimeout(() => setRollbackStatus(null), 5000);
+    }
+  };
+
   // User CRUD
   const handleSaveUser = async (e) => {
     e.preventDefault();
@@ -303,6 +323,34 @@ export default function AuditLogs() {
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
             {adminTab === 'audit' && (
                 <div className="space-y-6">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-6 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-800">
+                        <div className="flex-1">
+                            <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">
+                                <Clock className="text-blue-400" size={24} /> {language === 'ro' ? 'Restaurare Granulară (Time Travel)' : 'Granular Point-in-Time Recovery'}
+                            </h3>
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-relaxed">
+                                {language === 'ro' 
+                                    ? 'Inversați toate operațiunile în mod secvențial până la un marcaj temporal precis folosind registrul de trasabilitate.' 
+                                    : 'Reverse all operations sequentially back to a precise timestamp using the traceability ledger.'}
+                            </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                            <input 
+                                type="datetime-local" 
+                                value={pitrTimestamp}
+                                onChange={(e) => setPitrTimestamp(e.target.value)}
+                                className="bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl text-xs font-black outline-none focus:ring-4 focus:ring-blue-500/20 transition-all w-full"
+                            />
+                            <button 
+                                onClick={handlePITR}
+                                disabled={!pitrTimestamp || loading}
+                                className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            >
+                                {language === 'ro' ? 'Execută Restaurare' : 'Execute Recovery'}
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="flex items-center justify-between px-2">
                         <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Registru Trasabilitate Operațiuni' : 'Operations Traceability Ledger'}</h3>
                         <button onClick={fetchAuditLogs} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh Logs'}</button>

@@ -27,6 +27,24 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Force charset=utf-8 for JSON and XML to ensure Romanian diacritics integrity (REQ-AFSMS-UTF8)
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    // This is just for logging/verification if needed
+  });
+  
+  const originalSetHeader = res.setHeader;
+  res.setHeader = function (name, value) {
+    if (name.toLowerCase() === 'content-type') {
+      if ((value.includes('application/json') || value.includes('application/xml')) && !value.includes('charset')) {
+        value = `${value}; charset=utf-8`;
+      }
+    }
+    return originalSetHeader.call(this, name, value);
+  };
+  next();
+});
+
 // Routes
 // Ruta externă (Simulatorul Universității)
 app.use('/api/mock-sso', mockSsoRoutes);

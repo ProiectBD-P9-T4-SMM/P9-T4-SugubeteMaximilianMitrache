@@ -115,14 +115,27 @@ export default function GradesList() {
     });
   };
 
-  const handleSaveEdit = async (gradeId) => {
+  const handleSaveEdit = async (gradeId, shouldAdvance = false) => {
     if (editForm.value === '' || editForm.value < 0 || editForm.value > 10) {
       setMessage({ type: 'error', text: language === 'ro' ? 'Nota trebuie să fie între 0 și 10.' : 'Grade must be 0-10.' }); return;
     }
     try {
       await api.put(`/academic/grades/${gradeId}`, { ...editForm, value: parseFloat(editForm.value) });
       setMessage({ type: 'success', text: language === 'ro' ? 'Notă actualizată cu succes!' : 'Grade updated successfully!' });
-      setEditingId(null); loadGrades(filters);
+      
+      if (shouldAdvance) {
+         const currentIndex = grades.findIndex(g => g.id === gradeId);
+         if (currentIndex !== -1 && currentIndex < grades.length - 1) {
+            const nextGrade = grades[currentIndex + 1];
+            handleStartEdit(nextGrade);
+         } else {
+            setEditingId(null);
+         }
+      } else {
+         setEditingId(null); 
+      }
+      
+      loadGrades(filters);
     } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Actualizare eșuată.' : 'Update failed.' }); }
   };
 
@@ -331,7 +344,18 @@ export default function GradesList() {
                   </td>
                   <td className="px-8 py-6">
                     {editingId === row.id ? (
-                      <input type="number" step="0.01" className="w-16 bg-white border border-slate-200 rounded-lg p-2 font-black text-blue-600 text-sm" value={editForm.value} onChange={e => setEditForm({...editForm, value: e.target.value})} />
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        autoFocus
+                        className="w-16 bg-white border border-slate-200 rounded-lg p-2 font-black text-blue-600 text-sm" 
+                        value={editForm.value} 
+                        onChange={e => setEditForm({...editForm, value: e.target.value})} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit(row.id, true);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                      />
                     ) : (
                       <span className={`text-xl font-black ${parseFloat(row.value) >= 5 ? 'text-emerald-500' : 'text-rose-500'}`}>
                         {parseFloat(row.value) === 0 ? 'Abs.' : row.value}
@@ -376,16 +400,16 @@ export default function GradesList() {
       {showAddModal && (
         <Modal title={language === 'ro' ? 'Înregistrare Securizată Notă' : "Secure Grade Entry"} onClose={() => setShowAddModal(false)}>
            <form onSubmit={handleAddGradeSubmit} className="space-y-6">
-              <SelectField label={t('th_student')} options={students.map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name}` }))} value={addFormData.studentId} onChange={opt => setAddFormData({...addFormData, studentId: opt?.value || ''})} />
-              <SelectField label={t('th_discipline')} options={disciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))} value={addFormData.disciplineId} onChange={opt => setAddFormData({...addFormData, disciplineId: opt?.value || ''})} />
+              <SelectField tabIndex="1" label={t('th_student')} options={students.map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name}` }))} value={addFormData.studentId} onChange={opt => setAddFormData({...addFormData, studentId: opt?.value || ''})} />
+              <SelectField tabIndex="2" label={t('th_discipline')} options={disciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))} value={addFormData.disciplineId} onChange={opt => setAddFormData({...addFormData, disciplineId: opt?.value || ''})} />
               <div className="grid grid-cols-2 gap-4">
-                 <ModalInput label={language === 'ro' ? 'Valoare Notă (0-10)' : "Grade Value (0-10)"} type="number" step="0.01" value={addFormData.gradeValue} onChange={e => setAddFormData({...addFormData, gradeValue: e.target.value})} />
+                 <ModalInput tabIndex="3" label={language === 'ro' ? 'Valoare Notă (0-10)' : "Grade Value (0-10)"} type="number" step="0.01" value={addFormData.gradeValue} onChange={e => setAddFormData({...addFormData, gradeValue: e.target.value})} />
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('th_session')}</label>
-                    <Select options={[{value:'WINTER', label:language === 'ro' ? 'Iarnă' : 'Winter'}, {value:'SUMMER', label:language === 'ro' ? 'Vară' : 'Summer'}, {value:'RETAKE', label:language === 'ro' ? 'Restanță' : 'Retake'}]} value={{value: addFormData.examSession, label: addFormData.examSession}} onChange={opt => setAddFormData({...addFormData, examSession: opt?.value})} styles={customSelectStyles} />
+                    <Select tabIndex="4" options={[{value:'WINTER', label:language === 'ro' ? 'Iarnă' : 'Winter'}, {value:'SUMMER', label:language === 'ro' ? 'Vară' : 'Summer'}, {value:'RETAKE', label:language === 'ro' ? 'Restanță' : 'Retake'}]} value={{value: addFormData.examSession, label: addFormData.examSession}} onChange={opt => setAddFormData({...addFormData, examSession: opt?.value})} styles={customSelectStyles} />
                  </div>
               </div>
-              <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-3">
+              <button tabIndex="5" type="submit" disabled={isSubmitting} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-3">
                  {isSubmitting ? (language === 'ro' ? 'Se procesează...' : 'Processing...') : (language === 'ro' ? 'Salvează Notă' : 'Commit Grade')} <ChevronRight size={16} />
               </button>
            </form>
@@ -532,12 +556,12 @@ function ModalInput({ label, ...props }) {
   );
 }
 
-function SelectField({ label, options, value, onChange, isDisabled }) {
+function SelectField({ label, options, value, onChange, isDisabled, tabIndex }) {
   const { language } = useLanguage();
   return (
     <div className="space-y-2">
        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
-       <Select options={options} value={value ? options.find(o => o.value === value) : null} onChange={onChange} styles={customSelectStyles} placeholder={language === 'ro' ? `-- Selectează ${label} --` : `-- Select ${label} --`} isDisabled={isDisabled} />
+       <Select tabIndex={tabIndex} options={options} value={value ? options.find(o => o.value === value) : null} onChange={onChange} styles={customSelectStyles} placeholder={language === 'ro' ? `-- Selectează ${label} --` : `-- Select ${label} --`} isDisabled={isDisabled} />
     </div>
   );
 }

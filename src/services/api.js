@@ -53,9 +53,12 @@ export const reportsService = {
 
 export const documentsService = {
   getDocuments: (params) => api.get('/documents', { params }),
-  updateStatus: (id, status) => api.put(`/documents/${id}/status`, { status }),
+  updateStatus: (id, status, revision_notes) => api.put(`/documents/${id}/status`, { status, revision_notes }),
   forwardDocument: (id, userId) => api.put(`/documents/${id}/forward`, { userId }),
   uploadDocument: (formData) => api.post('/documents', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  reuploadDocument: (id, formData) => api.put(`/documents/${id}/reupload`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   downloadDocument: (id) => api.get(`/documents/download/${id}`, { responseType: 'blob' }),

@@ -6,6 +6,50 @@ const { auditableUpdate, auditableInsert } = require('../services/auditService')
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { PDFParse } = require('pdf-parse');
+const mammoth = require('mammoth');
+const xlsx = require('xlsx');
+
+async function extractDocumentContent(fileObj) {
+  if (!fileObj) return null;
+  const ext = path.extname(fileObj.originalname).toLowerCase();
+  try {
+    const fullPath = path.join(__dirname, '../../../uploads', fileObj.filename);
+    
+    if (ext === '.pdf') {
+      const dataBuffer = fs.readFileSync(fullPath);
+      const parser = new PDFParse({ data: dataBuffer });
+      const data = await parser.getText();
+      await parser.destroy();
+      return data.text ? data.text.substring(0, 100000) : null;
+    }
+    
+    if (ext === '.docx') {
+      const result = await mammoth.extractRawText({ path: fullPath });
+      return result.value ? result.value.substring(0, 100000) : null;
+    }
+
+    if (ext === '.xlsx') {
+      const workbook = xlsx.readFile(fullPath);
+      let text = '';
+      workbook.SheetNames.forEach(sheetName => {
+        const sheet = workbook.Sheets[sheetName];
+        text += xlsx.utils.sheet_to_csv(sheet) + '\n';
+      });
+      return text ? text.substring(0, 100000) : null;
+    }
+
+    if (['.txt', '.csv', '.xml'].includes(ext)) {
+      const text = fs.readFileSync(fullPath, 'utf-8');
+      return text ? text.substring(0, 100000) : null;
+    }
+
+    return null;
+  } catch (err) {
+    console.error(`Document extraction error for ${ext}:`, err);
+    return null;
+  }
+}
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -45,7 +89,7 @@ router.get('/', async (req, res, next) => {
 
     let query = `
       SELECT d.id, d.title, d.type, d.content, d.status, d.created_at,
-             d.file_path, d.original_filename, d.assigned_to_user_id,
+             d.file_path, d.original_filename, d.assigned_to_user_id, d.revision_notes,
              u.full_name as author_name,
              u2.full_name as assigned_to_user_name
       FROM DOCUMENT d
@@ -94,7 +138,7 @@ router.get('/', async (req, res, next) => {
 router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // e.g. APPROVED, REJECTED
+    const { status, revision_notes } = req.body; // e.g. APPROVED, REJECTED, MODIFICATION
 
     // Audit the document status update
     const updatedDocument = await auditableUpdate(
@@ -102,7 +146,7 @@ router.put('/:id/status', requireRole(['SECRETARIAT', 'ADMIN', 'PROFESSOR']), as
       'DOCUMENT_FLOW',
       'DOCUMENT',
       id,
-      { status }
+      { status, revision_notes: revision_notes || null }
     );
 
     res.json(updatedDocument);
@@ -160,7 +204,8 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     if (filePath) {
       insertFields.file_path = filePath;
       insertFields.original_filename = originalFilename;
-      insertFields.content = title; // fallback for full text search
+      const extractedText = await extractDocumentContent(file);
+      insertFields.content = extractedText ? extractedText : title; // fallback for full text search
     }
 
     const newDoc = await auditableInsert(
@@ -171,6 +216,38 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     );
 
     res.status(201).json(newDoc);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/documents/:id/reupload - Reupload file for modification
+router.put('/:id/reupload', upload.single('file'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: true, message: 'No file provided' });
+    }
+
+    const extractedText = await extractDocumentContent(file);
+
+    const updatedDocument = await auditableUpdate(
+      req.user.userId,
+      'DOCUMENT_FLOW',
+      'DOCUMENT',
+      id,
+      { 
+        file_path: file.filename,
+        original_filename: file.originalname,
+        status: 'PENDING',
+        revision_notes: null,
+        ...(extractedText && { content: extractedText })
+      }
+    );
+
+    res.json(updatedDocument);
   } catch (error) {
     next(error);
   }

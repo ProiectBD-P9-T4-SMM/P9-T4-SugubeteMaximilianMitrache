@@ -39,7 +39,7 @@ app.use((_req, res, next) => {
 });
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,https://proiectbd-p9-t4-smm.github.io')
   .split(',')
   .map(o => o.trim());
 

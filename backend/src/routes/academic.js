@@ -5,8 +5,8 @@ const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 const { auditableUpdate, auditableInsert } = require('../services/auditService');
 const importService = require('../services/importService');
 const multer = require('multer');
+const XLSX = require('xlsx');
 const upload = multer({ storage: multer.memoryStorage() });
-const uploadDisk = multer({ dest: 'uploads/' });
 
 router.use(requireAuth);
 
@@ -231,7 +231,6 @@ async function processBulkStudents(students, actorUserId) {
 router.post('/students/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.single('file'), async (req, res, next) => {
   if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
   try {
-    const XLSX = require('xlsx');
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
@@ -391,7 +390,6 @@ router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.sing
   if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
 
   try {
-    const XLSX = require('xlsx');
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
@@ -1238,20 +1236,15 @@ router.post('/students/bulk', requireRole(['ADMIN', 'SECRETARIAT']), async (req,
 });
 
 // POST /api/academic/import/grades-csv - Bulk import grades from CSV/Excel (REQ-AFSMS-18)
-router.post('/import/grades-csv', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), uploadDisk.single('file'), async (req, res, next) => {
+router.post('/import/grades-csv', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
     
-    const xlsx = require('xlsx');
-    const workbook = xlsx.readFile(req.file.path);
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
-    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     
     const results = await importService.importGrades(data, req.user.userId);
-    
-    // Cleanup
-    const fs = require('fs');
-    fs.unlinkSync(req.file.path);
     
     res.json({ success: true, ...results });
   } catch (error) {

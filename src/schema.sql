@@ -377,3 +377,4 @@ CREATE INDEX idx_document_type_date ON DOCUMENT(type, created_at);
 CREATE INDEX idx_audit_entity ON AUDIT_LOG_ENTRY(entity_type, entity_id);
 CREATE INDEX idx_audit_actor ON AUDIT_LOG_ENTRY(actor_user_id);
 CREATE INDEX idx_audit_date ON AUDIT_LOG_ENTRY(occurred_at);
+CREATE TABLE IF NOT EXISTS SYSTEM_SETTINGS (id VARCHAR(50) PRIMARY KEY, value VARCHAR(255) NOT NULL, description TEXT, updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);

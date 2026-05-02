@@ -53,7 +53,6 @@ const coreDiagrams = [
           'Traces a document\'s lifecycle from user submission through portal validation to server-side routing. The AFSMS server determines whether the document is informational, pending approval, or requires modification, then commits the state to the database. Audit logging and Outlook notifications are triggered asynchronously post-commit.',
       },
       {
-        file: 'diagrams/core/activity/activity_v1.svg', // Fallback if v2 is missing
         file: 'diagrams/core/activity/activity_v2.svg',
         title: 'Grade Report Generation',
         description:

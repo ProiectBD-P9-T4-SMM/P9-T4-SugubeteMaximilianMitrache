@@ -2,6 +2,15 @@ export const translations = {
   en: {
     // Navigation
     nav_dashboard: "Dashboard",
+    greeting: "Hello",
+    act_updated: "Updated",
+    act_created: "Created",
+    act_deleted: "Deleted",
+    act_record: "record",
+    act_initiated: "Initiated by",
+    sys_admin: "System Administrator",
+    no_activity: "No activity recorded today.",
+    no_events: "No recent academic events found.",
     nav_students: "Students",
     nav_disciplines: "Curricula",
     nav_my_grades: "My Grades",
@@ -386,6 +395,15 @@ export const translations = {
   ro: {
     // Navigation
     nav_dashboard: "Tablou de bord",
+    greeting: "Bună",
+    act_updated: "Actualizat",
+    act_created: "Creat",
+    act_deleted: "Șters",
+    act_record: "înregistrare",
+    act_initiated: "Inițiat de",
+    sys_admin: "Administrator Sistem",
+    no_activity: "Nicio activitate înregistrată astăzi.",
+    no_events: "Nu s-au găsit evenimente academice recente.",
     nav_students: "Studenți",
     nav_disciplines: "Planuri de Învățământ",
     nav_my_grades: "Notele Mele",

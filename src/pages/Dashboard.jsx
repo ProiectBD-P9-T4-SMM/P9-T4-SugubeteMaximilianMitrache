@@ -172,7 +172,7 @@ export default function Dashboard() {
                {stats?.timeline?.length > 0 ? stats.timeline.map((item, i) => (
                  <TimelineItem key={i} title={item.title} date={item.date} status={item.status === 'success' ? 'success' : 'upcoming'} />
                )) : (
-                 <div className="py-12 text-center text-slate-300 italic font-bold">No recent academic events found.</div>
+                 <div className="py-12 text-center text-slate-300 italic font-bold">{t('no_events')}</div>
                )}
             </div>
            </div>
@@ -193,7 +193,7 @@ export default function Dashboard() {
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
-            Hello, {user?.fullName?.split(' ')[0]}!
+            {t('greeting')}, {user?.fullName?.split(' ')[0]}!
           </h1>
           <div className="flex items-center gap-3">
             <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{t(`role_${user?.role?.toLowerCase()}`)}</span>
@@ -258,16 +258,16 @@ function ActivityFeed({ activities }) {
             <div className="flex-1">
               <div className="flex justify-between items-start">
                 <p className="font-bold text-slate-800 text-sm leading-none">
-                  {act.action_type === 'UPDATE' ? 'Updated' : act.action_type === 'INSERT' ? 'Created' : 'Deleted'} {act.entity_type.toLowerCase()} record
+                  {act.action_type === 'UPDATE' ? t('act_updated') : act.action_type === 'INSERT' ? t('act_created') : t('act_deleted')} {act.entity_type.toLowerCase()} {t('act_record')}
                 </p>
                 <span className="text-[10px] text-slate-400 font-bold whitespace-nowrap">{new Date(act.occurred_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">Initiated by <span className="font-bold text-slate-900">{act.actor_name || 'System Administrator'}</span></p>
+                <p className="text-xs text-slate-500 mt-1">{t('act_initiated')} <span className="font-bold text-slate-900">{act.actor_name || t('sys_admin')}</span></p>
             </div>
           </div>
         )) : (
           <div className="text-center py-12">
-            <p className="text-slate-400 font-bold italic text-sm">No activity recorded today.</p>
+            <p className="text-slate-400 font-bold italic text-sm">{t('no_activity')}</p>
           </div>
         )}
       </div>

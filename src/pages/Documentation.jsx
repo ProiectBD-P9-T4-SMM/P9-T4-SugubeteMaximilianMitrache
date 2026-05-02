@@ -60,7 +60,14 @@ export default function Documentation() {
             <li>Sistemul va valida pe loc rândurile și va evidenția erorile înainte de salvarea finală.</li>
           </ol>
 
-          <h2 className="text-2xl font-bold text-slate-800 mt-10 mb-4 border-b pb-2">4. Generarea Rapoartelor (Centralizatoare)</h2>
+          <h2 className="text-2xl font-bold text-slate-800 mt-10 mb-4 border-b pb-2">4. Validări Inteligente (Smart Suggestions)</h2>
+          <p className="text-slate-600 mb-4">Pentru a asigura integritatea datelor, AFSMS include un motor de sugestii automate.</p>
+          <ul className="list-disc pl-6 space-y-2 text-slate-600 mb-6">
+            <li>Dacă introduci o valoare duplicat (ex: număr matricol existent), sistemul va afișa un banner albastru cu <strong>Sfat de Rezolvare Inteligent</strong>.</li>
+            <li>Aceste sfaturi te ghidează pas cu pas pentru a corecta eroarea fără a consulta manualul tehnic.</li>
+          </ul>
+
+          <h2 className="text-2xl font-bold text-slate-800 mt-10 mb-4 border-b pb-2">5. Generarea Rapoartelor (Centralizatoare)</h2>
           <p className="text-slate-600 mb-4">Generarea rapoartelor oficiale este complet automatizată.</p>
           <ul className="list-disc pl-6 space-y-2 text-slate-600 mb-6">
             <li>Mergi în secțiunea <strong>Rapoarte / Centralizator</strong>.</li>
@@ -105,7 +112,14 @@ export default function Documentation() {
             <li>The system will validate all rows and highlight any discrepancies before saving to the database.</li>
           </ol>
 
-          <h2 className="text-2xl font-bold text-slate-800 mt-10 mb-4 border-b pb-2">4. Generating e-Transcripts & Centralizers</h2>
+          <h2 className="text-2xl font-bold text-slate-800 mt-10 mb-4 border-b pb-2">4. Smart Validation Suggestions</h2>
+          <p className="text-slate-600 mb-4">To ensure data integrity, AFSMS includes an automated suggestion engine.</p>
+          <ul className="list-disc pl-6 space-y-2 text-slate-600 mb-6">
+            <li>If you enter a duplicate value (e.g., existing registration number), the system will display a blue banner with **Smart Resolution Advice**.</li>
+            <li>These hints guide you step-by-step to correct the error without consulting technical documentation.</li>
+          </ul>
+
+          <h2 className="text-2xl font-bold text-slate-800 mt-10 mb-4 border-b pb-2">5. Generating e-Transcripts & Centralizers</h2>
           <p className="text-slate-600 mb-4">Report generation is automated:</p>
           <ul className="list-disc pl-6 space-y-2 text-slate-600 mb-6">
             <li>Go to the <strong>Reports / Centralizer</strong> page.</li>

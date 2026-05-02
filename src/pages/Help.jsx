@@ -34,7 +34,8 @@ export default function Help() {
       textColor: 'text-blue-600',
       dotColor: 'bg-blue-500',
       docName: language === 'ro' ? 'Manual Operațional' : 'Operations Manual',
-      docUrl: '/docs/Manual_Secretariat.md',
+      docUrl: '/docs/secretariat',
+      roleId: 'secretariat',
       items: language === 'ro' ? [
         'Utilizarea colectării datelor bazate pe liste',
         'Gestionarea circulației documentelor electronice',
@@ -56,7 +57,8 @@ export default function Help() {
       textColor: 'text-emerald-600',
       dotColor: 'bg-emerald-500',
       docName: language === 'ro' ? 'Ghid de Pornire Rapidă' : 'Quick Start Guide',
-      docUrl: '/docs/Manual_Professor.md',
+      docUrl: '/docs/professors',
+      roleId: 'professors',
       items: language === 'ro' ? [
         'Autentificarea prin SSO-ul Universității',
         'Localizarea formațiunilor de studiu alocate',
@@ -76,7 +78,8 @@ export default function Help() {
       textColor: 'text-amber-600',
       dotColor: 'bg-amber-500',
       docName: language === 'ro' ? 'Ghidul Portalului Studenților' : 'Student Portal Guide',
-      docUrl: '/docs/Manual_Student.md',
+      docUrl: '/docs/students',
+      roleId: 'students',
       items: language === 'ro' ? [
         'Vizualizarea orarelor personale',
         'Interpretarea afișării notelor',
@@ -96,7 +99,8 @@ export default function Help() {
       textColor: 'text-slate-600',
       dotColor: 'bg-slate-500',
       docName: language === 'ro' ? 'Ghidul Administratorului' : 'Administrator Guide',
-      docUrl: '/docs/Manual_Admin.md',
+      docUrl: '/docs/admin',
+      roleId: 'admin',
       items: language === 'ro' ? [
         'Adaptarea site-ului și configurarea curriculei',
         'Maparea privilegiilor și grupurilor de utilizatori',
@@ -203,9 +207,9 @@ export default function Help() {
                       <p className="text-white/80 text-xs font-medium uppercase tracking-wider">{language === 'ro' ? 'Document' : 'Document'}: {role.docName}</p>
                     </div>
                   </div>
-                  <a href={role.docUrl} target="_blank" rel="noopener noreferrer">
+                  <Link to={`/docs/${role.roleId}`}>
                     <ExternalLink className="h-5 w-5 opacity-50 group-hover:opacity-100 transition-opacity cursor-pointer text-white" />
-                  </a>
+                  </Link>
                 </div>
                 <div className="p-8 flex-1">
                   <ul className="space-y-4">
@@ -218,9 +222,9 @@ export default function Help() {
                   </ul>
                 </div>
                 <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-                  <a href={role.docUrl} target="_blank" rel="noopener noreferrer" className={`${role.textColor} text-sm font-bold hover:underline inline-block`}>
+                  <Link to={`/docs/${role.roleId}`} className={`${role.textColor} text-sm font-bold hover:underline inline-block`}>
                     {t('help_view_doc')}
-                  </a>
+                  </Link>
                 </div>
               </div>
             ))}

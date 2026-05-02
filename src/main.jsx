@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import App from './App.jsx';
-import SuguDiagramsPage from './SuguDiagramsPage.jsx';
+import SystemDiagramsPage from './SystemDiagramsPage.jsx';
 import './index.css';
 
 import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
 function MainRouter() {
   return (
     <Routes>
-      <Route path="/sugu-diagrams" element={<SuguDiagramsPage />} />
+      <Route path="/system-diagrams" element={<SystemDiagramsPage />} />
       <Route path="/*" element={<App />} />
     </Routes>
   );

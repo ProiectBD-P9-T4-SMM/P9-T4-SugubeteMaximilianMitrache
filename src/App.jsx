@@ -21,7 +21,7 @@ import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
 import Help from './pages/Help';
 import Shortcuts from './pages/Shortcuts';
-import SuguDiagramsPage from './SuguDiagramsPage';
+import SystemDiagramsPage from './SystemDiagramsPage';
 import Documentation from './pages/Documentation';
 
 import { LanguageProvider } from './context/LanguageContext';
@@ -34,7 +34,7 @@ export default function App() {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/sugu-diagrams" element={<SuguDiagramsPage />} />
+          <Route path="/system-diagrams" element={<SystemDiagramsPage />} />
           <Route path="/" element={<PublicPortal />} />
           <Route path="/public" element={<Navigate to="/" replace />} />
 

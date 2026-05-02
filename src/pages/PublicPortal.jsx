@@ -19,6 +19,7 @@ export default function PublicPortal() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const repositoryRef = useRef(null);
+  const [selectedSpecialization, setSelectedSpecialization] = useState('ALL');
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -42,6 +43,11 @@ export default function PublicPortal() {
   const scrollToRepository = () => {
     repositoryRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const specializations = ['ALL', ...new Set(curricula.map(c => c.specialization_name))];
+  const filteredCurricula = selectedSpecialization === 'ALL' 
+    ? curricula 
+    : curricula.filter(c => c.specialization_name === selectedSpecialization);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
@@ -182,6 +188,49 @@ export default function PublicPortal() {
           </div>
 
           <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-50 overflow-hidden">
+            <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200">
+                        <Layers size={20} />
+                    </div>
+                    <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-0.5">{language === 'ro' ? 'Filtrează după Specializare' : 'Filter by Specialization'}</h4>
+                        <p className="text-sm font-black text-slate-900">{language === 'ro' ? 'Selectează domeniul de studiu' : 'Select field of study'}</p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <div className="relative min-w-[280px] w-full md:w-auto">
+                        <select
+                            value={selectedSpecialization}
+                            onChange={(e) => setSelectedSpecialization(e.target.value)}
+                            className="w-full bg-white border-2 border-slate-100 rounded-2xl px-6 py-4 text-sm font-black text-slate-700 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-50 transition-all appearance-none cursor-pointer pr-12 shadow-sm"
+                        >
+                            {specializations.map(spec => (
+                                <option key={spec} value={spec}>
+                                    {spec === 'ALL' ? (language === 'ro' ? 'Toate specializările' : 'All Specializations') : spec}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                             <Layers size={18} />
+                        </div>
+                    </div>
+
+                    {selectedSpecialization !== 'ALL' && (
+                        <div className="flex items-center gap-4 bg-emerald-50 text-emerald-600 px-6 py-4 rounded-2xl border border-emerald-100 animate-in slide-in-from-left-4 duration-500 shadow-sm">
+                             <div className="p-2 bg-emerald-100 rounded-xl">
+                                <CheckCircle size={16} />
+                             </div>
+                             <div>
+                                <div className="text-[9px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">{language === 'ro' ? 'Total Credite' : 'Total Credits'}</div>
+                                <div className="text-sm font-black leading-none">{filteredCurricula.reduce((acc, curr) => acc + curr.ects_credits, 0)} ECTS</div>
+                             </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -197,9 +246,9 @@ export default function PublicPortal() {
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr><td colSpan="6" className="py-20 text-center"><div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" /> <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('public_loading')}</span></td></tr>
-                  ) : curricula.length === 0 ? (
+                  ) : filteredCurricula.length === 0 ? (
                     <tr><td colSpan="6" className="py-20 text-center text-slate-300 font-black italic">{t('public_no_data')}</td></tr>
-                  ) : curricula.map((row) => (
+                  ) : filteredCurricula.map((row) => (
                     <tr key={row.id} className="group hover:bg-blue-50/30 transition-all">
                       <td className="px-8 py-6"><span className="font-black text-slate-900 text-sm">{row.specialization_name}</span></td>
                       <td className="px-8 py-6"><span className="font-bold text-slate-500 text-xs">{t('unit_year')} {row.study_year}</span></td>
@@ -257,7 +306,7 @@ export default function PublicPortal() {
               </div>
 
               <button 
-                onClick={() => navigate('/sugu-diagrams')}
+                onClick={() => navigate('/system-diagrams')}
                 className="mt-12 bg-white text-slate-900 px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-400 hover:text-white transition-all flex items-center gap-3"
               >
                 {t('pub_view_details')} <ChevronRight size={18} />
@@ -267,7 +316,7 @@ export default function PublicPortal() {
             <div className="relative">
               <div className="relative z-10 bg-slate-800 p-4 rounded-[2rem] shadow-2xl border border-slate-700">
                 <img 
-                  src="diagrams/sugu/use-case/use-case_v1.svg" 
+                  src="diagrams/core/use-case/use-case_v1.svg" 
                   alt="High-level Architecture" 
                   className="w-full h-auto rounded-xl filter invert grayscale brightness-200"
                 />
@@ -310,7 +359,7 @@ export default function PublicPortal() {
           
           <div className="pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
             <p>© 2026 University of Craiova - Faculty of Automation, Computers and Electronics</p>
-            <p>Designed by Sugubete Andrei & Maximilian Mitrache</p>
+            <p>Designed for the University of Craiova</p>
           </div>
         </div>
       </footer>

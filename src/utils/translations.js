@@ -31,6 +31,7 @@ export const translations = {
     login_powered_by: "Powered by",
     login_no_users: "No users found",
     login_failed: "Authentication failed. Please try again.",
+    back_to_public: "Return to Public Portal",
     
     // Dashboard (Professor)
     prof_welcome: "Welcome back, Professor",
@@ -191,11 +192,15 @@ export const translations = {
     th_timestamp: "Timestamp",
     
     // Public Portal
-    public_title: "Public Portal – Curricula Overview",
-    public_subtitle: "Browse publicly available curricula information. No login required.",
-    login_to_private: "Login to Private Portal",
-    public_no_data: "No curricula data available.",
     public_loading: "Loading curricula...",
+    pub_hero_title: "Next-Gen Academic Intelligence",
+    pub_hero_subtitle: "Empowering students and faculty with advanced digital management solutions at the Faculty of Automation, Computers and Electronics.",
+    pub_announcements: "Latest Announcements",
+    pub_architecture: "System Architecture & Logic",
+    pub_explore_curricula: "Academic Repository",
+    pub_view_details: "View System Diagrams",
+    pub_get_started: "Access Private Zone",
+    pub_learn_more: "Explore Curriculum",
     unit_year: "Year",
     unit_sem: "Sem",
     unit_ects: "ECTS",
@@ -410,6 +415,7 @@ export const translations = {
     login_powered_by: "Susținut de",
     login_no_users: "Nu s-au găsit utilizatori",
     login_failed: "Autentificare eșuată. Vă rugăm să încercați din nou.",
+    back_to_public: "Înapoi la Portalul Public",
     
     // Dashboard (Professor)
     prof_welcome: "Bine ați revenit, Domnule Profesor",
@@ -570,11 +576,15 @@ export const translations = {
     th_timestamp: "Timestamp",
     
     // Public Portal
-    public_title: "Portal Public – Prezentare Planuri de Învățământ",
-    public_subtitle: "Răsfoiți informațiile publice despre curricula. Nu este necesară autentificarea.",
-    login_to_private: "Autentificare în Portal Privat",
-    public_no_data: "Nu există date disponibile despre planurile de învățământ.",
     public_loading: "Se încarcă planurile de învățământ...",
+    pub_hero_title: "Inteligență Academică de Nouă Generație",
+    pub_hero_subtitle: "Susținem studenții și facultatea cu soluții avansate de management digital la Facultatea de Automatică, Calculatoare și Electronică.",
+    pub_announcements: "Ultimele Anunțuri",
+    pub_architecture: "Arhitectură și Logică Sistem",
+    pub_explore_curricula: "Depozitar Academic",
+    pub_view_details: "Vezi Diagramele Sistemului",
+    pub_get_started: "Acces Zonă Privată",
+    pub_learn_more: "Explorează Curricula",
     unit_year: "An",
     unit_sem: "Sem",
     unit_ects: "ECTS",

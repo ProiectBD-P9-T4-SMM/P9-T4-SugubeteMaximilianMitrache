@@ -153,7 +153,16 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-10 pt-8 border-t border-slate-100 text-center">
+        <div className="mt-10 pt-8 border-t border-slate-100 text-center flex flex-col gap-6">
+          <button 
+            onClick={() => navigate('/')}
+            className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            {t('back_to_public')}
+          </button>
           <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
             {t('login_powered_by')} <strong>UCV Identity Management</strong> &copy; 2026
           </p>

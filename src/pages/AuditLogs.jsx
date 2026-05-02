@@ -23,6 +23,7 @@ export default function AuditLogs() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userForm, setUserForm] = useState({ sso_subject: '', username: '', email: '', full_name: '', account_status: 'ACTIVE' });
+  const [selectedEmail, setSelectedEmail] = useState(null);
 
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
@@ -443,7 +444,7 @@ export default function AuditLogs() {
                     <div className="overflow-x-auto rounded-2xl border border-slate-100">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
                             <thead className="bg-slate-50/50">
-                                <tr>{[language === 'ro' ? 'Trimis la' : 'Sent At', language === 'ro' ? 'Expeditor' : 'Sender', language === 'ro' ? 'Țintă' : 'Target', language === 'ro' ? 'Subiect' : 'Subject', 'Status'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                <tr>{[language === 'ro' ? 'Trimis la' : 'Sent At', language === 'ro' ? 'Expeditor' : 'Sender', language === 'ro' ? 'Țintă' : 'Target', language === 'ro' ? 'Subiect' : 'Subject', 'Status', language === 'ro' ? 'Acțiune' : 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-50">
                                 {emailLogs.map(log => (
@@ -457,6 +458,14 @@ export default function AuditLogs() {
                                         <td className="px-6 py-4 font-bold text-slate-600 text-xs">{log.subject}</td>
                                         <td className="px-6 py-4">
                                             <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase">{log.delivery_status}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button 
+                                                onClick={() => setSelectedEmail(log)}
+                                                className="bg-blue-600 text-white px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-1"
+                                            >
+                                                <Mail size={12} /> {language === 'ro' ? 'Vezi Mail' : 'View Mail'}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -625,6 +634,57 @@ export default function AuditLogs() {
                           </button>
                       </div>
                   </form>
+              </div>
+          </div>
+      )}
+
+      {/* Email View Modal */}
+      {selectedEmail && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[90vh]">
+                  <div className="flex justify-between items-center mb-6 flex-shrink-0">
+                      <div>
+                          <h3 className="text-xl font-black text-slate-900">{language === 'ro' ? 'Previzualizare E-mail (Phantom Mail)' : 'E-mail Preview (Phantom Mail)'}</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{language === 'ro' ? 'Protocol Monitorizare Notificări' : 'Notification Monitoring Protocol'}</p>
+                      </div>
+                      <button onClick={() => setSelectedEmail(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
+                  </div>
+                  
+                  <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                      <div className="bg-slate-50 p-6 rounded-3xl space-y-4 border border-slate-100">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Expeditor' : 'Sender'}</label>
+                                  <div className="text-sm font-black text-slate-700">{selectedEmail.sent_by || 'System'}</div>
+                              </div>
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Trimis la' : 'Sent At'}</label>
+                                  <div className="text-sm font-bold text-slate-600">{new Date(selectedEmail.sent_at).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}</div>
+                              </div>
+                          </div>
+                          <div>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Destinatari' : 'Recipients'}</label>
+                              <div className="text-xs font-mono bg-white p-3 rounded-xl border border-slate-200 text-blue-600 break-all">{selectedEmail.recipients}</div>
+                          </div>
+                          <div>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Subiect' : 'Subject'}</label>
+                              <div className="text-sm font-black text-slate-900">{selectedEmail.subject}</div>
+                          </div>
+                      </div>
+
+                      <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-2">{language === 'ro' ? 'Conținut Mesaj' : 'Message Content'}</label>
+                          <div className="bg-white border border-slate-200 rounded-3xl p-8 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap min-h-[200px]">
+                              {selectedEmail.body_preview}
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="pt-6 mt-6 border-t border-slate-100 flex-shrink-0">
+                      <button onClick={() => setSelectedEmail(null)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">
+                          {language === 'ro' ? 'Închide Previzualizarea' : 'Close Preview'}
+                      </button>
+                  </div>
               </div>
           </div>
       )}

@@ -92,8 +92,8 @@ router.post('/send', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async (
          VALUES ($1, $3, $4, $5, 'SENT')`;
 
     const insertParams = targetType === 'GROUP'
-      ? [req.user.userId, groupId, emails.join(', '), subject, body.substring(0, 500)]
-      : [req.user.userId, null, emails.join(', '), subject, body.substring(0, 500)];
+      ? [req.user.userId, groupId, emails.join(', '), subject, body]
+      : [req.user.userId, null, emails.join(', '), subject, body];
 
     await db.query(insertQuery, insertParams);
 
@@ -146,7 +146,7 @@ router.post('/contact', async (req, res, next) => {
     await db.query(
       `INSERT INTO OUTLOOK_NOTIFICATION (sent_by_user_id, recipients, subject, body_preview, delivery_status)
        VALUES ($1, $2, $3, $4, 'SENT')`,
-      [req.user.userId, 'SYSTEM_ADMIN', `[SUPPORT] ${subject}`, message.substring(0, 500)]
+      [req.user.userId, 'SYSTEM_ADMIN', `[SUPPORT] ${subject}`, message]
     );
 
     res.json({ success: true, message: 'Your message has been sent to the IT Helpdesk.' });

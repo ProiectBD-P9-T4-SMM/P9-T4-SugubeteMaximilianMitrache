@@ -22,7 +22,7 @@ export default function Disciplines() {
   const [selectedCurriculum, setSelectedCurriculum] = useState('');
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '', hint: '' });
+  const [message, setMessage] = useState({ type: '', text: '', suggestion: '', hint: '' });
   
   // Form Visibility
   const [showSpecForm, setShowSpecForm] = useState(false);
@@ -96,7 +96,14 @@ export default function Disciplines() {
       setMessage({ type: 'success', text: language === 'ro' ? 'Domeniu înregistrat cu succes.' : 'Domain registered successfully.' });
       setShowSpecForm(false); setSpecFormData({ code:'', name:'', degree_level:'BACHELOR'});
       loadSpecializations();
-    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Înregistrare eșuată.' : 'Registration failed.' }); }
+    } catch (err) { 
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || (language === 'ro' ? 'Înregistrare eșuată.' : 'Registration failed.'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      }); 
+    }
   };
 
   const handleCreateCurriculum = async (e) => {
@@ -111,7 +118,14 @@ export default function Disciplines() {
       setMessage({ type: 'success', text: language === 'ro' ? 'Plan de studiu implementat.' : 'Study plan deployed.' });
       setShowCurriculumForm(false);
       loadCurriculaForSpecialization(selectedSpecialization);
-    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Crearea planului a eșuat.' : 'Plan creation failed.' }); }
+    } catch (err) { 
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || (language === 'ro' ? 'Crearea planului a eșuat.' : 'Plan creation failed.'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      }); 
+    }
   };
 
   const resetDisciplineForm = () => {
@@ -149,7 +163,14 @@ export default function Disciplines() {
       setMessage({ type: 'success', text: language === 'ro' ? 'Modul salvat cu succes.' : 'Module saved successfully.' });
       resetDisciplineForm(); setShowDisciplineForm(false);
       fetchDisciplines(selectedCurriculum);
-    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Salvare eșuată.' : 'Save failed.' }); }
+    } catch (err) { 
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || (language === 'ro' ? 'Salvare eșuată.' : 'Save failed.'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      }); 
+    }
   };
 
   const handleDeleteDiscipline = async (id) => {
@@ -172,8 +193,21 @@ export default function Disciplines() {
       </header>
 
       {message.text && (
-        <div className={`p-4 rounded-2xl mb-10 flex items-center gap-3 animate-in fade-in duration-300 ${message.type === 'error' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-           <AlertCircle size={18} /> <p className="text-xs font-black uppercase tracking-widest">{message.text}</p>
+        <div className={`p-6 rounded-[2rem] mb-10 border shadow-xl animate-in fade-in duration-300 ${message.type === 'error' ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
+           <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-2xl ${message.type === 'error' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                {message.type === 'error' ? <AlertCircle size={24} /> : <CheckCircle size={24} />}
+              </div>
+              <div className="flex-1">
+                <p className={`text-xs font-black uppercase tracking-widest ${message.type === 'error' ? 'text-rose-600' : 'text-emerald-600'}`}>{message.text}</p>
+                {message.suggestion && (
+                  <div className="mt-2 bg-white/60 p-3 rounded-xl border border-rose-100/50">
+                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-tighter mb-1">{t('suggest_title') || (language === 'ro' ? 'Sfat de Rezolvare' : 'Resolution Hint')}</p>
+                    <p className="text-[11px] font-bold text-slate-700">{t(message.suggestion) || message.hint}</p>
+                  </div>
+                )}
+              </div>
+           </div>
         </div>
       )}
 

@@ -33,6 +33,20 @@ const errorHandler = (err, req, res, next) => {
         response.suggestion = 'suggest_grade_range';
         response.resolutionHint = 'Notele trebuie să fie între 1 și 10. Valoarea 0 reprezintă "Absent".';
         break;
+      case '23502': // not_null_violation
+        statusCode = 400;
+        response.code = 'NOT_NULL_VIOLATION';
+        response.message = 'Câmpuri obligatorii lipsă.';
+        response.suggestion = 'suggest_not_null';
+        response.resolutionHint = 'Completează toate câmpurile marcate cu steluță sau obligatorii.';
+        break;
+      case '22001': // string_data_right_truncation
+        statusCode = 400;
+        response.code = 'STRING_LENGTH_VIOLATION';
+        response.message = 'Text prea lung.';
+        response.suggestion = 'suggest_length';
+        response.resolutionHint = 'Textul introdus depășește limita de caractere permisă de baza de date.';
+        break;
       default:
         // Other DB errors
         statusCode = 500;

@@ -27,12 +27,16 @@ export const translations = {
     nav_shortcuts: "Shortcuts",
 
     // Validation Suggestions
+    suggest_title: "Smart Resolution Advice",
     suggest_unique: "Try a different value or check if the record was already added.",
     suggest_fk: "The selected entity might have been deleted. Please refresh the list.",
     suggest_grade_range: "Grades must be between 1 and 10. Use 0 for 'Absent'.",
     suggest_email: "Ensure the email follows the university format: name@ucv.ro",
     suggest_required: "This field is required for audit compliance.",
     suggest_reg_num: "The registration number must be 8 characters long (e.g., MAT12345).",
+    suggest_not_null: "Please fill in all required fields.",
+    suggest_length: "The text is too long. Please shorten it.",
+    suggest_bulk_format: "Ensure the Excel/CSV columns match the required template precisely.",
     
     // Auth
     logout: "Logout",
@@ -405,6 +409,16 @@ export const translations = {
 
   ro: {
     // Navigation
+    suggest_title: "Sfat de Rezolvare Inteligent",
+    suggest_unique: "Încearcă o valoare diferită sau verifică dacă înregistrarea există deja.",
+    suggest_fk: "Entitatea selectată ar fi putut fi ștearsă. Te rugăm să reîmprospătezi lista.",
+    suggest_grade_range: "Notele trebuie să fie între 1 și 10. Folosește 0 pentru 'Absent'.",
+    suggest_email: "Asigură-te că email-ul respectă formatul universității: nume@ucv.ro",
+    suggest_required: "Acest câmp este obligatoriu pentru conformitatea auditului.",
+    suggest_reg_num: "Numărul matricol trebuie să aibă 8 caractere (ex: MAT12345).",
+    suggest_not_null: "Te rugăm să completezi toate câmpurile obligatorii.",
+    suggest_length: "Textul este prea lung. Te rugăm să îl scurtezi.",
+    suggest_bulk_format: "Asigură-te că formatul fișierului Excel/CSV respectă modelul oficial.",
     nav_dashboard: "Tablou de bord",
     greeting: "Bună",
     act_updated: "Actualizat",

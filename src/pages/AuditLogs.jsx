@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save } from 'lucide-react';
+import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save, Clock } from 'lucide-react';
 import { auditService, adminService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -8,6 +8,7 @@ export default function AuditLogs() {
   const { t, language } = useLanguage();
   const [adminTab, setAdminTab] = useState('audit');
   const [auditLogs, setAuditLogs] = useState([]);
+  const [paginationMeta, setPaginationMeta] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(false);
   const [rollbackStatus, setRollbackStatus] = useState(null);
 
@@ -18,18 +19,20 @@ export default function AuditLogs() {
   const [backups, setBackups] = useState([]);
   const [emailLogs, setEmailLogs] = useState([]);
   const [backupConfig, setBackupConfig] = useState({ cron_expression: '0 0 * * *', enabled: false });
+  const [pitrTimestamp, setPitrTimestamp] = useState('');
 
   // Modals / Forms state
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userForm, setUserForm] = useState({ sso_subject: '', username: '', email: '', full_name: '', account_status: 'ACTIVE' });
+  const [selectedEmail, setSelectedEmail] = useState(null);
 
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [roleForm, setRoleForm] = useState({ code: '', name: '', description: '' });
 
   useEffect(() => {
-    if (adminTab === 'audit') fetchAuditLogs();
+    if (adminTab === 'audit') fetchAuditLogs(paginationMeta.page);
     if (adminTab === 'users') {
       fetchUsers();
       fetchRoles();
@@ -131,11 +134,12 @@ export default function AuditLogs() {
     }
   };
 
-  const fetchAuditLogs = async () => {
+  const fetchAuditLogs = async (page = 1) => {
     setLoading(true);
     try {
-      const res = await auditService.getLogs();
-      setAuditLogs(res.data);
+      const res = await auditService.getLogs({ page, limit: 20 });
+      setAuditLogs(res.data.data);
+      setPaginationMeta(res.data.meta);
     } catch (err) {
       console.error("Failed to load audit logs", err);
     } finally {
@@ -205,6 +209,40 @@ export default function AuditLogs() {
       link.remove();
     } catch (err) {
       alert((language === 'ro' ? 'Eroare la descărcarea backup-ului: ' : 'Failed to download backup: ') + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleManualArchive = async () => {
+    if (!window.confirm(language === 'ro' ? 'Doriți să rulați manual procesul de arhivare a logurilor mai vechi de 5 ani?' : 'Do you want to manually run the archiving process for logs older than 5 years?')) return;
+    setLoading(true);
+    try {
+      const res = await adminService.triggerAuditArchiving();
+      setRollbackStatus({ success: true, message: res.data.message });
+      setTimeout(() => setRollbackStatus(null), 5000);
+    } catch (err) {
+      setRollbackStatus({ success: false, message: language === 'ro' ? 'Arhivarea a eșuat' : 'Archiving failed' });
+      setTimeout(() => setRollbackStatus(null), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePITR = async () => {
+    if (!pitrTimestamp) return;
+    if (!window.confirm(language === 'ro' 
+      ? `⚠️ ATENȚIE: Aceasta va REVENI TOATE modificările de sistem la starea din ${new Date(pitrTimestamp).toLocaleString()}. Continuați?` 
+      : `⚠️ CAUTION: This will REVERT ALL system changes to the state at ${new Date(pitrTimestamp).toLocaleString()}. Proceed?`)) return;
+
+    setLoading(true);
+    try {
+      const res = await auditService.pitr(pitrTimestamp);
+      setRollbackStatus({ success: true, message: res.data.message });
+      fetchAuditLogs();
+    } catch (err) {
+      setRollbackStatus({ success: false, message: err.response?.data?.message || (language === 'ro' ? 'PITR a eșuat' : 'PITR failed') });
+    } finally {
+      setLoading(false);
+      setTimeout(() => setRollbackStatus(null), 5000);
     }
   };
 
@@ -302,9 +340,37 @@ export default function AuditLogs() {
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
             {adminTab === 'audit' && (
                 <div className="space-y-6">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-6 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-800">
+                        <div className="flex-1">
+                            <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">
+                                <Clock className="text-blue-400" size={24} /> {language === 'ro' ? 'Restaurare Granulară (Time Travel)' : 'Granular Point-in-Time Recovery'}
+                            </h3>
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-relaxed">
+                                {language === 'ro' 
+                                    ? 'Inversați toate operațiunile în mod secvențial până la un marcaj temporal precis folosind registrul de trasabilitate.' 
+                                    : 'Reverse all operations sequentially back to a precise timestamp using the traceability ledger.'}
+                            </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                            <input 
+                                type="datetime-local" 
+                                value={pitrTimestamp}
+                                onChange={(e) => setPitrTimestamp(e.target.value)}
+                                className="bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl text-xs font-black outline-none focus:ring-4 focus:ring-blue-500/20 transition-all w-full"
+                            />
+                            <button 
+                                onClick={handlePITR}
+                                disabled={!pitrTimestamp || loading}
+                                className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            >
+                                {language === 'ro' ? 'Execută Restaurare' : 'Execute Recovery'}
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="flex items-center justify-between px-2">
                         <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Registru Trasabilitate Operațiuni' : 'Operations Traceability Ledger'}</h3>
-                        <button onClick={fetchAuditLogs} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh Logs'}</button>
+                        <button onClick={() => fetchAuditLogs(paginationMeta.page)} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh Logs'}</button>
                     </div>
                     <div className="overflow-x-auto rounded-2xl border border-slate-100">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
@@ -345,6 +411,48 @@ export default function AuditLogs() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    <div className="flex items-center justify-between px-2 pt-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {language === 'ro' 
+                                ? `Afișare ${auditLogs.length} din ${paginationMeta.total} înregistrări total` 
+                                : `Showing ${auditLogs.length} of ${paginationMeta.total} total records`}
+                        </p>
+                        <div className="flex gap-2">
+                            <button 
+                                disabled={paginationMeta.page <= 1}
+                                onClick={() => fetchAuditLogs(paginationMeta.page - 1)}
+                                className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all"
+                            >
+                                {language === 'ro' ? 'Anterior' : 'Previous'}
+                            </button>
+                            <button 
+                                disabled={paginationMeta.page >= paginationMeta.totalPages}
+                                onClick={() => fetchAuditLogs(paginationMeta.page + 1)}
+                                className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all"
+                            >
+                                {language === 'ro' ? 'Următor' : 'Next'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mt-8">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-amber-100 p-2 rounded-xl text-amber-600">
+                                <Shield size={18} />
+                            </div>
+                            <div>
+                                <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest">
+                                    {language === 'ro' ? 'Politică Retenție Date' : 'Data Retention Policy'}
+                                </h4>
+                                <p className="text-[10px] font-bold text-amber-700/80 mt-1">
+                                    {language === 'ro' 
+                                        ? 'Conform reglementărilor instituționale, registrele de audit sunt păstrate pentru o perioadă de 5 ani. Datele mai vechi sunt arhivate automat într-un depozit securizat extern la intervale regulate.' 
+                                        : 'Per institutional regulations, audit logs are retained for a period of 5 years. Older data is automatically archived to a secure external repository at regular intervals.'}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -443,7 +551,7 @@ export default function AuditLogs() {
                     <div className="overflow-x-auto rounded-2xl border border-slate-100">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
                             <thead className="bg-slate-50/50">
-                                <tr>{[language === 'ro' ? 'Trimis la' : 'Sent At', language === 'ro' ? 'Expeditor' : 'Sender', language === 'ro' ? 'Țintă' : 'Target', language === 'ro' ? 'Subiect' : 'Subject', 'Status'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                <tr>{[language === 'ro' ? 'Trimis la' : 'Sent At', language === 'ro' ? 'Expeditor' : 'Sender', language === 'ro' ? 'Țintă' : 'Target', language === 'ro' ? 'Subiect' : 'Subject', 'Status', language === 'ro' ? 'Acțiune' : 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-50">
                                 {emailLogs.map(log => (
@@ -457,6 +565,14 @@ export default function AuditLogs() {
                                         <td className="px-6 py-4 font-bold text-slate-600 text-xs">{log.subject}</td>
                                         <td className="px-6 py-4">
                                             <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase">{log.delivery_status}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button 
+                                                onClick={() => setSelectedEmail(log)}
+                                                className="bg-blue-600 text-white px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-1"
+                                            >
+                                                <Mail size={12} /> {language === 'ro' ? 'Vezi Mail' : 'View Mail'}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -505,6 +621,9 @@ export default function AuditLogs() {
                             </div>
                             <button onClick={handleCreateBackup} disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all flex items-center justify-center gap-3">
                                 <Database size={20} /> {language === 'ro' ? 'Crează Instantaneu Manual' : 'Create Manual Snapshot'}
+                            </button>
+                            <button onClick={handleManualArchive} disabled={loading} className="w-full mt-4 bg-slate-800 text-slate-300 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black border border-slate-700 transition-all flex items-center justify-center gap-3">
+                                <Shield size={20} /> {language === 'ro' ? 'Arhivare Manuală 5 Ani' : 'Manual 5-Year Archive'}
                             </button>
                         </div>
 
@@ -625,6 +744,57 @@ export default function AuditLogs() {
                           </button>
                       </div>
                   </form>
+              </div>
+          </div>
+      )}
+
+      {/* Email View Modal */}
+      {selectedEmail && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[90vh]">
+                  <div className="flex justify-between items-center mb-6 flex-shrink-0">
+                      <div>
+                          <h3 className="text-xl font-black text-slate-900">{language === 'ro' ? 'Previzualizare E-mail (Phantom Mail)' : 'E-mail Preview (Phantom Mail)'}</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{language === 'ro' ? 'Protocol Monitorizare Notificări' : 'Notification Monitoring Protocol'}</p>
+                      </div>
+                      <button onClick={() => setSelectedEmail(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
+                  </div>
+                  
+                  <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                      <div className="bg-slate-50 p-6 rounded-3xl space-y-4 border border-slate-100">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Expeditor' : 'Sender'}</label>
+                                  <div className="text-sm font-black text-slate-700">{selectedEmail.sent_by || 'System'}</div>
+                              </div>
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Trimis la' : 'Sent At'}</label>
+                                  <div className="text-sm font-bold text-slate-600">{new Date(selectedEmail.sent_at).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}</div>
+                              </div>
+                          </div>
+                          <div>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Destinatari' : 'Recipients'}</label>
+                              <div className="text-xs font-mono bg-white p-3 rounded-xl border border-slate-200 text-blue-600 break-all">{selectedEmail.recipients}</div>
+                          </div>
+                          <div>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Subiect' : 'Subject'}</label>
+                              <div className="text-sm font-black text-slate-900">{selectedEmail.subject}</div>
+                          </div>
+                      </div>
+
+                      <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-2">{language === 'ro' ? 'Conținut Mesaj' : 'Message Content'}</label>
+                          <div className="bg-white border border-slate-200 rounded-3xl p-8 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap min-h-[200px]">
+                              {selectedEmail.body_preview}
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="pt-6 mt-6 border-t border-slate-100 flex-shrink-0">
+                      <button onClick={() => setSelectedEmail(null)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">
+                          {language === 'ro' ? 'Închide Previzualizarea' : 'Close Preview'}
+                      </button>
+                  </div>
               </div>
           </div>
       )}

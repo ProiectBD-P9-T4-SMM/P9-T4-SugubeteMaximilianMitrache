@@ -262,7 +262,7 @@ export default function Students() {
         <div className="flex flex-wrap gap-3">
           <label className="group bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all cursor-pointer flex items-center gap-3">
             <Database size={18} />
-            <span>{t('upload')}</span>
+            <span>{t('bulk_import')}</span>
             <input type="file" accept=".csv,.xlsx" className="hidden" onChange={async (e) => {
                const file = e.target.files[0];
                if (!file) return;

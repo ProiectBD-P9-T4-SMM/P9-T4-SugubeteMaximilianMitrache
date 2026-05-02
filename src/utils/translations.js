@@ -113,6 +113,7 @@ export const translations = {
     filter: "Filters",
     add: "Add New",
     update: "Update",
+    bulk_import: "Bulk Import (Excel/CSV)",
     upload: "Upload",
     download: "Download",
     confirm_delete: "Are you sure you want to delete this?",
@@ -145,7 +146,7 @@ export const translations = {
     // Students
     std_title: "Student Management Registry",
     std_subtitle: "Master Academic Enrollment & Data Control",
-    bulk_import: "Bulk CSV Import",
+    // (bulk_import already defined above)
     add_student: "Register Student",
     th_reg_num: "Reg. Number",
     th_name: "Full Name",
@@ -173,7 +174,7 @@ export const translations = {
     grades_title: "Academic Grade Ledger",
     grades_subtitle: "Official Evaluation & Validation Gateway",
     gen_template: "Generate Template",
-    import_grades: "Import Grades (CSV)",
+    import_grades: "Import Grades (Excel/CSV)",
     btn_validate: "Validate Grade",
     th_student: "Student",
     th_discipline: "Discipline",
@@ -508,6 +509,7 @@ export const translations = {
     filter: "Filtre",
     add: "Adaugă Nou",
     update: "Actualizează",
+    bulk_import: "Import Masiv (Excel/CSV)",
     upload: "Încarcă",
     download: "Descarcă",
     confirm_delete: "Ești sigur că vrei să ștergi?",
@@ -540,7 +542,7 @@ export const translations = {
     // Students
     std_title: "Registru Management Studenți",
     std_subtitle: "Control Date și Înscrieri Academice",
-    bulk_import: "Import Bulk CSV",
+    // (bulk_import already defined above)
     add_student: "Înregistrare Student",
     th_reg_num: "Nr. Matricol",
     th_name: "Nume Complet",
@@ -568,7 +570,7 @@ export const translations = {
     grades_title: "Registru Note Academice",
     grades_subtitle: "Portal Oficial Evaluare și Validare",
     gen_template: "Generare Șablon",
-    import_grades: "Import Note (CSV)",
+    import_grades: "Import Note (Excel/CSV)",
     btn_validate: "Validare Notă",
     th_student: "Student",
     th_discipline: "Disciplină",

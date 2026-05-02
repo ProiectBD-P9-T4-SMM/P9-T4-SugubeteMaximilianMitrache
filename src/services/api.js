@@ -100,11 +100,14 @@ export const adminService = {
   updateBackupConfig: (data) => api.put('/admin/backups/config', data),
   createBackup: () => api.post('/admin/backups/create'),
   restoreBackup: (filename) => api.post('/admin/backups/restore', { filename }),
-  downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' })
+  downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' }),
+  getSettings: () => api.get('/admin/settings'),
+  updateSettings: (settings) => api.put('/admin/settings', { settings }),
 };
 
 export const publicService = {
-  getCurricula: () => axios.get(`${API_URL}/public/curricula`)
+  getCurricula: () => axios.get(`${API_URL}/public/curricula`),
+  getSettings: () => axios.get(`${API_URL}/public/settings`),
 };
 
 export default api;

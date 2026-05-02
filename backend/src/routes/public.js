@@ -22,4 +22,27 @@ router.get('/curricula', async (req, res, next) => {
   }
 });
 
+// GET /api/public/settings
+// Returns all SYSTEM_SETTINGS rows, grouped by category
+router.get('/settings', async (req, res, next) => {
+  try {
+    const result = await db.query(
+      'SELECT key, value, category, label FROM SYSTEM_SETTINGS ORDER BY category ASC, key ASC'
+    );
+
+    // Build a flat key→value map and a grouped object
+    const flat = {};
+    const grouped = {};
+    for (const row of result.rows) {
+      flat[row.key] = row.value;
+      if (!grouped[row.category]) grouped[row.category] = [];
+      grouped[row.category].push({ key: row.key, value: row.value, label: row.label });
+    }
+
+    res.json({ success: true, settings: flat, grouped });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

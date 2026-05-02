@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, FileText, FileSignature, Clock, TrendingUp, Shield, 
   GraduationCap, BookOpen, Settings, AlertCircle, ChevronRight, 
-  Plus, Download, List, History, UserCheck, X
+  Plus, Download, List, History, UserCheck, X, RefreshCw, WifiOff
 } from 'lucide-react';
 import api, { auditService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -16,33 +16,53 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState(false);
+  const [error, setError] = useState(null); // null | 'network' | 'server'
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
+  // ── Offline detection ───────────────────────────────────────────────────
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [activityRes, statsRes] = await Promise.all([
-          user && ['ADMIN', 'PROFESSOR', 'SECRETARIAT'].includes(user.role) 
-            ? auditService.getLogs() 
-            : Promise.resolve({ data: [] }),
-          api.get('/academic/dashboard/stats')
-        ]);
-        
-        setRecentActivity(activityRes.data?.slice(0, 6) || []);
-        setStats(statsRes.data?.stats || null);
-      } catch (error) {
-        console.error("Failed to load dashboard data", error);
-      } finally {
-        setLoading(false);
-      }
+    const goOnline  = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener('online',  goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online',  goOnline);
+      window.removeEventListener('offline', goOffline);
     };
-    fetchData();
+  }, []);
+
+  // ── Data fetching ───────────────────────────────────────────────────────
+  const fetchData = useCallback(async (isRetry = false) => {
+    if (isRetry) setRetrying(true);
+    else setLoading(true);
+    setError(null);
+
+    try {
+      const [activityRes, statsRes] = await Promise.all([
+        user && ['ADMIN', 'PROFESSOR', 'SECRETARIAT'].includes(user.role)
+          ? auditService.getLogs()
+          : Promise.resolve({ data: [] }),
+        api.get('/academic/dashboard/stats')
+      ]);
+      setRecentActivity(activityRes.data?.slice(0, 6) || []);
+      setStats(statsRes.data?.stats || null);
+    } catch (err) {
+      console.error('[Dashboard] Failed to load data:', err);
+      const isNetwork = !err.response; // no response = network/offline
+      setError(isNetwork ? 'network' : 'server');
+    } finally {
+      setLoading(false);
+      setRetrying(false);
+    }
   }, [user]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50">
-        <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full shadow-xl shadow-blue-100"></div>
+        <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full shadow-xl shadow-blue-100" />
       </div>
     );
   }
@@ -190,6 +210,15 @@ export default function Dashboard() {
 
   return (
     <div className="flex-1 bg-slate-50/50 min-h-screen p-8 lg:p-12">
+
+      {/* ── Offline Banner ─────────────────────────────────────────────── */}
+      {isOffline && (
+        <div className="mb-6 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 px-5 py-3.5 rounded-2xl shadow-sm animate-in slide-in-from-top-2 duration-300">
+          <WifiOff size={18} className="flex-shrink-0 text-amber-500" />
+          <p className="text-xs font-bold flex-1">{t('err_offline_banner')}</p>
+        </div>
+      )}
+
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
@@ -206,17 +235,51 @@ export default function Dashboard() {
         <div className="flex gap-3">
           <div className="text-right hidden md:block">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{t('academic_status')}</p>
-            <p className="text-emerald-500 font-black text-sm flex items-center justify-end gap-1">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> {t('system_online')}
+            <p className={`font-black text-sm flex items-center justify-end gap-1 ${
+              error ? 'text-rose-500' : 'text-emerald-500'
+            }`}>
+              <span className={`h-2 w-2 rounded-full ${
+                error ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'
+              }`} />
+              {error ? t('err_loading_failed') : t('system_online')}
             </p>
           </div>
         </div>
       </header>
 
-      {user?.role === 'ADMIN' && renderAdminDashboard()}
-      {user?.role === 'PROFESSOR' && renderProfessorDashboard()}
-      {user?.role === 'SECRETARIAT' && renderSecretariatDashboard()}
-      {user?.role === 'STUDENT' && renderStudentDashboard()}
+      {/* ── Error State with Retry ──────────────────────────────────────── */}
+      {error ? (
+        <div className="flex flex-col items-center justify-center py-24 animate-in fade-in duration-500">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/60 border border-slate-100 p-12 max-w-md w-full text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-rose-50 border border-rose-100 mb-6">
+              {error === 'network'
+                ? <WifiOff size={36} className="text-rose-400" />
+                : <AlertCircle size={36} className="text-rose-400" />
+              }
+            </div>
+            <h2 className="text-xl font-black text-slate-900 mb-2">{t('err_dashboard_stats')}</h2>
+            <p className="text-sm text-slate-500 font-medium mb-8">
+              {error === 'network' ? t('err_network') : t('err_server')}
+            </p>
+            <button
+              id="dashboard-retry-btn"
+              onClick={() => fetchData(true)}
+              disabled={retrying || isOffline}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+            >
+              <RefreshCw size={16} className={retrying ? 'animate-spin' : ''} />
+              {retrying ? t('btn_retry_loading') : t('btn_retry')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {user?.role === 'ADMIN'       && renderAdminDashboard()}
+          {user?.role === 'PROFESSOR'   && renderProfessorDashboard()}
+          {user?.role === 'SECRETARIAT' && renderSecretariatDashboard()}
+          {user?.role === 'STUDENT'     && renderStudentDashboard()}
+        </>
+      )}
     </div>
   );
 }

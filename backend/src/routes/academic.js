@@ -3,8 +3,10 @@ const router = express.Router();
 const db = require('../db');
 const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 const { auditableUpdate, auditableInsert } = require('../services/auditService');
+const importService = require('../services/importService');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
+const uploadDisk = multer({ dest: 'uploads/' });
 
 router.use(requireAuth);
 
@@ -384,7 +386,6 @@ router.get('/grades/export', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
   }
 });
 
-
 // POST /api/academic/grades/import - Bulk Import Grades from Excel/CSV (SRS REQ-AFSMS-39)
 router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.single('file'), async (req, res, next) => {
   if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
@@ -467,6 +468,16 @@ router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), as
   try {
     const { id } = req.params;
     const { value, exam_session, validated } = req.body;
+
+    // Validation Lock Check (REQ-AFSMS-54)
+    const currentGrade = await db.query('SELECT validated FROM GRADE WHERE id = $1', [id]);
+    if (currentGrade.rows.length > 0 && currentGrade.rows[0].validated && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ 
+        error: true, 
+        message: 'Această notă a fost deja validată și nu mai poate fi modificată decât de un Administrator.' 
+      });
+    }
+
     
     const updateData = {};
     if (value !== undefined) {
@@ -1107,6 +1118,15 @@ router.delete('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
     
     const grade = gradeRes.rows[0];
     
+    // Validation Lock Check (REQ-AFSMS-54)
+    const currentGrade = await db.query('SELECT validated FROM GRADE WHERE id = $1', [id]);
+    if (currentGrade.rows.length > 0 && currentGrade.rows[0].validated && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ 
+        error: true, 
+        message: 'Această notă a fost deja validată și nu mai poate fi ștearsă decât de un Administrator.' 
+      });
+    }
+    
     // Delete the grade
     await db.query('DELETE FROM GRADE WHERE id = $1', [id]);
     
@@ -1199,6 +1219,41 @@ router.delete('/unenroll-student', requireRole(['ADMIN', 'SECRETARIAT']), async 
       WHERE student_id = $1 AND curriculum_id = $2
     `, [student_id, curriculum_id]);
     res.json({ success: true, message: 'Student unenrolled successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/academic/students/bulk - Bulk add students from JSON (REQ-AFSMS-18)
+router.post('/students/bulk', requireRole(['ADMIN', 'SECRETARIAT']), async (req, res, next) => {
+  try {
+    const { students } = req.body;
+    if (!Array.isArray(students)) return res.status(400).json({ error: true, message: 'Invalid data format.' });
+    
+    const results = await importService.importStudents(students, req.user.userId);
+    res.json({ success: true, ...results });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/academic/import/grades-csv - Bulk import grades from CSV/Excel (REQ-AFSMS-18)
+router.post('/import/grades-csv', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), uploadDisk.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
+    
+    const xlsx = require('xlsx');
+    const workbook = xlsx.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    
+    const results = await importService.importGrades(data, req.user.userId);
+    
+    // Cleanup
+    const fs = require('fs');
+    fs.unlinkSync(req.file.path);
+    
+    res.json({ success: true, ...results });
   } catch (error) {
     next(error);
   }

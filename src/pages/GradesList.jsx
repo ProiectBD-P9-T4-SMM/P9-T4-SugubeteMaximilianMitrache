@@ -8,10 +8,12 @@ import {
 } from 'lucide-react';
 import api, { academicService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function GradesList() {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -330,10 +332,13 @@ export default function GradesList() {
                 <tr><td colSpan="7" className="py-20 text-center"><LoadingPulse /></td></tr>
               ) : grades.length === 0 ? (
                 <tr><td colSpan="7" className="py-20 text-center text-slate-300 font-black italic">{language === 'ro' ? 'Nicio înregistrare găsită.' : 'No records matching criteria.'}</td></tr>
-              ) : grades.map((row) => (
-                <tr key={row.id} className={`group hover:bg-blue-50/30 transition-all ${editingId === row.id ? 'bg-blue-50 shadow-inner' : ''}`}>
+              ) : grades.map((row, idx) => (
+                <tr key={row.id} className={`group hover:bg-blue-50/30 transition-all ${editingId === row.id ? 'bg-blue-50 shadow-inner' : ''} ${row.validated ? 'bg-emerald-50/10' : ''}`}>
                   <td className="px-8 py-6">
-                    <span className="font-mono text-[11px] font-black text-slate-400 bg-slate-100 px-3 py-1.5 rounded-xl group-hover:bg-white group-hover:text-blue-600 transition-all">{row.registration_number}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-[11px] font-black text-slate-400 bg-slate-100 px-3 py-1.5 rounded-xl group-hover:bg-white group-hover:text-blue-600 transition-all">{row.registration_number}</span>
+                      {row.validated && <Shield size={14} className="text-emerald-500" title="Validated & Locked" />}
+                    </div>
                   </td>
                   <td className="px-8 py-6">
                     {editingId === row.id ? (
@@ -397,8 +402,18 @@ export default function GradesList() {
                         ) : (
                           <>
                             <ActionButton icon={History} color="text-indigo-600 bg-indigo-50" onClick={() => fetchHistory(row.id)} />
-                            <ActionButton icon={Edit2} color="text-blue-600 bg-blue-50" onClick={() => handleStartEdit(row)} />
-                            <ActionButton icon={Trash2} color="text-rose-600 bg-rose-50" onClick={() => handleDelete(row.id)} />
+                            <ActionButton 
+                              icon={Edit2} 
+                              color={row.validated && user?.role !== 'ADMIN' ? "text-slate-300 bg-slate-100 cursor-not-allowed" : "text-blue-600 bg-blue-50"} 
+                              onClick={() => (row.validated && user?.role !== 'ADMIN') ? null : handleStartEdit(row)} 
+                              title={row.validated && user?.role !== 'ADMIN' ? (language === 'ro' ? 'Notă Validată (Blocată)' : 'Validated Grade (Locked)') : ''}
+                            />
+                            <ActionButton 
+                              icon={Trash2} 
+                              color={row.validated && user?.role !== 'ADMIN' ? "text-slate-300 bg-slate-100 cursor-not-allowed" : "text-rose-600 bg-rose-50"} 
+                              onClick={() => (row.validated && user?.role !== 'ADMIN') ? null : handleDelete(row.id)} 
+                              title={row.validated && user?.role !== 'ADMIN' ? (language === 'ro' ? 'Notă Validată (Blocată)' : 'Validated Grade (Locked)') : ''}
+                            />
                           </>
                         )}
                      </div>

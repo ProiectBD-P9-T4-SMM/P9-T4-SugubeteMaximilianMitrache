@@ -175,7 +175,7 @@ CREATE TABLE GRADE (
     academic_year_id UUID REFERENCES ACADEMIC_YEAR(id) ON DELETE CASCADE,
     curriculum_snapshot_id UUID REFERENCES CURRICULUM_SNAPSHOT(id) ON DELETE CASCADE,
     graded_by_user_id UUID REFERENCES USER_ACCOUNT(id) ON DELETE SET NULL,
-    value DECIMAL(4, 2) NOT NULL CHECK (value >= 1 AND value <= 10),
+    value DECIMAL(4, 2) NOT NULL CHECK (value >= 0 AND value <= 10),
     exam_session VARCHAR(50) NOT NULL,
     grading_date DATE NOT NULL,
     source VARCHAR(50) DEFAULT 'MANUAL',

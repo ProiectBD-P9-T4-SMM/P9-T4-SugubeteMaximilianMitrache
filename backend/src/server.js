@@ -23,9 +23,39 @@ const groupsRoutes = require('./routes/groups');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
+// ── Security Headers (lightweight, no extra dependency) ─────────────────────
+app.use((_req, res, next) => {
+  // Prevent MIME-sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // Deny iframe embedding (clickjacking protection)
+  res.setHeader('X-Frame-Options', 'DENY');
+  // Restrict Referrer information
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Minimal CSP for an API server (block all non-API browser access)
+  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+  // Remove powered-by fingerprint
+  res.removeHeader('X-Powered-By');
+  next();
+});
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim());
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. curl, mobile apps, same-origin)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    }
+  },
+  credentials: true,
+}));
+
+app.use(express.json({ limit: '2mb' })); // cap request body size
 
 // Force charset=utf-8 for JSON and XML to ensure Romanian diacritics integrity (REQ-AFSMS-UTF8)
 app.use((req, res, next) => {
@@ -108,3 +138,4 @@ initDb();
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+

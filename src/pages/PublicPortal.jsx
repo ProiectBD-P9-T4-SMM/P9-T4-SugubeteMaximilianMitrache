@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BookOpen, Users, Shield, ArrowRight, CheckCircle, 
   ExternalLink, Layers, Database, ChevronRight, Menu, X,
-  Calendar, Info, Terminal, Layout, Github, Facebook, Youtube, Globe
+  Calendar, Info, Terminal, Layout, Github, Facebook, Youtube, Globe, WifiOff, RefreshCw
 } from 'lucide-react';
 import { publicService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,7 +12,11 @@ const HERO_IMAGE = "hero_university.png";
 
 export default function PublicPortal() {
   const [curricula, setCurricula] = useState([]);
+  const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [fetchError, setFetchError] = useState(null); // null | 'network' | 'server'
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('curricula');
@@ -21,6 +25,19 @@ export default function PublicPortal() {
   const repositoryRef = useRef(null);
   const [selectedSpecialization, setSelectedSpecialization] = useState('ALL');
 
+  // ── Offline detection ──────────────────────────────────────────────────
+  useEffect(() => {
+    const goOnline  = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener('online',  goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online',  goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
+  // ── Scroll + initial fetch ────────────────────────────────────────
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
@@ -28,17 +45,25 @@ export default function PublicPortal() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const fetchCurricula = async () => {
-    setLoading(true);
+  const fetchCurricula = useCallback(async (isRetry = false) => {
+    if (isRetry) setRetrying(true);
+    else setLoading(true);
+    setFetchError(null);
     try {
-      const res = await publicService.getCurricula();
-      setCurricula(res.data);
+      const [curRes, setRes] = await Promise.all([
+        publicService.getCurricula(),
+        publicService.getSettings()
+      ]);
+      setCurricula(curRes.data);
+      setSettings(setRes.data?.settings || {});
     } catch (err) {
-      console.error("Failed to load public curricula", err);
+      console.error('[PublicPortal] Failed to load curricula:', err);
+      setFetchError(!err.response ? 'network' : 'server');
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
-  };
+  }, []);
 
   const scrollToRepository = () => {
     repositoryRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -60,6 +85,13 @@ export default function PublicPortal() {
             </div>
             <span className="text-xl font-black tracking-tighter uppercase">AFSMS <span className="text-blue-600">Core</span></span>
           </div>
+
+          {/* Offline pill in nav */}
+          {isOffline && (
+            <div className="hidden md:flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+              <WifiOff size={12} /> {t('err_offline_banner').split('.')[0]}
+            </div>
+          )}
 
           <div className="hidden md:flex items-center gap-8">
             <NavLink href="#announcements" label={t('pub_announcements')} />
@@ -108,7 +140,9 @@ export default function PublicPortal() {
                 {t('pub_hero_title')}
               </h1>
               <p className="text-xl text-slate-500 font-medium leading-relaxed mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-                {t('pub_hero_subtitle')}
+                {language === 'ro' 
+                  ? `Susținem studenții și facultatea cu soluții avansate de management digital la ${settings.faculty_name || 'Facultatea de Automatică, Calculatoare și Electronică'}.`
+                  : `Empowering students and faculty with advanced digital management solutions at the ${settings.faculty_name_en || 'Faculty of Automation, Computers and Electronics'}.`}
               </p>
               <div className="flex flex-wrap gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
                 <button 
@@ -246,7 +280,35 @@ export default function PublicPortal() {
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr><td colSpan="6" className="py-20 text-center"><div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" /> <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('public_loading')}</span></td></tr>
-                  ) : filteredCurricula.length === 0 ? (
+                  ) : fetchError ? (
+                    <tr>
+                      <td colSpan="6" className="py-16 text-center">
+                        <div className="inline-flex flex-col items-center gap-4">
+                          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-rose-50 border border-rose-100">
+                            {fetchError === 'network'
+                              ? <WifiOff size={28} className="text-rose-400" />
+                              : <RefreshCw size={28} className="text-rose-400" />
+                            }
+                          </div>
+                          <div>
+                            <p className="font-black text-slate-700 text-sm mb-1">{t('err_public_curricula')}</p>
+                            <p className="text-xs text-slate-400 font-medium">
+                              {fetchError === 'network' ? t('err_network') : t('err_server')}
+                            </p>
+                          </div>
+                          <button
+                            id="public-portal-retry-btn"
+                            onClick={() => fetchCurricula(true)}
+                            disabled={retrying || isOffline}
+                            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                          >
+                            <RefreshCw size={14} className={retrying ? 'animate-spin' : ''} />
+                            {retrying ? t('btn_retry_loading') : t('btn_retry')}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : curricula.length === 0 ? (
                     <tr><td colSpan="6" className="py-20 text-center text-slate-300 font-black italic">{t('public_no_data')}</td></tr>
                   ) : filteredCurricula.map((row) => (
                     <tr key={row.id} className="group hover:bg-blue-50/30 transition-all">
@@ -341,7 +403,7 @@ export default function PublicPortal() {
                 <span className="text-xl font-black tracking-tighter uppercase">AFSMS <span className="text-blue-600">Core</span></span>
               </div>
               <p className="text-sm text-slate-500 font-bold leading-relaxed mb-8">
-                Integrated Academic Management System for the University of Craiova. Built for excellence in education and administrative efficiency.
+                Integrated Academic Management System for the {settings.institution_name_en || 'University of Craiova'}. Built for excellence in education and administrative efficiency.
               </p>
               <div className="flex gap-4">
                  <SocialLink href="https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache" icon={Github} />
@@ -359,8 +421,8 @@ export default function PublicPortal() {
           </div>
           
           <div className="pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            <p>© 2026 University of Craiova - Faculty of Automation, Computers and Electronics</p>
-            <p>Designed for the University of Craiova</p>
+            <p>© {new Date().getFullYear()} {language === 'ro' ? settings.institution_name : settings.institution_name_en} - {language === 'ro' ? settings.faculty_name : settings.faculty_name_en}</p>
+            <p>Designed by Sugubete Andrei & Maximilian Mitrache</p>
           </div>
         </div>
       </footer>

@@ -3,12 +3,12 @@ import autoTable from 'jspdf-autotable';
 import { loadUnicodeFont, PDF_STYLES } from './pdfUtils';
 
 export const generateFullTranscript = async (data, language = 'ro') => {
-  const { studentInfo, academicPlans } = data;
+  const { studentInfo, academicPlans, settings = {} } = data;
   const t = (key) => {
     const ro = {
       title: "FOAIE MATRICOLĂ OFICIALĂ",
-      institution: "Universitatea din Craiova",
-      faculty: "Facultatea de Automatică, Calculatoare și Electronică",
+      institution: settings.institution_name || "Universitatea din Craiova",
+      faculty: settings.faculty_name || "Facultatea de Automatică, Calculatoare și Electronică",
       system: "Sistem Integrat de Gestiune Academică (AFSMS Core)",
       student: "Nume Student",
       reg_num: "Nr. Matricol",
@@ -37,8 +37,8 @@ export const generateFullTranscript = async (data, language = 'ro') => {
     };
     const en = {
       title: "OFFICIAL ACADEMIC TRANSCRIPT",
-      institution: "University of Craiova",
-      faculty: "Faculty of Automation, Computers and Electronics",
+      institution: settings.institution_name_en || "University of Craiova",
+      faculty: settings.faculty_name_en || "Faculty of Automation, Computers and Electronics",
       system: "Integrated Academic Management System (AFSMS Core)",
       student: "Student Name",
       reg_num: "Registration No.",

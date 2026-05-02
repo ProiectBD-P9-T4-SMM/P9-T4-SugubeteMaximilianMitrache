@@ -147,8 +147,73 @@ async function seed() {
         [authorId, d.title, d.type, d.status, d.content]);
     }
 
+    // ── SYSTEM_SETTINGS (Institutional Metadata) ──────────────────────────
+    console.log('\nSeeding system settings...');
+    await client.query('DROP TABLE IF EXISTS SYSTEM_SETTINGS;');
+    await client.query(`
+      CREATE TABLE SYSTEM_SETTINGS (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT NOT NULL,
+        category VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
+        label VARCHAR(255),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const settings = [
+      // ── Institution ─────────────────────────────────────────────────────
+      { key: 'institution_name',       value: 'Universitatea din Craiova',                                  category: 'INSTITUTION', label: 'Institution Name' },
+      { key: 'institution_name_en',    value: 'University of Craiova',                                       category: 'INSTITUTION', label: 'Institution Name (English)' },
+      { key: 'faculty_name',           value: 'Facultatea de Automatică, Calculatoare și Electronică',       category: 'INSTITUTION', label: 'Faculty Name' },
+      { key: 'faculty_name_en',        value: 'Faculty of Automation, Computers and Electronics',             category: 'INSTITUTION', label: 'Faculty Name (English)' },
+      { key: 'faculty_code',           value: 'FACE',                                                        category: 'INSTITUTION', label: 'Faculty Code' },
+      { key: 'dean_name',             value: 'Prof. univ. dr. ing. Daniela Danciu',                          category: 'INSTITUTION', label: 'Dean' },
+      { key: 'vice_dean_academic',     value: 'Conf. univ. dr. ing. Alin Iulian Drăgan',                     category: 'INSTITUTION', label: 'Vice-Dean (Academic)' },
+      { key: 'secretary_chief',        value: 'Ec. Iuliana Bratu',                                           category: 'INSTITUTION', label: 'Chief Secretary' },
+      { key: 'domain',                value: 'Calculatoare și Tehnologia Informației',                       category: 'INSTITUTION', label: 'Academic Domain' },
+      { key: 'domain_en',             value: 'Computer Science and Information Technology',                  category: 'INSTITUTION', label: 'Academic Domain (English)' },
+      { key: 'accreditation',          value: 'ARACIS Acredited',                                             category: 'INSTITUTION', label: 'Accreditation Status' },
+
+      // ── Contact ─────────────────────────────────────────────────────────
+      { key: 'address',                value: 'Bulevardul Decebal nr. 107, Craiova, Dolj, 200440, România', category: 'CONTACT',     label: 'Address' },
+      { key: 'phone',                  value: '+40 251 438 198',                                              category: 'CONTACT',     label: 'Phone' },
+      { key: 'fax',                    value: '+40 251 438 198',                                              category: 'CONTACT',     label: 'Fax' },
+      { key: 'email_secretariat',      value: 'secretariat@ace.ucv.ro',                                       category: 'CONTACT',     label: 'Secretariat Email' },
+      { key: 'email_it_helpdesk',      value: 'helpdesk@software.ucv.ro',                                    category: 'CONTACT',     label: 'IT Helpdesk Email' },
+      { key: 'email_dpo',             value: 'dpo@ucv.ro',                                                   category: 'CONTACT',     label: 'DPO Email' },
+      { key: 'website',               value: 'https://ace.ucv.ro',                                           category: 'CONTACT',     label: 'Website' },
+
+      // ── Academic ────────────────────────────────────────────────────────
+      { key: 'current_academic_year',  value: '2025-2026',                                                    category: 'ACADEMIC',    label: 'Current Academic Year' },
+      { key: 'semester_1_start',       value: '2025-10-01',                                                    category: 'ACADEMIC',    label: 'Semester 1 Start' },
+      { key: 'semester_1_end',         value: '2026-01-31',                                                    category: 'ACADEMIC',    label: 'Semester 1 End' },
+      { key: 'semester_2_start',       value: '2026-02-16',                                                    category: 'ACADEMIC',    label: 'Semester 2 Start' },
+      { key: 'semester_2_end',         value: '2026-06-15',                                                    category: 'ACADEMIC',    label: 'Semester 2 End' },
+      { key: 'summer_session_start',   value: '2026-06-16',                                                    category: 'ACADEMIC',    label: 'Summer Session Start' },
+      { key: 'summer_session_end',     value: '2026-06-30',                                                    category: 'ACADEMIC',    label: 'Summer Session End' },
+      { key: 'grading_scale',          value: '1-10',                                                          category: 'ACADEMIC',    label: 'Grading Scale' },
+      { key: 'passing_grade',          value: '5',                                                              category: 'ACADEMIC',    label: 'Minimum Passing Grade' },
+
+      // ── System ──────────────────────────────────────────────────────────
+      { key: 'system_name',            value: 'AFSMS Core',                                                    category: 'SYSTEM',      label: 'System Name' },
+      { key: 'system_version',         value: '1.0.0',                                                          category: 'SYSTEM',      label: 'Version' },
+      { key: 'maintenance_mode',       value: 'false',                                                          category: 'SYSTEM',      label: 'Maintenance Mode' },
+      { key: 'max_upload_size_mb',     value: '10',                                                              category: 'SYSTEM',      label: 'Max Upload Size (MB)' },
+      { key: 'session_timeout_min',    value: '60',                                                              category: 'SYSTEM',      label: 'Session Timeout (minutes)' },
+      { key: 'default_language',       value: 'ro',                                                              category: 'SYSTEM',      label: 'Default Language' },
+    ];
+
+    for (const s of settings) {
+      await client.query(
+        `INSERT INTO SYSTEM_SETTINGS (key, value, category, label) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, category = EXCLUDED.category, label = EXCLUDED.label, updated_at = NOW()`,
+        [s.key, s.value, s.category, s.label]
+      );
+    }
+    console.log(`  ✓ Seeded ${settings.length} system settings`);
+
     await client.query('COMMIT');
-    console.log(`\n✅ Done! ${stuCount} students, ${formCount} formations, ${docs.length} documents seeded.`);
+    console.log(`\n✅ Done! ${stuCount} students, ${formCount} formations, ${docs.length} documents, ${settings.length} settings seeded.`);
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Error:', err.message);

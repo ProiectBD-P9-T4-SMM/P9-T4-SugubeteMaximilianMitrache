@@ -219,9 +219,16 @@ export default function Students() {
   const handleGenerateOfficialTranscript = async () => {
     if (!editingStudent) return;
     try {
-        const res = await api.get(`/academic/transcript/${editingStudent.id}`);
+        const [res, settingsRes] = await Promise.all([
+           api.get(`/academic/transcript/${editingStudent.id}`),
+           api.get(`/public/settings`)
+        ]);
         if (res.data.success) {
-            await generateFullTranscript(res.data, language);
+            const dataToPass = {
+                ...res.data,
+                settings: settingsRes.data?.settings || {}
+            };
+            await generateFullTranscript(dataToPass, language);
         }
     } catch (err) {
         alert(language === 'ro' ? 'Eroare la generarea documentului.' : 'Error generating document.');
@@ -262,19 +269,55 @@ export default function Students() {
         <div className="flex flex-wrap gap-3">
           <label className="group bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all cursor-pointer flex items-center gap-3">
             <Database size={18} />
-            <span>{t('bulk_import')}</span>
-            <input type="file" accept=".csv,.xlsx" className="hidden" onChange={async (e) => {
+            <span>{t('upload')}</span>
+            <input type="file" accept=".xlsx,.xls" className="hidden" onChange={async (e) => {
                const file = e.target.files[0];
                if (!file) return;
-               const formData = new FormData();
-               formData.append('file', file);
-               try {
-                 const res = await academicService.importStudents(formData);
-                 alert(res.data.message); 
-                 fetchStudents();
-               } catch (err) { 
-                 alert(language === 'ro' ? 'Import eșuat.' : 'Import failed.'); 
+
+               // ── Security: validate extension & MIME ──────────────────────
+               const allowedExts = ['.xlsx', '.xls'];
+               const ext = '.' + file.name.split('.').pop().toLowerCase();
+               if (!allowedExts.includes(ext)) {
+                 alert(language === 'ro' ? 'Tip de fișier invalid. Doar .xlsx și .xls sunt acceptate.' : 'Invalid file type. Only .xlsx and .xls are accepted.');
+                 e.target.value = null;
+                 return;
                }
+
+               // ── Security: enforce 5 MB size cap (mitigates ReDoS) ────────
+               const MAX_BYTES = 5 * 1024 * 1024;
+               if (file.size > MAX_BYTES) {
+                 alert(language === 'ro' ? 'Fișierul depășește limita de 5 MB.' : 'File exceeds the 5 MB limit.');
+                 e.target.value = null;
+                 return;
+               }
+
+               const reader = new FileReader();
+               reader.onload = async (evt) => {
+                 try {
+                   // Use ArrayBuffer (safer than binary string) + sheetStubs:false to avoid prototype pollution
+                   const workbook = XLSX.read(evt.target.result, { type: 'array', sheetStubs: false });
+                   const sheetName = workbook.SheetNames[0];
+                   const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                   // ── Security: strip prototype-polluting keys ─────────────
+                   const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+                   const sanitized = rawRows.map(row => {
+                     const clean = Object.create(null);
+                     for (const [k, v] of Object.entries(row)) {
+                       if (!BLOCKED_KEYS.has(k)) clean[k] = v;
+                     }
+                     return clean;
+                   });
+
+                   const res = await academicService.addStudentsBulk(sanitized);
+                   alert(res.data.message);
+                   fetchStudents();
+                 } catch (err) {
+                   console.error('[XLSX Import]', err);
+                   alert(language === 'ro' ? 'Import eșuat. Verificați formatul fișierului.' : 'Import failed. Check the file format.');
+                 }
+               };
+               reader.readAsArrayBuffer(file);
                e.target.value = null;
             }} />
           </label>

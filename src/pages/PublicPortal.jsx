@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   BookOpen, Users, Shield, ArrowRight, CheckCircle, 
   ExternalLink, Layers, Database, ChevronRight, Menu, X,
-  Calendar, Info, Terminal, Layout
+  Calendar, Info, Terminal, Layout, Github, Facebook, Youtube, Globe
 } from 'lucide-react';
 import { publicService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -344,9 +344,10 @@ export default function PublicPortal() {
                 Integrated Academic Management System for the University of Craiova. Built for excellence in education and administrative efficiency.
               </p>
               <div className="flex gap-4">
-                 <SocialLink href="#" label="Twitter" />
-                 <SocialLink href="#" label="LinkedIn" />
-                 <SocialLink href="#" label="GitHub" />
+                 <SocialLink href="https://github.com/ProiectBD-P9-T4-SMM/P9-T4-SugubeteMaximilianMitrache" icon={Github} />
+                 <SocialLink href="https://www.ucv.ro/" icon={Globe} />
+                 <SocialLink href="https://www.facebook.com/ucvro" icon={Facebook} />
+                 <SocialLink href="http://www.youtube.com/channel/UCF-fWHw8pI9_4GsxUckLSlw?feature=watch" icon={Youtube} />
               </div>
             </div>
 
@@ -416,10 +417,15 @@ function ArchitectureItem({ icon: Icon, title, desc }) {
   );
 }
 
-function SocialLink({ label }) {
+function SocialLink({ href, icon: Icon }) {
   return (
-    <a href="#" className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all">
-      <Info size={18} />
+    <a 
+      href={href} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-slate-100"
+    >
+      <Icon size={18} />
     </a>
   );
 }

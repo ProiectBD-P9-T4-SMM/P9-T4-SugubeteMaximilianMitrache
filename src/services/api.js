@@ -105,6 +105,8 @@ export const adminService = {
   createBackup: () => api.post('/admin/backups/create'),
   restoreBackup: (filename) => api.post('/admin/backups/restore', { filename }),
   downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' }),
+  getSettings: () => api.get('/admin/settings'),
+  updateSettings: (settings) => api.put('/admin/settings', { settings }),
   triggerAuditArchiving: () => api.post('/admin/audit/archive')
 };
 
@@ -122,7 +124,8 @@ export const configService = {
 };
 
 export const publicService = {
-  getCurricula: () => axios.get(`${API_URL}/public/curricula`)
+  getCurricula: () => axios.get(`${API_URL}/public/curricula`),
+  getSettings: () => axios.get(`${API_URL}/public/settings`),
 };
 
 export default api;

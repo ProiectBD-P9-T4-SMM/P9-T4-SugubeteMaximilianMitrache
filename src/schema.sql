@@ -360,7 +360,19 @@ CREATE TABLE AUDIT_LOG_ENTRY (
 );
 
 -- ==============================================================================
--- 7. PERFORMANȚĂ (INDEXURI PENTRU RAPORTARE ȘI CĂUTARE)
+-- 7. SYSTEM CONFIGURATION
+-- ==============================================================================
+
+CREATE TABLE SYSTEM_SETTINGS (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
+    label VARCHAR(255),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==============================================================================
+-- 8. PERFORMANȚĂ (INDEXURI PENTRU RAPORTARE ȘI CĂUTARE)
 -- ==============================================================================
 
 -- Baza academică

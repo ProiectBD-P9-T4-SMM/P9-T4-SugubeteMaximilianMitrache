@@ -274,6 +274,51 @@ router.get('/backups/download/:filename', requireRole(['ADMIN']), async (req, re
   }
 });
 
+// ── SYSTEM SETTINGS (Institutional Metadata) ────────────────────────────────
+
+// GET /api/admin/settings - Fetch all system settings
+router.get('/settings', requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const result = await db.query(
+      'SELECT key, value, category, label, updated_at FROM SYSTEM_SETTINGS ORDER BY category ASC, key ASC'
+    );
+    const grouped = {};
+    for (const row of result.rows) {
+      if (!grouped[row.category]) grouped[row.category] = [];
+      grouped[row.category].push(row);
+    }
+    res.json({ success: true, grouped });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/admin/settings - Bulk-update settings
+router.put('/settings', requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { settings } = req.body; // [{ key, value }]
+    if (!Array.isArray(settings)) {
+      return res.status(400).json({ error: true, message: 'settings must be an array of {key, value}' });
+    }
+
+    let updated = 0;
+    for (const { key, value } of settings) {
+      if (!key || value === undefined) continue;
+      await db.query(
+        `UPDATE SYSTEM_SETTINGS SET value = $1, updated_at = NOW() WHERE key = $2`,
+        [String(value), key]
+      );
+      updated++;
+    }
+
+    // Audit log
+    await db.query(
+      `INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, after_snapshot_json)
+       VALUES ($1, 'UPDATE', 'ADMIN_SYSTEM', 'SYSTEM_SETTINGS', gen_random_uuid(), $2)`,
+      [req.user.userId, JSON.stringify(settings)]
+    );
+
+    res.json({ success: true, message: `Updated ${updated} setting(s).` });
 const { archiveOldLogs } = require('../services/auditService');
 
 // POST /api/admin/audit/archive - Manually trigger audit log archiving

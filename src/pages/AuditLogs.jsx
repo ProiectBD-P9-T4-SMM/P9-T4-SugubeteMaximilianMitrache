@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save } from 'lucide-react';
-import { auditService, adminService } from '../services/api';
+import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save, Clock, Settings } from 'lucide-react';
+import { auditService, adminService, configService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function AuditLogs() {
   const { t, language } = useLanguage();
   const [adminTab, setAdminTab] = useState('audit');
   const [auditLogs, setAuditLogs] = useState([]);
+  const [paginationMeta, setPaginationMeta] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(false);
   const [rollbackStatus, setRollbackStatus] = useState(null);
 
@@ -18,18 +19,31 @@ export default function AuditLogs() {
   const [backups, setBackups] = useState([]);
   const [emailLogs, setEmailLogs] = useState([]);
   const [backupConfig, setBackupConfig] = useState({ cron_expression: '0 0 * * *', enabled: false });
+  const [pitrTimestamp, setPitrTimestamp] = useState('');
 
   // Modals / Forms state
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userForm, setUserForm] = useState({ sso_subject: '', username: '', email: '', full_name: '', account_status: 'ACTIVE' });
+  const [selectedEmail, setSelectedEmail] = useState(null);
+
+  // Settings state
+  const [systemSettings, setSystemSettings] = useState({});
+  const [academicYears, setAcademicYears] = useState([]);
+  const [specializations, setSpecializations] = useState([]);
+  const [showYearModal, setShowYearModal] = useState(false);
+  const [editingYear, setEditingYear] = useState(null);
+  const [yearForm, setYearForm] = useState({ year_start: 2024, year_end: 2025, is_active: false });
+  const [showSpecModal, setShowSpecModal] = useState(false);
+  const [editingSpec, setEditingSpec] = useState(null);
+  const [specForm, setSpecForm] = useState({ code: '', name: '', degree_level: 'Bachelor', is_active: true });
 
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [roleForm, setRoleForm] = useState({ code: '', name: '', description: '' });
 
   useEffect(() => {
-    if (adminTab === 'audit') fetchAuditLogs();
+    if (adminTab === 'audit') fetchAuditLogs(paginationMeta.page);
     if (adminTab === 'users') {
       fetchUsers();
       fetchRoles();
@@ -40,7 +54,33 @@ export default function AuditLogs() {
       fetchBackupConfig();
     }
     if (adminTab === 'emails') fetchEmailLogs();
+    if (adminTab === 'settings') {
+      fetchSystemSettings();
+      fetchAcademicYears();
+      fetchSpecializations();
+    }
   }, [adminTab]);
+
+  const fetchSystemSettings = async () => {
+    try {
+      const res = await configService.getSettings();
+      setSystemSettings(res.data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchAcademicYears = async () => {
+    try {
+      const res = await configService.getAcademicYears();
+      setAcademicYears(res.data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchSpecializations = async () => {
+    try {
+      const res = await configService.getSpecializations();
+      setSpecializations(res.data);
+    } catch (err) { console.error(err); }
+  };
 
   const fetchBackupConfig = async () => {
     try {
@@ -131,11 +171,12 @@ export default function AuditLogs() {
     }
   };
 
-  const fetchAuditLogs = async () => {
+  const fetchAuditLogs = async (page = 1) => {
     setLoading(true);
     try {
-      const res = await auditService.getLogs();
-      setAuditLogs(res.data);
+      const res = await auditService.getLogs({ page, limit: 20 });
+      setAuditLogs(res.data.data);
+      setPaginationMeta(res.data.meta);
     } catch (err) {
       console.error("Failed to load audit logs", err);
     } finally {
@@ -206,6 +247,66 @@ export default function AuditLogs() {
     } catch (err) {
       alert((language === 'ro' ? 'Eroare la descărcarea backup-ului: ' : 'Failed to download backup: ') + (err.response?.data?.message || err.message));
     }
+  };
+
+  const handleManualArchive = async () => {
+    if (!window.confirm(language === 'ro' ? 'Doriți să rulați manual procesul de arhivare a logurilor mai vechi de 5 ani?' : 'Do you want to manually run the archiving process for logs older than 5 years?')) return;
+    setLoading(true);
+    try {
+      const res = await adminService.triggerAuditArchiving();
+      setRollbackStatus({ success: true, message: res.data.message });
+      setTimeout(() => setRollbackStatus(null), 5000);
+    } catch (err) {
+      setRollbackStatus({ success: false, message: language === 'ro' ? 'Arhivarea a eșuat' : 'Archiving failed' });
+      setTimeout(() => setRollbackStatus(null), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePITR = async () => {
+    if (!pitrTimestamp) return;
+    if (!window.confirm(language === 'ro' 
+      ? `⚠️ ATENȚIE: Aceasta va REVENI TOATE modificările de sistem la starea din ${new Date(pitrTimestamp).toLocaleString()}. Continuați?` 
+      : `⚠️ CAUTION: This will REVERT ALL system changes to the state at ${new Date(pitrTimestamp).toLocaleString()}. Proceed?`)) return;
+
+    setLoading(true);
+    try {
+      const res = await auditService.pitr(pitrTimestamp);
+      setRollbackStatus({ success: true, message: res.data.message });
+      fetchAuditLogs();
+    } catch (err) {
+      setRollbackStatus({ success: false, message: err.response?.data?.message || (language === 'ro' ? 'PITR a eșuat' : 'PITR failed') });
+    } finally {
+      setLoading(false);
+      setTimeout(() => setRollbackStatus(null), 5000);
+    }
+  };
+
+  const handleSaveYear = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingYear) {
+        await configService.updateAcademicYear(editingYear.id, yearForm);
+      } else {
+        await configService.createAcademicYear(yearForm);
+      }
+      setShowYearModal(false);
+      fetchAcademicYears();
+    } catch (err) { alert('Failed to save academic year'); }
+  };
+
+  const handleSaveSpec = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingSpec) {
+        await configService.updateSpecialization(editingSpec.id, specForm);
+      } else {
+        await configService.createSpecialization(specForm);
+      }
+      setShowSpecModal(false);
+      fetchSpecializations();
+    } catch (err) { alert('Failed to save specialization'); }
   };
 
   // User CRUD
@@ -284,6 +385,7 @@ export default function AuditLogs() {
                 { id: 'audit', label: language === 'ro' ? 'Registre Audit' : 'Audit Logs', icon: Activity },
                 { id: 'users', label: language === 'ro' ? 'Utilizatori și Roluri' : 'Users & Roles', icon: Users },
                 { id: 'emails', label: language === 'ro' ? 'Notificări' : 'Notifications', icon: Mail },
+                { id: 'settings', label: language === 'ro' ? 'Configurare' : 'Settings', icon: Settings },
                 { id: 'queries', label: language === 'ro' ? 'Monitor DB' : 'DB Monitor', icon: Terminal },
                 { id: 'backups', label: language === 'ro' ? 'Recuperare' : 'Recovery', icon: Database },
             ].map(t => (
@@ -302,9 +404,37 @@ export default function AuditLogs() {
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
             {adminTab === 'audit' && (
                 <div className="space-y-6">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-6 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-800">
+                        <div className="flex-1">
+                            <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">
+                                <Clock className="text-blue-400" size={24} /> {language === 'ro' ? 'Restaurare Granulară (Time Travel)' : 'Granular Point-in-Time Recovery'}
+                            </h3>
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-relaxed">
+                                {language === 'ro' 
+                                    ? 'Inversați toate operațiunile în mod secvențial până la un marcaj temporal precis folosind registrul de trasabilitate.' 
+                                    : 'Reverse all operations sequentially back to a precise timestamp using the traceability ledger.'}
+                            </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                            <input 
+                                type="datetime-local" 
+                                value={pitrTimestamp}
+                                onChange={(e) => setPitrTimestamp(e.target.value)}
+                                className="bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl text-xs font-black outline-none focus:ring-4 focus:ring-blue-500/20 transition-all w-full"
+                            />
+                            <button 
+                                onClick={handlePITR}
+                                disabled={!pitrTimestamp || loading}
+                                className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            >
+                                {language === 'ro' ? 'Execută Restaurare' : 'Execute Recovery'}
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="flex items-center justify-between px-2">
                         <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Registru Trasabilitate Operațiuni' : 'Operations Traceability Ledger'}</h3>
-                        <button onClick={fetchAuditLogs} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh Logs'}</button>
+                        <button onClick={() => fetchAuditLogs(paginationMeta.page)} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh Logs'}</button>
                     </div>
                     <div className="overflow-x-auto rounded-2xl border border-slate-100">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
@@ -345,6 +475,48 @@ export default function AuditLogs() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    <div className="flex items-center justify-between px-2 pt-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {language === 'ro' 
+                                ? `Afișare ${auditLogs.length} din ${paginationMeta.total} înregistrări total` 
+                                : `Showing ${auditLogs.length} of ${paginationMeta.total} total records`}
+                        </p>
+                        <div className="flex gap-2">
+                            <button 
+                                disabled={paginationMeta.page <= 1}
+                                onClick={() => fetchAuditLogs(paginationMeta.page - 1)}
+                                className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all"
+                            >
+                                {language === 'ro' ? 'Anterior' : 'Previous'}
+                            </button>
+                            <button 
+                                disabled={paginationMeta.page >= paginationMeta.totalPages}
+                                onClick={() => fetchAuditLogs(paginationMeta.page + 1)}
+                                className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all"
+                            >
+                                {language === 'ro' ? 'Următor' : 'Next'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mt-8">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-amber-100 p-2 rounded-xl text-amber-600">
+                                <Shield size={18} />
+                            </div>
+                            <div>
+                                <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest">
+                                    {language === 'ro' ? 'Politică Retenție Date' : 'Data Retention Policy'}
+                                </h4>
+                                <p className="text-[10px] font-bold text-amber-700/80 mt-1">
+                                    {language === 'ro' 
+                                        ? 'Conform reglementărilor instituționale, registrele de audit sunt păstrate pentru o perioadă de 5 ani. Datele mai vechi sunt arhivate automat într-un depozit securizat extern la intervale regulate.' 
+                                        : 'Per institutional regulations, audit logs are retained for a period of 5 years. Older data is automatically archived to a secure external repository at regular intervals.'}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -443,7 +615,7 @@ export default function AuditLogs() {
                     <div className="overflow-x-auto rounded-2xl border border-slate-100">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
                             <thead className="bg-slate-50/50">
-                                <tr>{[language === 'ro' ? 'Trimis la' : 'Sent At', language === 'ro' ? 'Expeditor' : 'Sender', language === 'ro' ? 'Țintă' : 'Target', language === 'ro' ? 'Subiect' : 'Subject', 'Status'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                <tr>{[language === 'ro' ? 'Trimis la' : 'Sent At', language === 'ro' ? 'Expeditor' : 'Sender', language === 'ro' ? 'Țintă' : 'Target', language === 'ro' ? 'Subiect' : 'Subject', 'Status', language === 'ro' ? 'Acțiune' : 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-50">
                                 {emailLogs.map(log => (
@@ -457,6 +629,14 @@ export default function AuditLogs() {
                                         <td className="px-6 py-4 font-bold text-slate-600 text-xs">{log.subject}</td>
                                         <td className="px-6 py-4">
                                             <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase">{log.delivery_status}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button 
+                                                onClick={() => setSelectedEmail(log)}
+                                                className="bg-blue-600 text-white px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-1"
+                                            >
+                                                <Mail size={12} /> {language === 'ro' ? 'Vezi Mail' : 'View Mail'}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -494,6 +674,110 @@ export default function AuditLogs() {
                 </div>
             )}
 
+            {adminTab === 'settings' && (
+                <div className="space-y-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Institutional Metadata */}
+                        <div className="space-y-6">
+                            <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px] px-2">{language === 'ro' ? 'Metadate Instituționale' : 'Institutional Metadata'}</h3>
+                            <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Denumire Facultate' : 'Faculty Name'}</label>
+                                    <input type="text" value={systemSettings.FACULTY_NAME || ''} onChange={e => setSystemSettings({...systemSettings, FACULTY_NAME: e.target.value})} className="w-full p-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Decan Facultate' : 'Dean of Faculty'}</label>
+                                    <input type="text" value={systemSettings.DEAN_NAME || ''} onChange={e => setSystemSettings({...systemSettings, DEAN_NAME: e.target.value})} className="w-full p-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Notă Informativă Portal' : 'Portal Information Notice'}</label>
+                                    <textarea rows="3" value={systemSettings.PORTAL_NOTICE || ''} onChange={e => setSystemSettings({...systemSettings, PORTAL_NOTICE: e.target.value})} className="w-full p-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all resize-none"></textarea>
+                                </div>
+                                <button onClick={async () => {
+                                    try {
+                                        await configService.updateSettings(systemSettings);
+                                        setRollbackStatus({ success: true, message: language === 'ro' ? 'Setări salvate!' : 'Settings saved!' });
+                                        setTimeout(() => setRollbackStatus(null), 3000);
+                                    } catch (err) { alert('Failed to save settings'); }
+                                }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2">
+                                    <Save size={18} /> {language === 'ro' ? 'Salvează Configurația' : 'Save Configuration'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Academic Calendar */}
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between px-2">
+                                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Calendar Academic' : 'Academic Calendar'}</h3>
+                                <button onClick={() => { setEditingYear(null); setYearForm({ year_start: 2024, year_end: 2025, is_active: false }); setShowYearModal(true); }} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Plus size={14} /> {language === 'ro' ? 'An Nou' : 'New Year'}</button>
+                            </div>
+                            <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+                                <table className="min-w-full divide-y divide-slate-100 text-sm">
+                                    <thead className="bg-slate-50/50">
+                                        <tr>{['Interval', 'Status', 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {academicYears.map(ay => (
+                                            <tr key={ay.id} className="hover:bg-slate-50/50 transition-all group">
+                                                <td className="px-6 py-4 font-black text-slate-700 text-xs">{ay.year_start} - {ay.year_end}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest uppercase ${ay.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>{ay.is_active ? (language === 'ro' ? 'Activ' : 'Active') : (language === 'ro' ? 'Inactiv' : 'Inactive')}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => { setEditingYear(ay); setYearForm({ year_start: ay.year_start, year_end: ay.year_end, is_active: ay.is_active }); setShowYearModal(true); }} className="p-2 text-slate-300 hover:text-blue-600 rounded-xl transition-all"><Edit2 size={14} /></button>
+                                                        <button onClick={async () => {
+                                                            if (window.confirm('Delete academic year?')) {
+                                                                await configService.deleteAcademicYear(ay.id);
+                                                                fetchAcademicYears();
+                                                            }
+                                                        }} className="p-2 text-slate-300 hover:text-red-600 rounded-xl transition-all"><Trash2 size={14} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Institutional Structure (Specializations) */}
+                    <div className="space-y-6 pt-4">
+                        <div className="flex items-center justify-between px-2">
+                            <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Structură Instituțională (Specializări)' : 'Institutional Structure (Specializations)'}</h3>
+                            <button onClick={() => { setEditingSpec(null); setSpecForm({ code: '', name: '', degree_level: 'Bachelor', is_active: true }); setShowSpecModal(true); }} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Plus size={14} /> {language === 'ro' ? 'Specializare Nouă' : 'New Specialization'}</button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {specializations.map(spec => (
+                                <div key={spec.id} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+                                    <div className={`absolute top-0 left-0 w-1 h-full ${spec.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="bg-slate-50 p-3 rounded-2xl text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                                            <Shield size={24} />
+                                        </div>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                            <button onClick={() => { setEditingSpec(spec); setSpecForm({ code: spec.code, name: spec.name, degree_level: spec.degree_level, is_active: spec.is_active }); setShowSpecModal(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-xl transition-all"><Edit2 size={14} /></button>
+                                            <button onClick={async () => {
+                                                if (window.confirm('Delete specialization?')) {
+                                                    await configService.deleteSpecialization(spec.id);
+                                                    fetchSpecializations();
+                                                }
+                                            }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"><Trash2 size={14} /></button>
+                                        </div>
+                                    </div>
+                                    <div className="font-black text-slate-800 text-sm mb-1">{spec.name}</div>
+                                    <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest font-mono mb-4">{spec.code}</div>
+                                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{spec.degree_level}</span>
+                                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest uppercase ${spec.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>{spec.is_active ? 'Active' : 'Inactive'}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
             {adminTab === 'backups' && (
                 <div className="space-y-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -505,6 +789,9 @@ export default function AuditLogs() {
                             </div>
                             <button onClick={handleCreateBackup} disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all flex items-center justify-center gap-3">
                                 <Database size={20} /> {language === 'ro' ? 'Crează Instantaneu Manual' : 'Create Manual Snapshot'}
+                            </button>
+                            <button onClick={handleManualArchive} disabled={loading} className="w-full mt-4 bg-slate-800 text-slate-300 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black border border-slate-700 transition-all flex items-center justify-center gap-3">
+                                <Shield size={20} /> {language === 'ro' ? 'Arhivare Manuală 5 Ani' : 'Manual 5-Year Archive'}
                             </button>
                         </div>
 
@@ -625,6 +912,133 @@ export default function AuditLogs() {
                           </button>
                       </div>
                   </form>
+              </div>
+          </div>
+      )}
+
+      {/* Academic Year Modal */}
+      {showYearModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-black text-slate-900">{editingYear ? 'Edit Academic Year' : 'New Academic Year'}</h3>
+                      <button onClick={() => setShowYearModal(false)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
+                  </div>
+                  <form onSubmit={handleSaveYear} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Start Year</label>
+                              <input required type="number" value={yearForm.year_start} onChange={e => setYearForm({...yearForm, year_start: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                          </div>
+                          <div className="space-y-1">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">End Year</label>
+                              <input required type="number" value={yearForm.year_end} onChange={e => setYearForm({...yearForm, year_end: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                          </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <input type="checkbox" checked={yearForm.is_active} onChange={e => setYearForm({...yearForm, is_active: e.target.checked})} className="w-5 h-5 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500" />
+                          <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Set as Active Year</label>
+                      </div>
+                      <div className="flex gap-3 pt-6">
+                          <button type="button" onClick={() => setShowYearModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Cancel</button>
+                          <button type="submit" className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2">
+                              <Save size={18} /> Save Year
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
+
+      {/* Specialization Modal */}
+      {showSpecModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-black text-slate-900">{editingSpec ? 'Edit Specialization' : 'New Specialization'}</h3>
+                      <button onClick={() => setShowSpecModal(false)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
+                  </div>
+                  <form onSubmit={handleSaveSpec} className="space-y-4">
+                      <div className="space-y-1">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Name</label>
+                          <input required type="text" value={specForm.name} onChange={e => setSpecForm({...specForm, name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Code</label>
+                              <input required type="text" value={specForm.code} onChange={e => setSpecForm({...specForm, code: e.target.value.toUpperCase()})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                          </div>
+                          <div className="space-y-1">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Level</label>
+                              <select value={specForm.degree_level} onChange={e => setSpecForm({...specForm, degree_level: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all">
+                                  <option value="Bachelor">Bachelor</option>
+                                  <option value="Master">Master</option>
+                                  <option value="Doctorate">Doctorate</option>
+                              </select>
+                          </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <input type="checkbox" checked={specForm.is_active} onChange={e => setSpecForm({...specForm, is_active: e.target.checked})} className="w-5 h-5 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500" />
+                          <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Active Specialization</label>
+                      </div>
+                      <div className="flex gap-3 pt-6">
+                          <button type="button" onClick={() => setShowSpecModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Cancel</button>
+                          <button type="submit" className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2">
+                              <Save size={18} /> Save Specialization
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
+
+      {/* Email View Modal */}
+      {selectedEmail && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[90vh]">
+                  <div className="flex justify-between items-center mb-6 flex-shrink-0">
+                      <div>
+                          <h3 className="text-xl font-black text-slate-900">{language === 'ro' ? 'Previzualizare E-mail (Phantom Mail)' : 'E-mail Preview (Phantom Mail)'}</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{language === 'ro' ? 'Protocol Monitorizare Notificări' : 'Notification Monitoring Protocol'}</p>
+                      </div>
+                      <button onClick={() => setSelectedEmail(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
+                  </div>
+                  
+                  <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                      <div className="bg-slate-50 p-6 rounded-3xl space-y-4 border border-slate-100">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Expeditor' : 'Sender'}</label>
+                                  <div className="text-sm font-black text-slate-700">{selectedEmail.sent_by || 'System'}</div>
+                              </div>
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Trimis la' : 'Sent At'}</label>
+                                  <div className="text-sm font-bold text-slate-600">{new Date(selectedEmail.sent_at).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}</div>
+                              </div>
+                          </div>
+                          <div>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Destinatari' : 'Recipients'}</label>
+                              <div className="text-xs font-mono bg-white p-3 rounded-xl border border-slate-200 text-blue-600 break-all">{selectedEmail.recipients}</div>
+                          </div>
+                          <div>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{language === 'ro' ? 'Subiect' : 'Subject'}</label>
+                              <div className="text-sm font-black text-slate-900">{selectedEmail.subject}</div>
+                          </div>
+                      </div>
+
+                      <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-2">{language === 'ro' ? 'Conținut Mesaj' : 'Message Content'}</label>
+                          <div className="bg-white border border-slate-200 rounded-3xl p-8 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap min-h-[200px]">
+                              {selectedEmail.body_preview}
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="pt-6 mt-6 border-t border-slate-100 flex-shrink-0">
+                      <button onClick={() => setSelectedEmail(null)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">
+                          {language === 'ro' ? 'Închide Previzualizarea' : 'Close Preview'}
+                      </button>
+                  </div>
               </div>
           </div>
       )}

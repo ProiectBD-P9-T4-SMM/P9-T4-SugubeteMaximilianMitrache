@@ -2,6 +2,8 @@ const cron = require('node-cron');
 const db = require('../db');
 const { createBackup } = require('./backupService');
 
+const { archiveOldLogs } = require('./auditService');
+
 let currentJob = null;
 
 const initScheduler = async () => {
@@ -16,6 +18,21 @@ const initScheduler = async () => {
         console.log('[Scheduler] Automatic backups are disabled.');
       }
     }
+
+    // Schedule Audit Log Archiving (Daily at 1 AM)
+    cron.schedule('0 1 * * *', async () => {
+      console.log('[Scheduler] Running automated audit log archiving (5-year retention)...');
+      try {
+        const archivedCount = await archiveOldLogs();
+        if (archivedCount > 0) {
+          console.log(`[Scheduler] Successfully archived ${archivedCount} old audit entries.`);
+        }
+      } catch (err) {
+        console.error('[Scheduler] Audit archiving failed:', err);
+      }
+    });
+    console.log('[Scheduler] Audit log archiving job scheduled (Daily at 01:00).');
+
   } catch (error) {
     console.error('[Scheduler] Initialization failed:', error);
   }

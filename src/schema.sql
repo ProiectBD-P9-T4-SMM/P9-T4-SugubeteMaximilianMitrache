@@ -175,7 +175,7 @@ CREATE TABLE GRADE (
     academic_year_id UUID REFERENCES ACADEMIC_YEAR(id) ON DELETE CASCADE,
     curriculum_snapshot_id UUID REFERENCES CURRICULUM_SNAPSHOT(id) ON DELETE CASCADE,
     graded_by_user_id UUID REFERENCES USER_ACCOUNT(id) ON DELETE SET NULL,
-    value DECIMAL(4, 2) NOT NULL CHECK (value >= 1 AND value <= 10),
+    value DECIMAL(4, 2) NOT NULL CHECK (value >= 0 AND value <= 10),
     exam_session VARCHAR(50) NOT NULL,
     grading_date DATE NOT NULL,
     source VARCHAR(50) DEFAULT 'MANUAL',
@@ -389,3 +389,4 @@ CREATE INDEX idx_document_type_date ON DOCUMENT(type, created_at);
 CREATE INDEX idx_audit_entity ON AUDIT_LOG_ENTRY(entity_type, entity_id);
 CREATE INDEX idx_audit_actor ON AUDIT_LOG_ENTRY(actor_user_id);
 CREATE INDEX idx_audit_date ON AUDIT_LOG_ENTRY(occurred_at);
+CREATE TABLE IF NOT EXISTS SYSTEM_SETTINGS (id VARCHAR(50) PRIMARY KEY, value VARCHAR(255) NOT NULL, description TEXT, updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);

@@ -1,0 +1,1280 @@
+Software Requirements Specification
+for
+Information System for the
+Automatic Management of Faculty Students
+Version:1.0 approved
+Prepared by:
+Sugubete Andrei
+Maximilian Andrei
+Mitrache Marian Nicus, or
+University of Craiova
+Faculty of Automation, Computers and Electronics
+Date:07.03.2026
+©1999 by Karl E. Wiegers. Permission is granted to use, modify, and distribute this document.
+Software Requirements Specification AFSMS v1.0
+Contents
+Revision History 4
+1 Introduction 5
+1.1 Purpose . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.2 Document Conventions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.3 Intended Audience and Reading Suggestions . . . . . . . . . . . . . . . . . . . 5
+1.4 Product Scope . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.5 References . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+2 Overall Description 6
+2.1 Product Perspective . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+2.1.1 System Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2.1.2 User Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2.1.3 Hardware Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2.1.4 Software Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2.1.5 Communications Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2.1.6 Memory Constraints . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2.1.7 Operations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2.1.8 Site Adaptation Requirements . . . . . . . . . . . . . . . . . . . . . . . . 8
+2.2 Product Functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+2.3 User Classes and Characteristics . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+2.4 Operating Environment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+2.5 Design and Implementation Constraints . . . . . . . . . . . . . . . . . . . . . . 11
+2.6 User Documentation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+2.6.1 Delivered Documentation Components . . . . . . . . . . . . . . . . . . . 11
+2.6.2 Interactive and In-App Documentation . . . . . . . . . . . . . . . . . . . 12
+2.6.3 Delivery Formats and Tooling . . . . . . . . . . . . . . . . . . . . . . . . . 12
+2.6.4 Documentation Standards and Compliance . . . . . . . . . . . . . . . . 12
+2.7 Assumptions and Dependencies . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+2.7.1 Assumptions (Factors Assumed to be True) . . . . . . . . . . . . . . . . 12
+2.7.2 Dependencies (External Factors Relied Upon) . . . . . . . . . . . . . . . 13
+3 External Interface Requirements 14
+3.1 User Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+3.1.1 Logical Characteristics and Screen Organization . . . . . . . . . . . . . 14
+3.1.2 UI Optimization and Verifiable Usability . . . . . . . . . . . . . . . . . . 14
+3.2 Hardware Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+3.2.1 Server-Side Hardware Interface . . . . . . . . . . . . . . . . . . . . . . . 14
+3.2.2 Client-Side Hardware Interface . . . . . . . . . . . . . . . . . . . . . . . . 16
+3.2.3 Hardware-Related Configuration Characteristics . . . . . . . . . . . . . 16
+3.2.4 Logical Characteristics of Hardware Interactions . . . . . . . . . . . . . 16
+3.3 Software Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+3.3.1 Interfaces with External Applications . . . . . . . . . . . . . . . . . . . . 16
+3.3.2 Shared Data and Constraints . . . . . . . . . . . . . . . . . . . . . . . . . 17
+3.4 Communications Interfaces . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+3.4.1 Network and Web Server Communications . . . . . . . . . . . . . . . . 18
+3.4.2 Message Content, Formatting, and Commands . . . . . . . . . . . . . . 19
+3.4.3 Timing, Transfer Rates, and Synchronization . . . . . . . . . . . . . . . . 19
+Automated Faculty Student Management System (AFSMS) v1.01
+Software Requirements Specification AFSMS v1.0
+3.4.4 E-mail and Document Workflow Communications . . . . . . . . . . . . 19
+3.4.5 Data Export and Download Mechanisms . . . . . . . . . . . . . . . . . . 19
+4 System Features 20
+4.1 Web Portal and Access Management . . . . . . . . . . . . . . . . . . . . . . . . 20
+4.1.1 Description and Priority . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+4.1.2 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+4.2 Academic Data Collection and Management . . . . . . . . . . . . . . . . . . . . 21
+4.2.1 Description and Priority . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+4.2.2 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+4.3 Reporting and Export . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+4.3.1 Description and Priority . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+4.3.2 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+4.4 Document Workflow and Search . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+4.4.1 Description and Priority . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+4.4.2 Stimulus/Response Sequences . . . . . . . . . . . . . . . . . . . . . . . . 24
+4.4.3 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+4.5 User Groups and Messaging . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.5.1 Description and Priority . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.5.2 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.6 Validation and Error Handling . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.6.1 Description and Priority . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.6.2 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.7 Audit Logging and Data Recovery . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.7.1 Description and Priority . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.7.2 Stimulus/Response Sequences . . . . . . . . . . . . . . . . . . . . . . . . 27
+4.7.3 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+5 Other Nonfunctional Requirements 28
+5.1 Performance Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+5.1.1 Capacity (Static numerical requirements) . . . . . . . . . . . . . . . . . . 28
+5.1.2 Response time and throughput (Dynamic numerical requirements) . . 29
+5.1.3 Background operations and recovery performance . . . . . . . . . . . . 29
+5.1.4 Performance measurement conditions (Verification) . . . . . . . . . . . 29
+5.2 Safety Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+5.2.1 Data integrity and loss prevention . . . . . . . . . . . . . . . . . . . . . . 29
+5.2.2 Safe input and validation safeguards . . . . . . . . . . . . . . . . . . . . 30
+5.2.3 Controlled execution of critical actions . . . . . . . . . . . . . . . . . . . 30
+5.2.4 Safety-related operational constraints . . . . . . . . . . . . . . . . . . . 30
+5.2.5 Verification (Safety) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+5.3 Security Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+5.3.1 Authentication and session access control . . . . . . . . . . . . . . . . . 31
+5.3.2 Authorization (least privilege) . . . . . . . . . . . . . . . . . . . . . . . . 31
+5.3.3 Secure communications and transport protection . . . . . . . . . . . . 31
+5.3.4 Auditability and accountability . . . . . . . . . . . . . . . . . . . . . . . . 31
+5.3.5 Privacy and regulatory constraints . . . . . . . . . . . . . . . . . . . . . . 31
+5.3.6 Security verification requirements . . . . . . . . . . . . . . . . . . . . . . 31
+5.4 Software Quality Attributes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+5.4.1 Maintainability and extensibility . . . . . . . . . . . . . . . . . . . . . . . 32
+5.4.2 Portability and compatibility . . . . . . . . . . . . . . . . . . . . . . . . . 32
+5.5 Business Rules . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+5.6 Coding Standards and Code Quality Requirements . . . . . . . . . . . . . . . . 33
+Automated Faculty Student Management System (AFSMS) v1.02
+Software Requirements Specification AFSMS v1.0
+6 Other Requirements 33
+6.1 Database Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+6.2 Legal and Regulatory Requirements . . . . . . . . . . . . . . . . . . . . . . . . . 33
+6.3 Internationalization and Localization . . . . . . . . . . . . . . . . . . . . . . . . 34
+A Glossary 35
+B Analysis Models 35
+B.1 High-Level System Context Diagram . . . . . . . . . . . . . . . . . . . . . . . . . 35
+B.2 Data Flow Diagram (DFD Level 0) . . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+B.3 Entity-Relationship Model (Conceptual) . . . . . . . . . . . . . . . . . . . . . . . 36
+B.4 High-Level System States . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+C To Be Determined List 36
+Automated Faculty Student Management System (AFSMS) v1.03
+Software Requirements Specification AFSMS v1.0
+Revision History
+Name Date Reason For Changes Version
+Everyone 23.02.2026 Init. Made work on 1.x and 2.x. 0.1
+Sugubete Andrei 27.02.2026 Added TODO’s for better workflow. Reviewed
+1.1., 1.4., 2.1., 2.3, 2.4. Did 2.3., 2.5., 2.6., 2.7.
+0.2
+Mitrache Marian 27.02.2026 Did 1.3 and added a new user at 2.3 (TESTER),
+1.5. Trecand prin ce este de la 3 incolo trebuie
+sa facem impreuna. Reviewed 1.3, 1.5.
+0.3
+Everyone 07.03.2026 Finishing up: Final review and formatting for
+submission.
+1.0
+Automated Faculty Student Management System (AFSMS) v1.04
+Software Requirements Specification AFSMS v1.0
+1 Introduction
+1.1 Purpose
+This Software Requirements Specification (SRS) describes the functional and non-functional
+requirements for Version 1.0 of the Automated Faculty Student Management System
+(AFSMS). It covers how AFSMS will manage curricula, student records, and document
+workflows to digitalize the faculty’s administrative processes.
+The document serves as the primary technical reference for the development team, QA
+testers, project managers, and university stakeholders (secretariat staff and faculty).
+1.2 Document Conventions
+•Headings:Times New Roman, size 14, bold (per the document template).
+•Body text:Arial, size 11.
+•“Shall” indicates mandatory behavior; “should” indicates recommended behavior .
+•Functional requirements use IDs REQ-XX, non-functional requirements use NFR-XX.
+•Boldtext highlights key terms when first introduced.
+1.3 Intended Audience and Reading Suggestions
+Each audience should prioritize sections relevant to their role:
+• Registrar and Secretariat Staff (Primary):Section 2.2 (Product Functions) and
+Section 3.1 (User Interfaces).
+• External Visitors and Prospective Students:Section 2.2 and Section 3.1.1 (Public
+Web Interface).
+• Software Developers and Architects:Section 3 (External Interface Requirements)
+and Section 4 (System Features).
+•System Administrators:Section 5.2 (Safety) and Section 5.3 (Security).
+• Academic Staff (Professors):Section 2.2 and Section 3.1 for grade entry and com-
+munication features.
+• QA and Testing Teams:Section 3 for verifiable requirements and Section 6 for testing
+mandates.
+1.4 Product Scope
+The product is the Automated Faculty Student Management System (AFSMS / GASF).
+Objectives and Benefits
+AFSMS automates the faculty’s manual administrative workflows. Key benefits:
+• Eliminates data redundancy and manual entry errors via client-side validation and
+centralized database management.
+Automated Faculty Student Management System (AFSMS) v1.05
+Software Requirements Specification AFSMS v1.0
+• Reduces processing time for generating official documents (e-Transcript, e-Grade
+Centralizer).
+• Provides 24/7 information access for students and staff via a secure, role-based web
+portal.
+What the System Will Do
+AFSMS provides web-based tools for:
+•Academic data collection and student record management.
+•Advanced document search and filtering.
+•Secure electronic document circulation within the secretariat.
+•Report generation, exportable in CSV, XML, XLS, and PDF formats.
+•Integration with Microsoft Excel and Microsoft Outlook.
+•Activity logging, offline backups, and point-in-time database recovery (rollback).
+What the System Will Not Do
+AFSMS will not:
+•Process financial transactions or manage tuition fees.
+•Interface with central HR or payroll systems.
+•Replace institutional systems outside its academic scope.
+1.5 References
+• IEEE Std 830-1998, IEEE Recommended Practice for Software Requirements Specifica-
+tions.
+• University of Craiova (ACE), Academic Curricula and Educational Plans: https://ace.
+ucv.ro/invatamant/didactica/planuri.php
+• University of Craiova (ACE), Student Formations and Timetable Schedules: https:
+//ace.ucv.ro/invatamant/utile/orar.php
+• University of Craiova (ACE), Institutional Evaluation and Grading Procedures: https:
+//ace.ucv.ro/invatamant/utile/modalitati˙de˙evaluare.php
+• Microsoft Corporation, Microsoft Graph API Documentation for Excel and Outlook
+Integration.
+•IEEE Std 610.12-1990, IEEE Standard Glossary of Software Engineering Terminology.
+2 Overall Description
+2.1 Product Perspective
+AFSMS is a new, standalone software product. It provides faculty-level academic manage-
+ment but is not a component of any larger institutional system — it will not replace the
+Automated Faculty Student Management System (AFSMS) v1.06
+Software Requirements Specification AFSMS v1.0
+university’s financial or HR systems.
+2.1.1 System Interfaces
+AFSMS operates independently at the registrar’s office level, with minimal interfaces to
+higher-level university systems. It exchanges data through standardized imports and
+exports, focusing strictly on faculty-level workflows.
+2.1.2 User Interfaces
+• Logical characteristics:The interface displays in a web browser with two perspectives
+(public and private). Screens use tabular layouts for grade registers and summaries,
+consistent navigation menus, and help/search functions.
+• Optimization:The interface uses selection lists (dropdowns) extensively to reduce
+errors and increase speed.
+• Verifiable usability:The system should allow rapid generation of grade summaries
+after minimal staff training.
+2.1.3 Hardware Interfaces
+• Server:The physical or virtual server architecture must support concurrent process-
+ing.
+• Client:No special hardware is required. Any internet-connected device (desktop PC,
+laptop, or tablet) with an up-to-date web browser is supported.
+2.1.4 Software Interfaces
+The system integrates with:
+• RDBMS:Stores student data and activity logs; supports web-based administration
+and offline backups.
+•Microsoft Excel (.XLS/.CSV):Bidirectional bulk data import and report export.
+• Microsoft Outlook (SMTP / Microsoft Graph API):Group messaging and document
+workflow communications.
+2.1.5 Communications Interfaces
+All data transfer uses HTTPS over standard ports, encrypting academic and authentication
+data (SSO) in transit between browser and server .
+2.1.6 Memory Constraints
+Server-side storage must be scalable to accommodate large volumes of historical data
+(spanning years of study) and comprehensive operation logs required for the rollback
+function.
+2.1.7 Operations
+• Interactive:Grade entry, student queries, and document management during office
+hours.
+Automated Faculty Student Management System (AFSMS) v1.07
+Software Requirements Specification AFSMS v1.0
+•Unattended:Automatic offline database backups (preferably outside peak hours).
+• Special:Administrator-triggered rollback and point-in-time recovery for data corrup-
+tion or major errors.
+2.1.8 Site Adaptation Requirements
+The system must support faculty-specific configuration before first use, including pre-
+configured curricula, department types, local grading rules, and academic year structures
+(grid values).
+2.2 Product Functions
+AFSMS automates student management and administrative workflows through the follow-
+ing functions:
+•Data Collection:Gather curricula, study formations, and student records.
+• Data Management:Centralized administration of academic information; data ex-
+traction from databases, Excel files, and text files.
+• Report Generation:Produce official documents (e-Transcript, e-Grade Centralizer) in
+CSV, XML, XLS, and PDF.
+• Document Workflow Management:Electronic circulation of documents within the
+registrar’s office for information, approvals, or modifications.
+• Querying and Search:Locate documents and data by file type, creation date, author ,
+or content, using selection lists for easy navigation.
+• Web Portal:Differentiated access via public and private perspectives; registered
+users can modify data or generate reports based on their privileges.
+• Logging and Data Recovery:Record all operations in a log file; support data rollbacks
+to prevent collection errors.
+2.3 User Classes and Characteristics
+AFSMS serves the following user classes, ordered by importance to the system’s core
+mission:
+Automated Faculty Student Management System (AFSMS) v1.08
+Software Requirements Specification AFSMS v1.0
+Figure 1: User Classes: System Use Case Diagram.
+Automated Faculty Student Management System (AFSMS) v1.09
+Software Requirements Specification AFSMS v1.0
+1.3 0.85
+User Class Characteristics Frequency of Use Impact on
+Requirements
+Registrar /
+Secretariat
+Staff
+(Primary)
+Administrative
+professionals with
+intermediate computer
+skills. Proficient in MS
+Excel and Outlook but
+not IT experts.
+Daily and continuous —
+the heaviest system
+users.
+Drive the need for
+optimized, error-proof
+interfaces (dropdowns),
+the “3-minute” usability
+requirement, and
+seamless Excel/Outlook
+integration.
+Professors /
+Teaching
+Staff
+Professionals with
+varying technical
+expertise (novice to
+expert).
+Intermittent, peaking at
+semester end and exam
+sessions.
+Grade-entry interfaces
+must be intuitive with
+zero retraining needed.
+Access to student
+records requires SSO
+and role-based security.
+Students Digitally literate users
+accustomed to
+responsive web apps;
+often use mobile
+devices.
+Frequent during the
+academic year for
+schedules and grades.
+Require read-only access
+limited to their own
+records. The portal must
+be platform-agnostic
+and fully responsive.
+System Ad-
+ministrators
+IT professionals with
+advanced technical and
+database skills.
+Occasional — system
+setup, maintenance, or
+emergency recovery.
+Drive requirements for
+complete activity logs,
+permission
+management, and
+database
+rollback/point-in-time
+recovery.
+General
+Public
+(Visitors)
+Unauthenticated users
+with unknown technical
+backgrounds.
+Occasional. Drive the need for a
+public portal perspective
+with zero authentication,
+showing curricula and
+timetables.
+Quality
+Assurance
+(QA) / Testers
+Professionals skilled in
+software validation and
+test execution.
+Intensive during
+development and
+pre-deployment;
+intermittent during
+updates.
+Drive the need for
+verifiable, unambiguous
+requirements and a
+dedicated testing
+section covering
+reporting, recovery, and
+performance.
+1.3 1.3
+2.4 Operating Environment
+AFSMS uses a client-server architecture and operates in the following environments:
+Server Environment
+• Hardware:Physical servers in the university data center or virtualized/cloud infras-
+tructure with scalable processing and storage.
+• Operating Systems:Linux (Ubuntu Server 22.04/24.04 LTS, CentOS) or Windows
+Server (2019, 2022).
+Automated Faculty Student Management System (AFSMS) v1.010
+Software Requirements Specification AFSMS v1.0
+• Software:An RDBMS supporting complex queries, offline backups, and point-in-time
+recovery.
+Client Environment
+• Hardware:Any internet-connected device — desktop PCs, laptops, tablets, or smart-
+phones.
+•Operating Systems:Windows (10, 11), macOS, desktop Linux, Android, iOS.
+•Browsers:Google Chrome 100+, Mozilla Firefox 100+, Microsoft Edge, Apple Safari.
+Compatibility
+On registrar workstations, the client must coexist with Microsoft Excel (2016, 2019, 2021,
+or Microsoft 365) and Microsoft Outlook without memory conflicts, supporting CSV/XLS
+import/export and institutional communication.
+2.5 Design and Implementation Constraints
+• Regulatory Policies:The system must comply with EU/Romanian GDPR for personal
+student data and with the University of Craiova’s academic data retention policies.
+• Hardware/Memory:The server requires scalable storage for comprehensive activity
+logs needed by point-in-time recovery.
+• Technologies:The backend must use an RDBMS. The frontend must use standard
+web technologies (HTML/CSS/JS) for cross-platform compatibility with no local client
+installation.
+• Security and Protocols:All data transfers must use HTTPS. Authentication must
+support institutional SSO.
+• Application Interfaces:Export and communication modules must interface with
+Microsoft Excel (.XLS/.CSV) and Microsoft Outlook.
+• Design Conventions:Developers must use selection lists (dropdowns) over free-text
+fields for standardized data entry. Reports must display in tabular format.
+• Audit and Concurrency:The DBMS must support full activity logging (audit) and
+point-in-time rollback. The system must handle concurrent access during peak exam
+sessions without data corruption.
+2.6 User Documentation
+The following documentation, organized by user role, will accompany AFSMS.
+2.6.1 Delivered Documentation Components
+•Registrar & Secretariat Staff Operations Manual:
+–Scope:Complete guide for daily workflows and data entry.
+– Contents:Step-by-step instructions for dropdown-based data collection, elec-
+tronic document circulation, advanced search filters, Excel import/export, Out-
+look communications, and generating the e-Transcript and e-Grade Centralizer .
+•Professors & Teaching Staff Quick Start Guide:
+Automated Faculty Student Management System (AFSMS) v1.011
+Software Requirements Specification AFSMS v1.0
+–Scope:Concise, visual tutorial for faculty-relevant features.
+– Contents:SSO authentication, locating study formations, entering session grades,
+and finalizing evaluation records.
+•System & Database Administrator Guide:
+–Scope:Technical documentation for IT staff.
+– Contents:Site adaptation procedures (curricula, grid values), user privilege map-
+ping, DBMS management, activity log interpretation, offline backups, and point-
+in-time recovery (rollback).
+•Student Portal Guide (Online Help):
+–Scope:Brief FAQ embedded in the private portal.
+– Contents:Viewing personal schedules, interpreting grades, and requesting ad-
+ministrative documents.
+2.6.2 Interactive and In-App Documentation
+•Context-Sensitive Help:Embedded tooltips next to complex fields and dropdowns.
+• Error Resolution Prompts:Client-side validation errors include resolution sugges-
+tions (e.g., “Invalid format: Ensure the Excel file matches the provided .XLS template
+before importing”).
+2.6.3 Delivery Formats and Tooling
+• Web-Based Documentation:Online help section integrated within the web portal
+(guides, FAQs, contextual help).
+• PDF Manuals:Registrar , Professor , and Administrator guides in PDF for offline access
+and archiving.
+All documentation will be updated alongside major software releases.
+2.6.4 Documentation Standards and Compliance
+• ISO/IEC/IEEE 26514:2022:Standard for user documentation design and development.
+• WCAG 2.2 (Level AA):HTML5 and PDF documentation must meet accessibility re-
+quirements (screen reader compatibility, color contrast, keyboard navigation).
+• GDPR Compliance:All sample data and screenshots must use anonymized, synthetic
+data — no real student PII.
+2.7 Assumptions and Dependencies
+The following assumed factors and external dependencies influence the requirements in
+this SRS. If any prove false, the affected requirements will need revision.
+2.7.1 Assumptions (Factors Assumed to be True)
+Infrastructure and Provisioning:
+Automated Faculty Student Management System (AFSMS) v1.012
+Software Requirements Specification AFSMS v1.0
+• Assumed:The university IT department will provide a data center or cloud-hosting envi-
+ronment with adequate availability during academic periods and sufficient bandwidth
+for exam-season traffic.
+• If false:The SRS must add requirements for an external cloud architecture (e.g.,
+AWS/Azure) and load-balancing.
+Centralized SSO Availability:
+• Assumed:The university SSO subsystem provides a stable authentication endpoint
+(SAML 2.0 or OAuth 2.0).
+• If false:The SRS must add requirements for secure password hashing, credential
+storage, account recovery, and MFA.
+Browser Standards and Connectivity:
+• Assumed:All users have reliable internet and devices capable of rendering HTML5
+and ES6 JavaScript.
+• If false:The SRS must add requirements for offline synchronization and legacy browser
+polyfills.
+Open-Source / Commercial Libraries:
+• Assumed:The team has unrestricted access to libraries for generating CSV, XML, XLS,
+and PDF exports.
+• If false:Export requirements must be scaled down, or the budget/timeline expanded.
+Administrative User Training:
+• Assumed:Registrar staff will complete a mandatory 1-hour training session before
+deployment.
+• If false:The 3-minute usability benchmark cannot be fairly evaluated at UAT and must
+be removed.
+2.7.2 Dependencies (External Factors Relied Upon)
+Microsoft Office Ecosystem:
+The export, import, and communication modules depend on Microsoft Excel and Microsoft
+Outlook being available and licensed on registrar machines. If Microsoft deprecates interop-
+erability protocols or changes .XLS parsing rules, integration modules will need refactoring.
+Legacy Data Availability (Site Adaptation):
+Launch depends on the secretariat providing cleansed, structured legacy data (historical
+records, curricula, past grid values) for database seeding. Delays or formatting errors in
+this data will block deployment.
+Regulatory Environment:
+Logging, data retention, and rollback features depend on current EU/Romanian GDPR
+legislation and Romanian Ministry of Education archiving mandates. Legislative changes
+will force revisions to database architecture and data-pruning logic.
+Institutional Network Security:
+Automated Faculty Student Management System (AFSMS) v1.013
+Software Requirements Specification AFSMS v1.0
+Automated notifications and user authentication depend on the university IT department
+whitelisting the application servers for outbound SMTP traffic and inbound SSO callbacks.
+3 External Interface Requirements
+3.1 User Interfaces
+AFSMS provides a web-based GUI accessible through modern browsers, organized into:
+•Public Portal:Unauthenticated, read-only access.
+• Private Portal:Authenticated via university SSO with role-based access control (reg-
+istrar staff, professors, students, administrators).
+3.1.1 Logical Characteristics and Screen Organization
+• Layout:A persistent two-pane design — a fixed, role-based navigation sidebar on
+the left and a dynamic workspace on the right. Breadcrumb navigation appears at
+the top of the workspace.
+• Screen Formats:All academic records (grade registers, centralizers) use a standard
+tabular format mirroring MS Excel for familiarity.
+• Standardized Elements:Every authenticated screen includes a persistent top header
+with a universal search bar , user profile/logout controls, and a “Help” icon for context-
+sensitive assistance.
+• Keyboard Shortcuts:The system supports grid-navigation shortcuts (Tab to cycle
+columns, Enter to save the row and advance) to optimize repetitive data entry.
+3.1.2 UI Optimization and Verifiable Usability
+• Selection-Only Mandate:The UI must use searchable dropdown menus (e.g., Select2/React-
+Select) for all relational data inputs (study formations, subjects, academic years). Free-
+text fields are allowed only when strictly required for non-standardized descriptions.
+• Error Message Standards:Brief, non-technical error messages appear adjacent
+to the offending input field (e.g., “Grade must be an integer between 1 and 10”).
+System-level errors include a “More Info” toggle for technical details.
+• Verifiable Usability Requirement:A secretariat staff member shall compile and
+export a complete semester e-Grade Centralizer for a 30-student group in under 3
+minutes, after no more than 1 hour of basic training.
+3.2 Hardware Interfaces
+AFSMS is a browser-based client-server system. Its hardware interfaces are defined by the
+server infrastructure and end-user devices (per IEEE 5.2.1.3 and IEEE 5.3.1).
+3.2.1 Server-Side Hardware Interface
+• Deployment:Deployable on physical (on-premises) or virtualized servers supporting
+multi-threaded concurrent processing.
+Automated Faculty Student Management System (AFSMS) v1.014
+Software Requirements Specification AFSMS v1.0
+Figure 2: SSO Login Screen.
+ Figure 3: Dashboard.
+Figure 4: Students & Curricula.
+ Figure 5: E-Grade Centralizer .
+Figure 6: Documents & Workflow.
+ Figure 7: Administration & Audit - Users &
+Roles.
+Figure 8: Administration & Audit - Audit Log.
+ Figure 9: Administration & Audit - Query
+Monitor .
+Automated Faculty Student Management System (AFSMS) v1.015
+Software Requirements Specification AFSMS v1.0
+Figure 10: Administration & Audit - Backup /
+Rollback.
+• Storage:Scalable primary and secondary storage for the operational database and
+long-term activity log retention (auditing and point-in-time recovery).
+• Network:The server exposes the application over standard network interfaces
+(Ethernet/Wi-Fi via the institutional network).
+3.2.2 Client-Side Hardware Interface
+• Supported Devices:Any internet-connected device with a modern browser — desktop
+PCs, laptops, tablets, and smartphones.
+• Interaction:Full-screen graphical UI within the browser; no legacy terminal interac-
+tions.
+•Peripherals:No specialized hardware required (no barcode scanners or smart-card
+readers). Standard input only: keyboard and mouse on PCs/laptops; touch on mobile
+devices.
+3.2.3 Hardware-Related Configuration Characteristics
+• Ports:Inbound TCP port 443 (HTTPS) required. All other service ports (e.g., database
+administration) restricted to internal network interfaces.
+3.2.4 Logical Characteristics of Hardware Interactions
+• Network Tolerance:The server must handle up to 10,000 simultaneous TCP connec-
+tions without packet loss during peak exam periods.
+•Network Latency:Server routing must support round-trip latency under 100ms.
+• Storage I/O:Database drives must deliver sufficient IOPS to process offline backups
+without locking the database or timing out user sessions.
+3.3 Software Interfaces
+This section defines the logical connections between AFSMS and external software compo-
+nents.
+3.3.1 Interfaces with External Applications
+A. Data Persistence Interface (DBMS)
+Automated Faculty Student Management System (AFSMS) v1.016
+Software Requirements Specification AFSMS v1.0
+• Purpose:Persistent storage and retrieval of academic data and audit logs; supports
+point-in-time recovery and offline backups.
+• Inbound:Query results for student records, curricula, grades, document metadata,
+user roles, and audit entries.
+• Outbound:CUD (Create, Update, Delete) transactions for academic entities; append-
+only log events for all operations.
+• Format:Relational records via SQL (JDBC/ODBC), including rollback recovery com-
+mands.
+B. Import and Export Interface (Microsoft Excel)
+•Inbound:User-provided structured files (student lists, curricula) validated by the UI
+layer .
+•Outbound:Report exports and tabular datasets (e.g., e-Grade Centralizer).
+• Format:.XLSX, .XLS, .CSV, and .XML files. Column definitions and templates are
+documented.
+C. Communication and Workflow Interface (Microsoft Outlook)
+• Outbound:Composed emails (recipients, subject, body) with optional attachments
+(PDF reports).
+•Inbound:Basic delivery status (if supported by the API); primarily send-initiated.
+• Format:Standard email fields via Microsoft Graph API or SMTP; attachments in
+PDF/XLS/CSV.
+D. Authentication Interface (University SSO)
+•Inbound:Authentication assertions/tokens and unique user IDs after login.
+•Outbound:Authentication requests and redirects to the SSO endpoint.
+•Format:SAML assertions or OAuth2/OIDC tokens (implementation-dependent).
+E. Report Rendering Interface (PDF-Gen)
+•Inbound:Compiled binary file for download or email attachment.
+•Outbound:HTML or tabular data templates pushed to the rendering engine.
+•Format:.PDF files conforming to ISO 32000.
+3.3.2 Shared Data and Constraints
+•Data Sharing:The system exports structured academic datasets in .CSV, .XML, .XLS,
+and .PDF.
+• Authentication Restriction:Authentication is constrained to the institutional SSO. A
+standalone credential database is prohibited by institutional security policy.
+• Transaction Integrity:The DBMS must enforce strict transaction logging for every
+operation to guarantee point-in-time recovery (rollback).
+Automated Faculty Student Management System (AFSMS) v1.017
+Software Requirements Specification AFSMS v1.0
+Software Component Summary:
+1.3 0.9
+Software
+Compo-
+nent
+Mnem. Version /
+Standard
+Source /
+Provider
+Interface Purpose & Data Formats
+Relational
+Database
+DBMS 8.0.36
+(MySQL) /
+15+ (Post-
+greSQL)
+University
+Data Center
+/ Cloud
+Store student data, curricula, and logs.
+Formats: SQL, JDBC/ODBC, Log files.
+Operating
+System
+OS Windows
+11 Pro /
+Server
+2022
+Local Infra. /
+Microsoft
+Runtime environment for server and
+registrar workstations.
+Microsoft
+Excel
+MS-
+XLS
+2016, 2019,
+2021, 365
+Microsoft
+Corp.
+Bulk data import and report export
+(e-Centralizer). Formats: .XLS, .CSV, .XML.
+Microsoft
+Outlook
+MS-
+OUT
+2016, 2019,
+2021, 365
+Microsoft
+Corp.
+Document workflow management and
+group messaging. Formats: SMTP/MAPI,
+Microsoft Graph API.
+PDF
+Renderer
+PDF-
+Gen
+Implementa-
+tion
+Depen-
+dent
+Third-party
+(iText/TCPDF)
+Generate official documents (e-Transcript).
+Formats: .PDF.
+Auth
+Subsystem
+SSO SAML 2.0 /
+OAuth 2.0
+Univ.
+Security
+Single Sign-On authentication.
+1.3 1.3
+3.4 Communications Interfaces
+This section defines the communications protocols, message formatting, and security
+standards (per IEEE 5.2.1.5 and IEEE 5.3.1).
+3.4.1 Network and Web Server Communications
+All primary interactions occur over WAN or LAN, from the client web browser to the AFSMS
+web server .
+Protocols & Standards:
+Std./Prtcl. Purpose Notes
+HTTPS (TLS
+1.2+)
+Secure
+Transport
+All client-server traffic, including SSO exchanges.
+HTTP/1.1 or
+newer
+Web
+Request
+Semantics
+Unencrypted HTTP (Port 80) auto-redirects to HTTPS (Port
+443).
+JSON Structured
+Data
+API responses and asynchronous operations.
+Automated Faculty Student Management System (AFSMS) v1.018
+Software Requirements Specification AFSMS v1.0
+Security:All data in transit must be encrypted with modern TLS to protect student records,
+document workflows, and session tokens.
+3.4.2 Message Content, Formatting, and Commands
+• Client to Server:HTTP requests (GET/POST) carrying form parameters, filter criteria,
+and search queries. File uploads use multipart/form-data.
+• Server to Client:HTTP responses with tabular data and validation results, primarily
+as JSON payloads or binary file downloads.
+• The UI layer must interpret standard HTTP status codes to display user-friendly error
+messages.
+3.4.3 Timing, Transfer Rates, and Synchronization
+• Synchronous:General data entry and portal navigation provide real-time UI feedback.
+• Asynchronous:Resource-intensive operations (bulk PDF generation, mass email)
+execute asynchronously with a polling mechanism or progress indicator to prevent
+UI blocking.
+• Transfer Rates:Dependent on institutional bandwidth. Exact timeout thresholds
+and minimum transfer rates are TBD (detailed design phase), but must support the
+3-minute usability benchmark (Section 2.1.2).
+3.4.4 E-mail and Document Workflow Communications
+• Source/Destination:Initiated by the AFSMS server; delivered to the institutional
+Microsoft Exchange/Outlook server and ultimately to user inboxes.
+• Protocols:Bulk group messages use the Microsoft Graph API (RESTful HTTPS) or
+SMTP .
+•Formatting:
+–Emails use the MIME standard (plain text and rich HTML).
+– Workflow documents are transmitted as secure attachments in .pdf, .xls, or .csv
+format.
+3.4.5 Data Export and Download Mechanisms
+• Protocols:Exports download through the user’s browser over HTTPS. No FTP/SFTP is
+required or permitted for end-user exports.
+•Formats:
+–CSV (Comma-Separated Values)
+–XML (Extensible Markup Language)
+–XLS/XLSX (Microsoft Excel Binary/OOXML)
+–PDF (Portable Document Format)
+Automated Faculty Student Management System (AFSMS) v1.019
+Software Requirements Specification AFSMS v1.0
+4 System Features
+This section organizes AFSMS functional requirements by major system feature.
+4.1 Web Portal and Access Management
+4.1.1 Description and Priority
+The web portal provides SSO-based authentication, user registration with an initial pre-
+defined rights set, and role-based access control across a public (unauthenticated) and
+private (authenticated) perspective.
+Priority:High.
+4.1.2 Functional Requirements
+• REQ-AFSMS-01:The system shall provide a public portal perspective accessible with-
+out authentication.
+• REQ-AFSMS-02:The system shall provide a private portal perspective accessible only
+to authenticated users.
+• REQ-AFSMS-03:The user interface shall be provided as a browser-based web inter-
+face.
+• REQ-AFSMS-04:The system shall display data and query results in tabular form within
+the web page.
+• REQ-AFSMS-05:The system shall enforce differentiated access to data based on user
+roles/rights in the private portal.
+• REQ-AFSMS-06:The web interface shall be secure and shall provide differentiated
+access for different user roles.
+•REQ-AFSMS-07:The system shall allow a user to register through the web interface.
+• REQ-AFSMS-08:The system shall assign each newly registered user an initial prede-
+fined set of access rights.
+• REQ-AFSMS-09:The system shall allow an authorized administrator to customize
+user access rights after registration.
+• REQ-AFSMS-10:If registration input data is invalid, the system shall reject the request
+and display an error message.
+• REQ-AFSMS-11:The system shall authenticate users using a single user account
+mechanism (SSO) for private portal access.
+• REQ-AFSMS-12:The system’s authentication mechanism shall conform to the security
+subsystem.
+• REQ-AFSMS-13:If a user is not authenticated, the system shall deny access to the
+private portal perspective.
+• REQ-AFSMS-14:The system shall enforce role-based access control for operations in
+the private portal.
+Automated Faculty Student Management System (AFSMS) v1.020
+Software Requirements Specification AFSMS v1.0
+• REQ-AFSMS-15:If a user attempts an operation without sufficient rights, the system
+shall block it and display an access-denied message.
+Figure 11: Web Portal and Access Management - SSO Authentication.
+4.2 Academic Data Collection and Management
+4.2.1 Description and Priority
+This module handles collection and management of curricula (study plans), study forma-
+tions, and enrolled student data. It supports data extraction/import from databases, Excel
+files, and text files, with filters and transformations for database integration.
+Priority:High.
+4.2.2 Functional Requirements
+• REQ-AFSMS-16:The system shall allow collecting data for curricula (study plans),
+study formations, and their students.
+• REQ-AFSMS-17:The system shall allow data collection and editing through the web
+interface.
+• REQ-AFSMS-18:The system shall provide data extraction/import from databases,
+Excel files, and text files.
+• REQ-AFSMS-19:The system shall provide filters and data transformations for inte-
+grating imported data into the system database.
+• REQ-AFSMS-20:The system shall display managed academic data in tabular form
+within the web page.
+• REQ-AFSMS-21:The system shall use selection lists to support easy visualization and
+localization of data.
+• REQ-AFSMS-22:The system shall validate user-entered and imported data in the UI
+module and generate error messages for invalid inputs.
+Automated Faculty Student Management System (AFSMS) v1.021
+Software Requirements Specification AFSMS v1.0
+• REQ-AFSMS-23:For frequent validation errors, the system shall suggest resolution
+methods in error messages.
+• REQ-AFSMS-24:The system shall support modifying existing academic data records,
+subject to the user’s assigned rights.
+4.3 Reporting and Export
+4.3.1 Description and Priority
+The reporting module allows authorized users to generate academic reports (including
+the e-Grade Centralizer by specialization, year , and form of education with students in
+alphabetical order) and export them in CSV, XML, XLS, and PDF formats.
+Priority:High.
+4.3.2 Functional Requirements
+•REQ-AFSMS-25:The system shall include a reporting module.
+• REQ-AFSMS-26:The system shall allow authorized users to generate reports in accor-
+dance with their allocated rights.
+• REQ-AFSMS-27:The system shall generate the e-Grade Centralizer at the level of
+specialization, year of study, and form of education.
+• REQ-AFSMS-28:The system shall list students in alphabetical order within the e-Grade
+Centralizer report.
+• REQ-AFSMS-29:The reporting component shall allow saving/exporting reports in
+CSV, XML, XLS, and PDF formats.
+• REQ-AFSMS-30:The system shall display generated reports in tabular form in the
+web interface.
+• REQ-AFSMS-31:If a user attempts to generate or export a report without sufficient
+rights, the system shall block the operation and display an access-denied message.
+• REQ-AFSMS-32:If report parameters are missing or invalid, the system shall reject
+the request and display an error message.
+4.4 Document Workflow and Search
+4.4.1 Description and Priority
+The system provides document workflow management for the faculty secretariat, support-
+ing electronic circulation of documents for information, approval, or modification, as well
+as electronic storage and retrieval. Document search is available by file type, creation date,
+author , and document content.
+Priority:Medium-High.
+Automated Faculty Student Management System (AFSMS) v1.022
+Software Requirements Specification AFSMS v1.0
+Figure 12: Reporting and Export - e-Grade Centralizer .
+Automated Faculty Student Management System (AFSMS) v1.023
+Software Requirements Specification AFSMS v1.0
+4.4.2 Stimulus/Response Sequences
+Stimulus Response
+An authenticated
+user opens the
+Document
+Management
+module.
+The system displays the document workspace with document list
+and available actions.
+The user
+submits/forwards
+a document for
+information,
+approval, or
+modification.
+The system records the workflow action and updates the
+document’s state.
+The user searches
+for a document
+by file type.
+The system returns matching documents.
+The user searches
+by creation date
+and/or author .
+The system returns documents matching the metadata criteria.
+The user searches
+by content.
+The system returns documents matching the content query.
+The user opens a
+document from
+search results.
+The system retrieves and displays/downloads it per the user’s
+rights.
+The user provides
+invalid search
+criteria.
+The system rejects the search and displays an error message.
+4.4.3 Functional Requirements
+• REQ-AFSMS-33:The system shall support document workflow management within
+the faculty secretariat.
+• REQ-AFSMS-34:The system shall support electronic circulation of documents for
+information, approval, or modification.
+• REQ-AFSMS-35:The system shall support electronic storage and retrieval of docu-
+ments.
+•REQ-AFSMS-36:The system shall allow searching documents by file type.
+•REQ-AFSMS-37:The system shall allow searching documents by creation date.
+•REQ-AFSMS-38:The system shall allow searching documents by author .
+•REQ-AFSMS-39:The system shall allow searching documents by document content.
+Automated Faculty Student Management System (AFSMS) v1.024
+Software Requirements Specification AFSMS v1.0
+• REQ-AFSMS-40:The system shall restrict document access and workflow actions
+according to the user’s assigned rights.
+• REQ-AFSMS-41:If search input criteria is invalid, the system shall reject the search
+and display an error message.
+4.5 User Groups and Messaging
+4.5.1 Description and Priority
+The system allows defining user groups and executing group-level operations, including
+sending email messages to all group members via Microsoft Outlook integration.
+Priority:Medium.
+4.5.2 Functional Requirements
+•REQ-AFSMS-42:The system shall allow defining user groups.
+•REQ-AFSMS-43:The system shall allow executing operations at group level.
+• REQ-AFSMS-44:The system shall allow sending email messages to all members of a
+user group.
+• REQ-AFSMS-45:The system shall support integration with Microsoft Outlook for
+messaging/communication functions.
+• REQ-AFSMS-46:The system shall restrict group management and group operations
+according to the user’s assigned rights.
+4.6 Validation and Error Handling
+4.6.1 Description and Priority
+The system validates user-entered data in the UI module, generates clear error messages
+for invalid inputs, and suggests resolution methods for frequent error cases.
+Priority:High.
+4.6.2 Functional Requirements
+•REQ-AFSMS-47:The system shall validate user-entered data within the UI module.
+• REQ-AFSMS-48:If input data is invalid, the system shall reject the input and display
+an error message.
+• REQ-AFSMS-49:For frequent validation error cases, the system shall suggest resolu-
+tion methods in error messages.
+• REQ-AFSMS-50:The system shall prevent saving or submitting invalid data to the
+database.
+4.7 Audit Logging and Data Recovery
+4.7.1 Description and Priority
+The system records all executed operations in activity logs containing the acting user and
+relevant data details. It provides rollback capability to return to previous data states and
+Automated Faculty Student Management System (AFSMS) v1.025
+Software Requirements Specification AFSMS v1.0
+Figure 13: Document Workflow and Search - Management Interface.
+Automated Faculty Student Management System (AFSMS) v1.026
+Software Requirements Specification AFSMS v1.0
+supports database-level point-in-time recovery and offline backups.
+Priority:High.
+4.7.2 Stimulus/Response Sequences
+Stimulus Response
+A user performs
+an operation
+(create/update/
+delete/import/
+export/report
+generation).
+The system records the operation in the activity log with the acting
+user and relevant details.
+An administrator
+reviews system
+activity.
+The system provides access to log records for monitoring and audit
+(subject to rights).
+An administrator
+triggers rollback
+to a previous
+state.
+The system restores data to the selected state and confirms
+completion.
+A rollback
+operation
+completes.
+The system records the rollback as a logged activity.
+Point-in-time
+recovery is
+requested at
+database level.
+The system restores data to the specified time point, consistent
+with backups/logs.
+Offline backup is
+scheduled or
+triggered.
+The system produces an offline backup usable for recovery.
+4.7.3 Functional Requirements
+•REQ-AFSMS-51:The system shall record all executed operations.
+• REQ-AFSMS-52:For each logged activity, the system shall store the user identity that
+performed the action.
+• REQ-AFSMS-53:For each logged activity, the system shall store relevant details about
+the accessed/modified data.
+• REQ-AFSMS-54:The system shall provide rollback capability to return to previous
+data states to prevent/correct data collection errors.
+• REQ-AFSMS-55:The system/database shall support recovery of data to a specified
+point in time.
+• REQ-AFSMS-56:The system/database shall support offline backup to enable data
+recovery.
+Automated Faculty Student Management System (AFSMS) v1.027
+Software Requirements Specification AFSMS v1.0
+• REQ-AFSMS-57:The system shall restrict access to logs and rollback/recovery opera-
+tions according to assigned rights.
+Figure 14: Audit Logging and Data Recovery - Rollback.
+5 Other Nonfunctional Requirements
+5.1 Performance Requirements
+This section specifies measurable performance constraints for AFSMS under normal and
+peak workloads. All performance requirements use the ID format NFR-AFSMS-PERF-XX for
+traceability.
+5.1.1 Capacity (Static numerical requirements)
+• NFR-AFSMS-PERF-01:The system shall support web-based access for all user interac-
+tions without requiring special client hardware or software beyond a standard web
+browser .
+• NFR-AFSMS-PERF-02:The database shall support managing a large volume of aca-
+demic data (including historical growth).
+• NFR-AFSMS-PERF-03:The system shall support concurrent user access to database
+information.
+Automated Faculty Student Management System (AFSMS) v1.028
+Software Requirements Specification AFSMS v1.0
+• NFR-AFSMS-PERF-04:The DBMS shall support web-based administration, concurrent
+access, and query monitoring.
+• NFR-AFSMS-PERF-05 (TBD):The system shall support at least TBD simultaneous
+authenticated users and at least TBD total stored academic records/documents,
+measured in a production-like environment.
+5.1.2 Response time and throughput (Dynamic numerical requirements)
+Where feasible, dynamic targets are expressed as percentiles tied to workload and dataset
+size.
+• NFR-AFSMS-PERF-06 (TBD):For interactive portal actions (open module page, load
+tabular view), 95% of requests shall complete in ≤ TBD seconds under normal work-
+load.
+• NFR-AFSMS-PERF-07 (TBD):For dataset listing via selection lists, 95% of requests
+shall complete in≤TBD seconds under normal workload (dataset up to TBD rows).
+• NFR-AFSMS-PERF-08 (TBD):Document search requests (by file type, date, author , or
+content) shall return results in ≤ TBD seconds for 95% of queries (repository up to
+TBD documents).
+• NFR-AFSMS-PERF-09 (TBD):Report generation (including the e-Grade Centralizer)
+shall complete in ≤ TBD seconds for 95% of requests (up to TBD students, normal
+workload).
+• NFR-AFSMS-PERF-10 (TBD):Report export shall complete in ≤ TBD seconds for 95%
+of requests per format (CSV, XML, XLS, PDF; up to TBD rows).
+5.1.3 Background operations and recovery performance
+• NFR-AFSMS-PERF-11 (TBD):Offline backups shall be schedulable and shall not cause
+visible downtime exceeding TBD minutes during planned windows.
+• NFR-AFSMS-PERF-12 (TBD):Point-in-time recovery and rollback shall complete within
+TBD for the standard recovery scenario (TBD dataset size).
+5.1.4 Performance measurement conditions (Verification)
+• NFR-AFSMS-PERF-13:Each performance requirement shall be verified in a controlled
+environment, documented with: workload type, concurrent users, dataset size, and
+network conditions.
+• NFR-AFSMS-PERF-14:Performance requirements shall be validated through dedi-
+cated performance tests.
+5.2 Safety Requirements
+This section defines requirements to prevent loss, corruption, or irreversible modification
+of critical data. Safety requirements use IDs NFR-AFSMS-SAFE-XX.
+5.2.1 Data integrity and loss prevention
+• NFR-AFSMS-SAFE-01:The system shall record all operations to support auditing and
+incident investigation.
+Automated Faculty Student Management System (AFSMS) v1.029
+Software Requirements Specification AFSMS v1.0
+• NFR-AFSMS-SAFE-02:The system shall provide rollback capability to previous data
+states to prevent or correct collection errors.
+• NFR-AFSMS-SAFE-03:The database shall support point-in-time recovery to a specified
+time.
+• NFR-AFSMS-SAFE-04:The database shall support offline backup for recovery after
+failures.
+• NFR-AFSMS-SAFE-05:Rollback/recovery operations shall be controlled and their
+completion recorded as audited activities.
+5.2.2 Safe input and validation safeguards
+• NFR-AFSMS-SAFE-06:The system shall validate user-entered data in the UI module
+before persistence.
+• NFR-AFSMS-SAFE-07:On validation failure, the system shall display error messages
+and suggest resolutions for frequent error cases.
+•NFR-AFSMS-SAFE-08:The system shall prevent saving invalid data to the database.
+5.2.3 Controlled execution of critical actions
+• NFR-AFSMS-SAFE-09:The system shall enforce role-based access to data and opera-
+tions to prevent unauthorized actions.
+• NFR-AFSMS-SAFE-10:The system shall restrict access to logs, rollback, and recovery
+functions by user rights.
+• NFR-AFSMS-SAFE-11:Only authenticated users shall access the private portal where
+data modifications and report generation occur .
+5.2.4 Safety-related operational constraints
+• NFR-AFSMS-SAFE-12:The system shall support safe concurrent access to avoid data
+corruption under multi-user usage.
+• NFR-AFSMS-SAFE-13:The system shall log the acting user identity and relevant data
+details for each activity to enable accountability and rollback targeting.
+5.2.5 Verification (Safety)
+• NFR-AFSMS-SAFE-14:Backup, rollback, and recovery requirements shall be verified
+through dedicated recovery test scenarios (e.g., introduce a controlled error , then
+demonstrate restoration).
+• NFR-AFSMS-SAFE-15:Input validation requirements shall be verified through negative
+test cases covering invalid formats, missing fields, and frequent error patterns.
+5.3 Security Requirements
+This section defines security and privacy requirements for protecting academic data and
+controlling access. Security requirements use IDs NFR-AFSMS-SEC-XX.
+Automated Faculty Student Management System (AFSMS) v1.030
+Software Requirements Specification AFSMS v1.0
+5.3.1 Authentication and session access control
+• NFR-AFSMS-SEC-01:The system shall provide a secure web interface with access
+differentiated by user role/rights.
+• NFR-AFSMS-SEC-02:The portal shall have two perspectives: public (unauthenticated)
+and private (registered users only).
+• NFR-AFSMS-SEC-03:The system shall require authentication for any action that
+modifies data, generates private reports, or accesses private records.
+• NFR-AFSMS-SEC-04:The authentication mechanism shall comply with the institution’s
+centralized security subsystem for unified account-based login.
+5.3.2 Authorization (least privilege)
+• NFR-AFSMS-SEC-05:The system shall enforce authorization checks for each protected
+operation (create, update, delete, report generation, document workflow) based on
+the user’s assigned rights.
+• NFR-AFSMS-SEC-06:The system shall allow defining users and user groups with
+different access rights and enforce them across all modules.
+• NFR-AFSMS-SEC-07:Students shall only access data permitted by their rights and the
+system shall prevent access to other students’ records.
+5.3.3 Secure communications and transport protection
+• NFR-AFSMS-SEC-08:The system shall use HTTPS for all browser-server communica-
+tion to protect authentication and academic data in transit.
+5.3.4 Auditability and accountability
+• NFR-AFSMS-SEC-09:The system shall log all activities, identifying the acting user and
+relevant details of accessed/modified information.
+• NFR-AFSMS-SEC-10:The system shall retain sufficient audit information to support
+investigation of unauthorized access and recovery/rollback targeting.
+5.3.5 Privacy and regulatory constraints
+• NFR-AFSMS-SEC-11:The system shall comply with GDPR for personal student data
+and with university policies for academic data retention.
+• NFR-AFSMS-SEC-12:Example data in documentation, training, or prototypes shall be
+anonymized/synthetic with no real student data.
+5.3.6 Security verification requirements
+• NFR-AFSMS-SEC-13:Authentication and role-based authorization shall be verified
+via test cases that attempt restricted access with insufficient rights (expected: access
+denied and logged).
+• NFR-AFSMS-SEC-14:Audit logging shall be verified by confirming each critical action
+produces a log entry with actor identity and action context.
+Automated Faculty Student Management System (AFSMS) v1.031
+Software Requirements Specification AFSMS v1.0
+5.4 Software Quality Attributes
+This section specifies quality characteristics beyond performance, safety, and security.
+Functional behavior (what the system does) is covered in Section 4; this section addresses
+how well it does it.
+5.4.1 Maintainability and extensibility
+• NFR-AFSMS-QUAL-09:The architecture shall be extensible so new modules can be
+added without negatively affecting existing functionality.
+• NFR-AFSMS-QUAL-10 (TBD):The project shall define module-level boundaries for core
+capabilities (data collection, reporting, logging) to maintain the system as modules
+evolve.
+5.4.2 Portability and compatibility
+• NFR-AFSMS-QUAL-11:The system shall be platform-agnostic on the client side, rely-
+ing on standard web technologies with no local installation required.
+• NFR-AFSMS-QUAL-12:The system shall coexist with Microsoft Excel and Outlook on
+registrar workstations.
+5.5 Business Rules
+Business rules define operational principles (who can do what, under which conditions)
+enforced through role-based access and workflow constraints.
+• BR-AFSMS-01:The Web Portal shall have a Public area (any user) and a Private area
+(registered users only).
+• BR-AFSMS-02:Only authenticated Private-area users may modify data or generate
+internal reports; allowed actions depend on assigned rights.
+• BR-AFSMS-03:New users receive an initial predefined set of rights, customizable
+afterward for differentiated access.
+• BR-AFSMS-04:Academic data must display in tabular form to support administrative
+workflows.
+• BR-AFSMS-05:Data entry and lookup shall use selection lists (dropdowns) to reduce
+errors.
+• BR-AFSMS-06:The e-Grade Centralizer shall be produced by specialization, study year ,
+and form of education, with students in alphabetical order .
+•BR-AFSMS-07:Reports shall be exportable in CSV, XML, XLS, and PDF.
+• BR-AFSMS-08:Document search shall support file type, creation date, author , and
+content (keyword) criteria.
+• BR-AFSMS-09:The system shall allow defining user groups and group-level operations,
+including group email.
+• BR-AFSMS-10:All operations shall be logged with user identity and relevant data
+details.
+Automated Faculty Student Management System (AFSMS) v1.032
+Software Requirements Specification AFSMS v1.0
+•BR-AFSMS-11:The system shall support rollback/recovery to previous data states.
+• BR-AFSMS-12:The database shall support offline backup and point-in-time recovery
+as part of operational maintenance.
+5.6 Coding Standards and Code Quality Requirements
+The following coding standards shall be respected during system development to ensure
+maintainable and high-quality source code.
+• CODE-01:All source code shall follow consistent naming conventions: classes in
+PascalCase and variables in camelCase.
+• CODE-02:Each function shall implement a single responsibility and should not exceed
+50 lines of code where possible.
+• CODE-03:Code duplication shall be avoided; reusable functionality shall be placed in
+shared modules.
+• CODE-04:All public classes and methods shall include documentation comments
+describing their purpose and parameters.
+• CODE-05:Error handling shall be implemented for all operations interacting with
+external systems or files.
+• CODE-06:Hard-coded values (“magic numbers”) shall be avoided; constants shall be
+defined in configuration files or constant definitions.
+• CODE-07:Source code shall be structured in logical modules corresponding to system
+components.
+• CODE-08:All code shall be reviewed through peer code review before integration into
+the main branch.
+• CODE-09:Static code analysis tools shall be used to detect potential bugs and code
+smells.
+•CODE-10:Unit tests shall be implemented for core business logic components.
+6 Other Requirements
+6.1 Database Requirements
+• Data Retention:Student academic records (e-Transcripts) shall be maintained in-
+definitely per educational legislation. System audit logs may be archived after 5
+years.
+• Relational Integrity:Curriculum modifications must not retroactively alter previously
+validated grades in the e-Grade Centralizer .
+6.2 Legal and Regulatory Requirements
+• GDPR Compliance:All processing of PII (student names, identification numbers)
+must comply with EU/Romanian GDPR.
+Automated Faculty Student Management System (AFSMS) v1.033
+Software Requirements Specification AFSMS v1.0
+• Anonymization:Sample data for documentation or training must be synthetic with
+no real student information.
+6.3 Internationalization and Localization
+• Language Support:The public portal shall support both Romanian and English for
+international students and mobility programs.
+• Character Encoding:All components (including PDF and Excel exports) must use
+UTF-8 encoding for correct rendering of Romanian diacritics.
+Automated Faculty Student Management System (AFSMS) v1.034
+Software Requirements Specification AFSMS v1.0
+A Glossary
+• AFSMS (Automated Faculty Student Management System):The software product
+specified here, designed to automate administration of student records, curricula,
+and document circulation within a university faculty.
+• e-Registrul matricol (e-Transcript):A secure electronic document recording a stu-
+dent’s full academic history — all completed disciplines, contact hours, and ECTS
+credits.
+• e-Centralizatorul de note (e-Grade Centralizer):A standardized electronic report
+aggregating student exam results within an academic year , organized by specialization
+and study formation.
+• Managementul fluxului de documente (Document Workflow Management):The
+system capability for electronic routing, tracking, and storage of administrative docu-
+ments for information, approval, or modification.
+• Rollback:A data integrity function enabling the database to revert to a previously
+verified stable state, neutralizing data corruption or collection errors.
+B Analysis Models
+This appendix provides logical models illustrating AFSMS functional requirements and data
+relationships.
+B.1 High-Level System Context Diagram
+The Context Diagram defines the AFSMS boundary and its external entities:
+• AFSMS Core System:Processes academic requests, report generation, and document
+workflows.
+•External Entities:
+– Registrar/Secretariat Staff:Provide student data, curricula updates, and document
+routing.
+–Teaching Staff (Professors):Provide examination results and grades.
+–Students:Receive academic standings, schedules, and grade reports.
+–University SSO Subsystem:Provides authentication tokens.
+– Microsoft Ecosystem:Facilitates Excel import/export and Outlook communications.
+B.2 Data Flow Diagram (DFD Level 0)
+Primary data transformations:
+1. Data Collection:Accepts raw data from external files (Excel, text) and databases,
+applies transformations and filters for system integration.
+Automated Faculty Student Management System (AFSMS) v1.035
+Software Requirements Specification AFSMS v1.0
+2. Report Processing:Transforms stored academic records (grades, ECTS, hours) into
+standardized formats (e-Grade Centralizer , e-Transcript).
+3. Audit & Log Generation:Generates a log entry for every interaction, identifying the
+user and data modification for safety and rollback.
+4. Workflow Management:Directs electronic document circulation within the secre-
+tariat for approval or modification.
+B.3 Entity-Relationship Model (Conceptual)
+Fundamental data structures and relationships:
+•STUDENT:Uniquely identified by personal details; enrolled in a STUDY FORMATION.
+• CURRICULUM (Plan deˆınv˘at, ˘amˆant):Defines DISCIPLINES, ECTS credits, and contact
+hours for a specialization.
+•GRADE:Links a STUDENT to a DISCIPLINE for a specific academic year .
+• USER ACCOUNT:Mapped to ROLES and PRIVILEGES for differentiated private portal
+access.
+•LOG ENTRY:Append-only record linked to a USER ACCOUNT and an OPERATION.
+B.4 High-Level System States
+AFSMS has two primary logical states:
+• Public Portal State:Default state where visitors browse unauthenticated data (cur-
+ricula, announcements).
+• Private Portal State:Activated on successful SSO authentication. Provides differ-
+entiated services (Data Management, Reporting, Rollback) based on the user’s role
+(Student, Professor , Registrar).
+C To Be Determined List
+• TBD-1 (NFR-AFSMS-PERF-005):Exact number of simultaneous authenticated users
+the server must support (estimated from university data center capacity).
+• TBD-2 (NFR-AFSMS-PERF-010–014):Maximum time thresholds (in seconds) for load-
+ing tabular pages and generating PDF/XLS reports.
+• TBD-3 (Section 3.4.3):Minimum data transfer rates and timeout thresholds for
+institutional network requests.
+• TBD-4 (NFR-AFSMS-QUAL-010):Exact module boundaries to ensure extensibility
+without negative effects.
+• TBD-5 (Section 3.3.4):Specific version of the third-party PDF rendering library (e.g.,
+iText or TCPDF).
+Automated Faculty Student Management System (AFSMS) v1.036

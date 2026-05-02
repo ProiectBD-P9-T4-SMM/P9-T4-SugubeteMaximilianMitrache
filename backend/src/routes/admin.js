@@ -254,7 +254,7 @@ router.post('/backups/restore', requireRole(['ADMIN']), async (req, res, next) =
       // Log the recovery action
       await client.query(`
         INSERT INTO AUDIT_LOG_ENTRY (actor_user_id, action_type, module, entity_type, entity_id, after_snapshot_json)
-        VALUES ($1, 'RECOVERY', 'ADMIN_SYSTEM', 'DATABASE', 0, $2)
+        VALUES ($1, 'RECOVERY', 'ADMIN_SYSTEM', 'DATABASE', '00000000-0000-0000-0000-000000000000', $2)
       `, [req.user.userId, JSON.stringify({ restored_file: filename })]);
     });
 
@@ -319,6 +319,13 @@ router.put('/settings', requireRole(['ADMIN']), async (req, res, next) => {
     );
 
     res.json({ success: true, message: `Updated ${updated} setting(s).` });
+const { archiveOldLogs } = require('../services/auditService');
+
+// POST /api/admin/audit/archive - Manually trigger audit log archiving
+router.post('/audit/archive', requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const count = await archiveOldLogs();
+    res.json({ success: true, message: `Archived ${count} entries older than 5 years.` });
   } catch (error) {
     next(error);
   }

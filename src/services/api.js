@@ -53,9 +53,12 @@ export const reportsService = {
 
 export const documentsService = {
   getDocuments: (params) => api.get('/documents', { params }),
-  updateStatus: (id, status) => api.put(`/documents/${id}/status`, { status }),
+  updateStatus: (id, status, revision_notes) => api.put(`/documents/${id}/status`, { status, revision_notes }),
   forwardDocument: (id, userId) => api.put(`/documents/${id}/forward`, { userId }),
   uploadDocument: (formData) => api.post('/documents', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  reuploadDocument: (id, formData) => api.put(`/documents/${id}/reupload`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   downloadDocument: (id) => api.get(`/documents/download/${id}`, { responseType: 'blob' }),
@@ -77,8 +80,9 @@ export const notificationsService = {
 };
 
 export const auditService = {
-  getLogs: () => api.get('/audit'),
+  getLogs: (params) => api.get('/audit', { params }),
   rollback: (logId) => api.post(`/audit/rollback/${logId}`),
+  pitr: (targetTimestamp) => api.post('/audit/pitr', { targetTimestamp }),
 };
 
 export const adminService = {
@@ -103,6 +107,20 @@ export const adminService = {
   downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' }),
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (settings) => api.put('/admin/settings', { settings }),
+  triggerAuditArchiving: () => api.post('/admin/audit/archive')
+};
+
+export const configService = {
+  getSettings: () => api.get('/config/settings'),
+  updateSettings: (data) => api.put('/config/settings', data),
+  getAcademicYears: () => api.get('/config/academic-years'),
+  createAcademicYear: (data) => api.post('/config/academic-years', data),
+  updateAcademicYear: (id, data) => api.put(`/config/academic-years/${id}`, data),
+  deleteAcademicYear: (id) => api.delete(`/config/academic-years/${id}`),
+  getSpecializations: () => api.get('/config/specializations'),
+  createSpecialization: (data) => api.post('/config/specializations', data),
+  updateSpecialization: (id, data) => api.put(`/config/specializations/${id}`, data),
+  deleteSpecialization: (id) => api.delete(`/config/specializations/${id}`),
 };
 
 export const publicService = {

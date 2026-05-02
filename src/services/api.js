@@ -77,7 +77,7 @@ export const notificationsService = {
 };
 
 export const auditService = {
-  getLogs: () => api.get('/audit'),
+  getLogs: (params) => api.get('/audit', { params }),
   rollback: (logId) => api.post(`/audit/rollback/${logId}`),
   pitr: (targetTimestamp) => api.post('/audit/pitr', { targetTimestamp }),
 };
@@ -101,7 +101,8 @@ export const adminService = {
   updateBackupConfig: (data) => api.put('/admin/backups/config', data),
   createBackup: () => api.post('/admin/backups/create'),
   restoreBackup: (filename) => api.post('/admin/backups/restore', { filename }),
-  downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' })
+  downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' }),
+  triggerAuditArchiving: () => api.post('/admin/audit/archive')
 };
 
 export const publicService = {

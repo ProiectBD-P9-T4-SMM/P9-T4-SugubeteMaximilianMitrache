@@ -8,6 +8,7 @@ export default function AuditLogs() {
   const { t, language } = useLanguage();
   const [adminTab, setAdminTab] = useState('audit');
   const [auditLogs, setAuditLogs] = useState([]);
+  const [paginationMeta, setPaginationMeta] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(false);
   const [rollbackStatus, setRollbackStatus] = useState(null);
 
@@ -31,7 +32,7 @@ export default function AuditLogs() {
   const [roleForm, setRoleForm] = useState({ code: '', name: '', description: '' });
 
   useEffect(() => {
-    if (adminTab === 'audit') fetchAuditLogs();
+    if (adminTab === 'audit') fetchAuditLogs(paginationMeta.page);
     if (adminTab === 'users') {
       fetchUsers();
       fetchRoles();
@@ -133,11 +134,12 @@ export default function AuditLogs() {
     }
   };
 
-  const fetchAuditLogs = async () => {
+  const fetchAuditLogs = async (page = 1) => {
     setLoading(true);
     try {
-      const res = await auditService.getLogs();
-      setAuditLogs(res.data);
+      const res = await auditService.getLogs({ page, limit: 20 });
+      setAuditLogs(res.data.data);
+      setPaginationMeta(res.data.meta);
     } catch (err) {
       console.error("Failed to load audit logs", err);
     } finally {
@@ -207,6 +209,21 @@ export default function AuditLogs() {
       link.remove();
     } catch (err) {
       alert((language === 'ro' ? 'Eroare la descărcarea backup-ului: ' : 'Failed to download backup: ') + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleManualArchive = async () => {
+    if (!window.confirm(language === 'ro' ? 'Doriți să rulați manual procesul de arhivare a logurilor mai vechi de 5 ani?' : 'Do you want to manually run the archiving process for logs older than 5 years?')) return;
+    setLoading(true);
+    try {
+      const res = await adminService.triggerAuditArchiving();
+      setRollbackStatus({ success: true, message: res.data.message });
+      setTimeout(() => setRollbackStatus(null), 5000);
+    } catch (err) {
+      setRollbackStatus({ success: false, message: language === 'ro' ? 'Arhivarea a eșuat' : 'Archiving failed' });
+      setTimeout(() => setRollbackStatus(null), 5000);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -353,7 +370,7 @@ export default function AuditLogs() {
 
                     <div className="flex items-center justify-between px-2">
                         <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Registru Trasabilitate Operațiuni' : 'Operations Traceability Ledger'}</h3>
-                        <button onClick={fetchAuditLogs} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh Logs'}</button>
+                        <button onClick={() => fetchAuditLogs(paginationMeta.page)} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh Logs'}</button>
                     </div>
                     <div className="overflow-x-auto rounded-2xl border border-slate-100">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
@@ -394,6 +411,48 @@ export default function AuditLogs() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    <div className="flex items-center justify-between px-2 pt-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {language === 'ro' 
+                                ? `Afișare ${auditLogs.length} din ${paginationMeta.total} înregistrări total` 
+                                : `Showing ${auditLogs.length} of ${paginationMeta.total} total records`}
+                        </p>
+                        <div className="flex gap-2">
+                            <button 
+                                disabled={paginationMeta.page <= 1}
+                                onClick={() => fetchAuditLogs(paginationMeta.page - 1)}
+                                className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all"
+                            >
+                                {language === 'ro' ? 'Anterior' : 'Previous'}
+                            </button>
+                            <button 
+                                disabled={paginationMeta.page >= paginationMeta.totalPages}
+                                onClick={() => fetchAuditLogs(paginationMeta.page + 1)}
+                                className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all"
+                            >
+                                {language === 'ro' ? 'Următor' : 'Next'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mt-8">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-amber-100 p-2 rounded-xl text-amber-600">
+                                <Shield size={18} />
+                            </div>
+                            <div>
+                                <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest">
+                                    {language === 'ro' ? 'Politică Retenție Date' : 'Data Retention Policy'}
+                                </h4>
+                                <p className="text-[10px] font-bold text-amber-700/80 mt-1">
+                                    {language === 'ro' 
+                                        ? 'Conform reglementărilor instituționale, registrele de audit sunt păstrate pentru o perioadă de 5 ani. Datele mai vechi sunt arhivate automat într-un depozit securizat extern la intervale regulate.' 
+                                        : 'Per institutional regulations, audit logs are retained for a period of 5 years. Older data is automatically archived to a secure external repository at regular intervals.'}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -562,6 +621,9 @@ export default function AuditLogs() {
                             </div>
                             <button onClick={handleCreateBackup} disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all flex items-center justify-center gap-3">
                                 <Database size={20} /> {language === 'ro' ? 'Crează Instantaneu Manual' : 'Create Manual Snapshot'}
+                            </button>
+                            <button onClick={handleManualArchive} disabled={loading} className="w-full mt-4 bg-slate-800 text-slate-300 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black border border-slate-700 transition-all flex items-center justify-center gap-3">
+                                <Shield size={20} /> {language === 'ro' ? 'Arhivare Manuală 5 Ani' : 'Manual 5-Year Archive'}
                             </button>
                         </div>
 

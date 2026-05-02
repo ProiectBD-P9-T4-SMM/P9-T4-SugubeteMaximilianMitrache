@@ -274,4 +274,16 @@ router.get('/backups/download/:filename', requireRole(['ADMIN']), async (req, re
   }
 });
 
+const { archiveOldLogs } = require('../services/auditService');
+
+// POST /api/admin/audit/archive - Manually trigger audit log archiving
+router.post('/audit/archive', requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const count = await archiveOldLogs();
+    res.json({ success: true, message: `Archived ${count} entries older than 5 years.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

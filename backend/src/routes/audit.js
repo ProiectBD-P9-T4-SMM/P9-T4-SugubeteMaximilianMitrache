@@ -6,9 +6,17 @@ const { auditableUpdate } = require('../services/auditService');
 
 router.use(requireAuth);
 
-// GET /api/audit - Fetch Audit Logs
+// GET /api/audit - Fetch Audit Logs with Pagination
 router.get('/', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async (req, res, next) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const countQuery = 'SELECT COUNT(*) FROM AUDIT_LOG_ENTRY';
+    const countRes = await db.query(countQuery);
+    const total = parseInt(countRes.rows[0].count);
+
     const query = `
       SELECT a.id, a.action_type, a.module, a.entity_type, a.entity_id, 
              a.before_snapshot_json, a.after_snapshot_json, a.occurred_at,
@@ -16,10 +24,19 @@ router.get('/', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async (req, 
       FROM AUDIT_LOG_ENTRY a
       LEFT JOIN USER_ACCOUNT u ON a.actor_user_id = u.id
       ORDER BY a.occurred_at DESC
-      LIMIT 100
+      LIMIT $1 OFFSET $2
     `;
-    const result = await db.query(query);
-    res.json(result.rows);
+    const result = await db.query(query, [limit, offset]);
+    
+    res.json({
+      data: result.rows,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     next(error);
   }

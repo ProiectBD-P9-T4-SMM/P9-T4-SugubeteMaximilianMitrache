@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save, Clock, Settings } from 'lucide-react';
-import { auditService, adminService } from '../services/api';
+import { auditService, adminService, configService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function AuditLogs() {

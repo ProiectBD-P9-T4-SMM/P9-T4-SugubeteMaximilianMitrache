@@ -22,6 +22,7 @@ import Contact from './pages/Contact';
 import Help from './pages/Help';
 import Shortcuts from './pages/Shortcuts';
 import SuguDiagramsPage from './SuguDiagramsPage';
+import Documentation from './pages/Documentation';
 
 import { LanguageProvider } from './context/LanguageContext';
 
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/shortcuts" element={<Shortcuts />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/docs/:role?" element={<Documentation />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

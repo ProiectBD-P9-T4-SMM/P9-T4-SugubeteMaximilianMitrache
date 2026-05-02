@@ -80,8 +80,9 @@ export const notificationsService = {
 };
 
 export const auditService = {
-  getLogs: () => api.get('/audit'),
+  getLogs: (params) => api.get('/audit', { params }),
   rollback: (logId) => api.post(`/audit/rollback/${logId}`),
+  pitr: (targetTimestamp) => api.post('/audit/pitr', { targetTimestamp }),
 };
 
 export const adminService = {
@@ -103,7 +104,21 @@ export const adminService = {
   updateBackupConfig: (data) => api.put('/admin/backups/config', data),
   createBackup: () => api.post('/admin/backups/create'),
   restoreBackup: (filename) => api.post('/admin/backups/restore', { filename }),
-  downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' })
+  downloadBackup: (filename) => api.get(`/admin/backups/download/${filename}`, { responseType: 'blob' }),
+  triggerAuditArchiving: () => api.post('/admin/audit/archive')
+};
+
+export const configService = {
+  getSettings: () => api.get('/config/settings'),
+  updateSettings: (data) => api.put('/config/settings', data),
+  getAcademicYears: () => api.get('/config/academic-years'),
+  createAcademicYear: (data) => api.post('/config/academic-years', data),
+  updateAcademicYear: (id, data) => api.put(`/config/academic-years/${id}`, data),
+  deleteAcademicYear: (id) => api.delete(`/config/academic-years/${id}`),
+  getSpecializations: () => api.get('/config/specializations'),
+  createSpecialization: (data) => api.post('/config/specializations', data),
+  updateSpecialization: (id, data) => api.put(`/config/specializations/${id}`, data),
+  deleteSpecialization: (id) => api.delete(`/config/specializations/${id}`),
 };
 
 export const publicService = {

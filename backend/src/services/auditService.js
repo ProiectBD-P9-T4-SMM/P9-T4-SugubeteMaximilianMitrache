@@ -144,9 +144,49 @@ const auditableDelete = async (actorUserId, moduleName, tableName, id, idColumn 
   });
 };
 
+const archiveOldLogs = async () => {
+  return db.transaction(async (client) => {
+    // 1. Ensure archive table exists
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS AUDIT_LOG_ARCHIVE (
+        id UUID PRIMARY KEY,
+        actor_user_id UUID,
+        action_type VARCHAR(50),
+        module VARCHAR(100),
+        entity_type VARCHAR(100),
+        entity_id UUID,
+        before_snapshot_json JSONB,
+        after_snapshot_json JSONB,
+        occurred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 2. Archive logs older than 5 years
+    const archiveQuery = `
+      INSERT INTO AUDIT_LOG_ARCHIVE 
+      SELECT * FROM AUDIT_LOG_ENTRY 
+      WHERE occurred_at < NOW() - INTERVAL '5 years'
+      RETURNING id
+    `;
+    const archiveRes = await client.query(archiveQuery);
+    const count = archiveRes.rows.length;
+
+    if (count > 0) {
+      // 3. Delete from active logs
+      await client.query(`
+        DELETE FROM AUDIT_LOG_ENTRY 
+        WHERE occurred_at < NOW() - INTERVAL '5 years'
+      `);
+    }
+
+    return count;
+  });
+};
+
 module.exports = {
   logAudit,
   auditableUpdate,
   auditableInsert,
-  auditableDelete
+  auditableDelete,
+  archiveOldLogs
 };

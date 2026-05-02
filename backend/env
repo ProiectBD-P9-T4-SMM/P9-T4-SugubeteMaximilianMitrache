@@ -1,0 +1,7 @@
+DB_HOST=79.76.96.223
+DB_PORT=5432
+DB_USER=afsms_app
+DB_PASS=88u9GqwGEsAJ
+DB_NAME=afsms_db
+PORT=3000
+JWT_SECRET=super_secret_key_change_in_production

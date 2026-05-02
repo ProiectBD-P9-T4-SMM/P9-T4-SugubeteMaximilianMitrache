@@ -105,6 +105,19 @@ export const adminService = {
   triggerAuditArchiving: () => api.post('/admin/audit/archive')
 };
 
+export const configService = {
+  getSettings: () => api.get('/config/settings'),
+  updateSettings: (data) => api.put('/config/settings', data),
+  getAcademicYears: () => api.get('/config/academic-years'),
+  createAcademicYear: (data) => api.post('/config/academic-years', data),
+  updateAcademicYear: (id, data) => api.put(`/config/academic-years/${id}`, data),
+  deleteAcademicYear: (id) => api.delete(`/config/academic-years/${id}`),
+  getSpecializations: () => api.get('/config/specializations'),
+  createSpecialization: (data) => api.post('/config/specializations', data),
+  updateSpecialization: (id, data) => api.put(`/config/specializations/${id}`, data),
+  deleteSpecialization: (id) => api.delete(`/config/specializations/${id}`),
+};
+
 export const publicService = {
   getCurricula: () => axios.get(`${API_URL}/public/curricula`)
 };

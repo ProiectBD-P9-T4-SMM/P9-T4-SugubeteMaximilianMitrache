@@ -28,7 +28,8 @@ export default function Dashboard() {
           api.get('/academic/dashboard/stats')
         ]);
         
-        setRecentActivity(activityRes.data?.slice(0, 6) || []);
+        const logs = activityRes.data?.data || activityRes.data || [];
+        setRecentActivity(logs.slice(0, 6));
         setStats(statsRes.data?.stats || null);
       } catch (error) {
         console.error("Failed to load dashboard data", error);

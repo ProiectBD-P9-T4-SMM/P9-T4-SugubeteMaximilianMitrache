@@ -177,7 +177,12 @@ export default function GradesList() {
       setAddFormData({ studentId: '', disciplineId: '', gradeValue: '', examSession: 'WINTER' });
       loadGrades(filters);
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || (language === 'ro' ? 'Trimitere eșuată.' : 'Submission failed.') });
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || (language === 'ro' ? 'Trimitere eșuată.' : 'Submission failed.'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -190,11 +195,11 @@ export default function GradesList() {
     const formData = new FormData();
     formData.append('file', importFile);
     try {
-      const res = await api.post('/academic/import/grades-csv', formData);
+      const res = await academicService.importGrades(formData);
       setImportResults(res.data);
       setMessage({ type: 'success', text: language === 'ro' ? 'Sarcina de import a fost procesată.' : 'Import task processed.' });
       setShowImportModal(false);
-      loadGrades();
+      loadGrades(filters);
     } catch (err) {
       setMessage({ type: 'error', text: language === 'ro' ? 'Import eșuat.' : 'Import failed.' });
     } finally {
@@ -291,8 +296,17 @@ export default function GradesList() {
       )}
 
       {message.text && (
-        <div className={`p-4 rounded-2xl mb-8 flex items-center gap-3 animate-in fade-in duration-300 ${message.type === 'error' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-           <AlertCircle size={18} /> <p className="text-xs font-black uppercase tracking-widest">{message.text}</p>
+        <div className={`p-6 rounded-3xl mb-8 flex flex-col gap-3 animate-in fade-in duration-300 ${message.type === 'error' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+           <div className="flex items-center gap-3">
+             <AlertCircle size={18} /> 
+             <p className="text-xs font-black uppercase tracking-widest">{message.text}</p>
+           </div>
+           {message.suggestion && (
+             <div className="mt-2 p-4 bg-white/50 rounded-2xl border border-rose-200/50">
+               <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-1">{language === 'ro' ? 'Sfat Inteligent' : 'Smart Suggestion'}</p>
+               <p className="text-[11px] font-bold text-slate-700">{t(message.suggestion) || message.hint}</p>
+             </div>
+           )}
         </div>
       )}
 

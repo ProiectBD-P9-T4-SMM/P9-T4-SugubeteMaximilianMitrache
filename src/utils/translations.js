@@ -25,6 +25,14 @@ export const translations = {
     nav_help: "Help",
     nav_contact: "Contact",
     nav_shortcuts: "Shortcuts",
+
+    // Validation Suggestions
+    suggest_unique: "Try a different value or check if the record was already added.",
+    suggest_fk: "The selected entity might have been deleted. Please refresh the list.",
+    suggest_grade_range: "Grades must be between 1 and 10. Use 0 for 'Absent'.",
+    suggest_email: "Ensure the email follows the university format: name@ucv.ro",
+    suggest_required: "This field is required for audit compliance.",
+    suggest_reg_num: "The registration number must be 8 characters long (e.g., MAT12345).",
     
     // Auth
     logout: "Logout",

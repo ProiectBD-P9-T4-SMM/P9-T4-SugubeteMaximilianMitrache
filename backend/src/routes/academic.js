@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require('../db');
 const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 const { auditableUpdate, auditableInsert } = require('../services/auditService');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(requireAuth);
 
@@ -382,8 +384,6 @@ router.get('/grades/export', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
   }
 });
 
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
 
 // POST /api/academic/grades/import - Bulk Import Grades from Excel/CSV (SRS REQ-AFSMS-39)
 router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.single('file'), async (req, res, next) => {

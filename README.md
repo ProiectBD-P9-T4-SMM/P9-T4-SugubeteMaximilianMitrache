@@ -23,7 +23,7 @@
 
 ---
 
-## 📖 Overview
+## 📖 Overview 
 
 The **Automated Faculty Student Management System (AFSMS)** is a comprehensive, secure, web-based platform designed to digitalize and optimize the administrative and educational workflows within a university faculty.
 

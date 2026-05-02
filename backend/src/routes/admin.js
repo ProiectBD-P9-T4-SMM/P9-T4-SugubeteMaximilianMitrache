@@ -319,6 +319,11 @@ router.put('/settings', requireRole(['ADMIN']), async (req, res, next) => {
     );
 
     res.json({ success: true, message: `Updated ${updated} setting(s).` });
+  } catch (error) {
+    next(error);
+  }
+});
+
 const { archiveOldLogs } = require('../services/auditService');
 
 // POST /api/admin/audit/archive - Manually trigger audit log archiving

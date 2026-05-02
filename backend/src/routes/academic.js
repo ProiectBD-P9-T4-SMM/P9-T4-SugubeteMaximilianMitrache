@@ -386,7 +386,7 @@ router.get('/grades/export', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
 });
 
 // POST /api/academic/grades/import - Bulk Import Grades from Excel/CSV (SRS REQ-AFSMS-39)
-router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.single('file'), async (req, res, next) => {
+router.post('/grades/import', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), upload.single('file'), async (req, res, next) => {
   if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
 
   try {
@@ -447,7 +447,7 @@ router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.sing
           value: gradeValue,
           exam_session: session,
           grading_date: new Date().toISOString().split('T')[0],
-          validated: true
+          validated: false
         });
 
         results.success++;
@@ -468,8 +468,16 @@ router.put('/grades/:id', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), as
     const { value, exam_session, validated } = req.body;
 
     // Validation Lock Check (REQ-AFSMS-54)
+    // Allow toggling validated flag, but prevent editing other fields on validated grades (except for ADMIN)
     const currentGrade = await db.query('SELECT validated FROM GRADE WHERE id = $1', [id]);
-    if (currentGrade.rows.length > 0 && currentGrade.rows[0].validated && req.user.role !== 'ADMIN') {
+    const isValidated = currentGrade.rows.length > 0 && currentGrade.rows[0].validated;
+    const isOnlyTogglingValidation = (value === undefined || value === null) && 
+                                      (exam_session === undefined || exam_session === null) &&
+                                      req.body.student_id === undefined &&
+                                      req.body.discipline_id === undefined &&
+                                      req.body.grading_date === undefined;
+
+    if (isValidated && req.user.role !== 'ADMIN' && !isOnlyTogglingValidation) {
       return res.status(403).json({ 
         error: true, 
         message: 'Această notă a fost deja validată și nu mai poate fi modificată decât de un Administrator.' 
@@ -1089,7 +1097,7 @@ router.post('/grades', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async
     // Insert grade
     const insertRes = await db.query(`
       INSERT INTO GRADE (student_id, discipline_id, academic_year_id, curriculum_snapshot_id, graded_by_user_id, value, exam_session, grading_date, validated)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, TRUE)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, FALSE)
       RETURNING id, value
     `, [studentId, disciplineId, academicYearRes.rows[0]?.id || null, snapshotRes.rows[0]?.id || null, professorId, gradeNum, examSession]);
 

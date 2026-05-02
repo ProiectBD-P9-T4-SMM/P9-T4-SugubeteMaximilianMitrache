@@ -405,14 +405,28 @@ export default function GradesList() {
                             <ActionButton 
                               icon={Edit2} 
                               color={row.validated && user?.role !== 'ADMIN' ? "text-slate-300 bg-slate-100 cursor-not-allowed" : "text-blue-600 bg-blue-50"} 
-                              onClick={() => (row.validated && user?.role !== 'ADMIN') ? null : handleStartEdit(row)} 
-                              title={row.validated && user?.role !== 'ADMIN' ? (language === 'ro' ? 'Notă Validată (Blocată)' : 'Validated Grade (Locked)') : ''}
+                              onClick={() => {
+                                // Only ADMIN can edit validated grades; others can edit unvalidated
+                                if (row.validated && user?.role !== 'ADMIN') {
+                                  setMessage({ type: 'error', text: language === 'ro' ? 'Notă Validată (Blocată)' : 'Validated Grade (Locked)' });
+                                  return;
+                                }
+                                handleStartEdit(row);
+                              }}
+                              title={row.validated && user?.role !== 'ADMIN' ? (language === 'ro' ? 'Notă Validată (Blocată)' : 'Validated Grade (Locked)') : (language === 'ro' ? 'Editează Notă' : 'Edit Grade')}
                             />
                             <ActionButton 
                               icon={Trash2} 
                               color={row.validated && user?.role !== 'ADMIN' ? "text-slate-300 bg-slate-100 cursor-not-allowed" : "text-rose-600 bg-rose-50"} 
-                              onClick={() => (row.validated && user?.role !== 'ADMIN') ? null : handleDelete(row.id)} 
-                              title={row.validated && user?.role !== 'ADMIN' ? (language === 'ro' ? 'Notă Validată (Blocată)' : 'Validated Grade (Locked)') : ''}
+                              onClick={() => {
+                                // Only ADMIN can delete validated grades; others can delete unvalidated
+                                if (row.validated && user?.role !== 'ADMIN') {
+                                  setMessage({ type: 'error', text: language === 'ro' ? 'Notă Validată (Blocată)' : 'Validated Grade (Locked)' });
+                                  return;
+                                }
+                                handleDelete(row.id);
+                              }}
+                              title={row.validated && user?.role !== 'ADMIN' ? (language === 'ro' ? 'Notă Validată (Blocată)' : 'Validated Grade (Locked)') : (language === 'ro' ? 'Șterge Notă' : 'Delete Grade')}
                             />
                           </>
                         )}

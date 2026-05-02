@@ -42,10 +42,10 @@ export default function Dashboard() {
       const [activityRes, statsRes] = await Promise.all([
         user && ['ADMIN', 'PROFESSOR', 'SECRETARIAT'].includes(user.role)
           ? auditService.getLogs()
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: { data: [] } }),
         api.get('/academic/dashboard/stats')
       ]);
-      setRecentActivity(activityRes.data?.slice(0, 6) || []);
+      setRecentActivity(activityRes.data?.data?.slice(0, 6) || []);
       setStats(statsRes.data?.stats || null);
     } catch (err) {
       console.error('[Dashboard] Failed to load data:', err);

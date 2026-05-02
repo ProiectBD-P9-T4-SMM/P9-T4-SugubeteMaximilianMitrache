@@ -25,6 +25,18 @@ export const translations = {
     nav_help: "Help",
     nav_contact: "Contact",
     nav_shortcuts: "Shortcuts",
+
+    // Validation Suggestions
+    suggest_title: "Smart Resolution Advice",
+    suggest_unique: "Try a different value or check if the record was already added.",
+    suggest_fk: "The selected entity might have been deleted. Please refresh the list.",
+    suggest_grade_range: "Grades must be between 1 and 10. Use 0 for 'Absent'.",
+    suggest_email: "Ensure the email follows the university format: name@ucv.ro",
+    suggest_required: "This field is required for audit compliance.",
+    suggest_reg_num: "The registration number must be 8 characters long (e.g., MAT12345).",
+    suggest_not_null: "Please fill in all required fields.",
+    suggest_length: "The text is too long. Please shorten it.",
+    suggest_bulk_format: "Ensure the Excel/CSV columns match the required template precisely.",
     
     // Auth
     logout: "Logout",
@@ -105,6 +117,7 @@ export const translations = {
     filter: "Filters",
     add: "Add New",
     update: "Update",
+    bulk_import: "Bulk Import (Excel/CSV)",
     upload: "Upload",
     download: "Download",
     confirm_delete: "Are you sure you want to delete this?",
@@ -137,7 +150,7 @@ export const translations = {
     // Students
     std_title: "Student Management Registry",
     std_subtitle: "Master Academic Enrollment & Data Control",
-    bulk_import: "Bulk CSV Import",
+    // (bulk_import already defined above)
     add_student: "Register Student",
     th_reg_num: "Reg. Number",
     th_name: "Full Name",
@@ -165,7 +178,7 @@ export const translations = {
     grades_title: "Academic Grade Ledger",
     grades_subtitle: "Official Evaluation & Validation Gateway",
     gen_template: "Generate Template",
-    import_grades: "Import Grades (CSV)",
+    import_grades: "Import Grades (Excel/CSV)",
     btn_validate: "Validate Grade",
     th_student: "Student",
     th_discipline: "Discipline",
@@ -441,6 +454,16 @@ export const translations = {
 
   ro: {
     // Navigation
+    suggest_title: "Sfat de Rezolvare Inteligent",
+    suggest_unique: "Încearcă o valoare diferită sau verifică dacă înregistrarea există deja.",
+    suggest_fk: "Entitatea selectată ar fi putut fi ștearsă. Te rugăm să reîmprospătezi lista.",
+    suggest_grade_range: "Notele trebuie să fie între 1 și 10. Folosește 0 pentru 'Absent'.",
+    suggest_email: "Asigură-te că email-ul respectă formatul universității: nume@ucv.ro",
+    suggest_required: "Acest câmp este obligatoriu pentru conformitatea auditului.",
+    suggest_reg_num: "Numărul matricol trebuie să aibă 8 caractere (ex: MAT12345).",
+    suggest_not_null: "Te rugăm să completezi toate câmpurile obligatorii.",
+    suggest_length: "Textul este prea lung. Te rugăm să îl scurtezi.",
+    suggest_bulk_format: "Asigură-te că formatul fișierului Excel/CSV respectă modelul oficial.",
     nav_dashboard: "Tablou de bord",
     greeting: "Bună",
     act_updated: "Actualizat",
@@ -545,6 +568,7 @@ export const translations = {
     filter: "Filtre",
     add: "Adaugă Nou",
     update: "Actualizează",
+    bulk_import: "Import Masiv (Excel/CSV)",
     upload: "Încarcă",
     download: "Descarcă",
     confirm_delete: "Ești sigur că vrei să ștergi?",
@@ -577,7 +601,7 @@ export const translations = {
     // Students
     std_title: "Registru Management Studenți",
     std_subtitle: "Control Date și Înscrieri Academice",
-    bulk_import: "Import Bulk CSV",
+    // (bulk_import already defined above)
     add_student: "Înregistrare Student",
     th_reg_num: "Nr. Matricol",
     th_name: "Nume Complet",
@@ -605,7 +629,7 @@ export const translations = {
     grades_title: "Registru Note Academice",
     grades_subtitle: "Portal Oficial Evaluare și Validare",
     gen_template: "Generare Șablon",
-    import_grades: "Import Note (CSV)",
+    import_grades: "Import Note (Excel/CSV)",
     btn_validate: "Validare Notă",
     th_student: "Student",
     th_discipline: "Disciplină",

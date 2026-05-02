@@ -40,6 +40,7 @@ export default function Students() {
   const [selectedCurriculumId, setSelectedCurriculumId] = useState('');
   const [enrollmentFormationId, setEnrollmentFormationId] = useState('');
   const [formationSel, setFormationSel] = useState({ eduForm: '', year: '', group: '', sub: '' });
+  const [message, setMessage] = useState({ type: '', text: '', suggestion: '', hint: '' });
 
   useKeyboardShortcuts({
     'Alt+A': () => {
@@ -187,7 +188,14 @@ export default function Students() {
       if (editingStudent) await academicService.updateStudent(editingStudent.id, payload);
       else await academicService.addStudent(studentForm);
       setShowModal(false); fetchStudents();
-    } catch (err) { alert(err.response?.data?.message || (language === 'ro' ? 'Eroare la salvare.' : 'Failed to save')); }
+    } catch (err) { 
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || (language === 'ro' ? 'Eroare la salvare.' : 'Failed to save'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      });
+    }
   };
 
   const handleDeleteStudent = async (id) => {
@@ -196,6 +204,7 @@ export default function Students() {
   };
 
   const openEditModal = (student) => {
+    setMessage({ type: '', text: '', suggestion: '', hint: '' });
     setEditingStudent(student);
     setStudentForm({
       first_name: student.first_name,
@@ -315,7 +324,7 @@ export default function Students() {
           <button onClick={handleExportExcel} className="group bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3">
             <Download size={18} /> {t('download')}
           </button>
-          <button onClick={() => { setEditingStudent(null); setStudentForm({first_name:'', last_name:'', email:'', status:'ENROLLED'}); setShowModal(true); }} className="group bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center gap-3">
+          <button onClick={() => { setMessage({ type: '', text: '', suggestion: '', hint: '' }); setEditingStudent(null); setStudentForm({first_name:'', last_name:'', email:'', status:'ENROLLED'}); setShowModal(true); }} className="group bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center gap-3">
             <UserPlus size={18} /> {t('add_student')}
           </button>
         </div>
@@ -417,6 +426,20 @@ export default function Students() {
             </header>
 
             <div className="flex-1 overflow-y-auto p-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
+               {message.text && (
+                 <div className="lg:col-span-12 p-6 rounded-3xl mb-4 flex flex-col gap-3 animate-in fade-in duration-300 bg-rose-50 text-rose-600 border border-rose-100">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle size={18} /> 
+                      <p className="text-xs font-black uppercase tracking-widest">{message.text}</p>
+                    </div>
+                    {message.suggestion && (
+                      <div className="mt-2 p-4 bg-white/50 rounded-2xl border border-rose-200/50">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-1">{language === 'ro' ? 'Sfat Inteligent' : 'Smart Suggestion'}</p>
+                        <p className="text-[11px] font-bold text-slate-700">{t(message.suggestion) || message.hint}</p>
+                      </div>
+                    )}
+                 </div>
+               )}
                {/* Left Column: Personal Info */}
                <div className="lg:col-span-4 space-y-10">
                   <SectionHeader icon={Shield} title={language === 'ro' ? 'Date Identitate' : "Identity Data"} color="text-blue-600" />

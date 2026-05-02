@@ -35,6 +35,7 @@ export default function Help() {
       dotColor: 'bg-blue-500',
       docName: language === 'ro' ? 'Manual Operațional' : 'Operations Manual',
       docUrl: '/docs/secretariat',
+      roleId: 'secretariat',
       items: language === 'ro' ? [
         'Utilizarea colectării datelor bazate pe liste',
         'Gestionarea circulației documentelor electronice',
@@ -57,6 +58,7 @@ export default function Help() {
       dotColor: 'bg-emerald-500',
       docName: language === 'ro' ? 'Ghid de Pornire Rapidă' : 'Quick Start Guide',
       docUrl: '/docs/professors',
+      roleId: 'professors',
       items: language === 'ro' ? [
         'Autentificarea prin SSO-ul Universității',
         'Localizarea formațiunilor de studiu alocate',
@@ -77,6 +79,7 @@ export default function Help() {
       dotColor: 'bg-amber-500',
       docName: language === 'ro' ? 'Ghidul Portalului Studenților' : 'Student Portal Guide',
       docUrl: '/docs/students',
+      roleId: 'students',
       items: language === 'ro' ? [
         'Vizualizarea orarelor personale',
         'Interpretarea afișării notelor',
@@ -97,6 +100,7 @@ export default function Help() {
       dotColor: 'bg-slate-500',
       docName: language === 'ro' ? 'Ghidul Administratorului' : 'Administrator Guide',
       docUrl: '/docs/admin',
+      roleId: 'admin',
       items: language === 'ro' ? [
         'Adaptarea site-ului și configurarea curriculei',
         'Maparea privilegiilor și grupurilor de utilizatori',
@@ -203,7 +207,7 @@ export default function Help() {
                       <p className="text-white/80 text-xs font-medium uppercase tracking-wider">{language === 'ro' ? 'Document' : 'Document'}: {role.docName}</p>
                     </div>
                   </div>
-                  <Link to={role.docUrl}>
+                  <Link to={`/docs/${role.roleId}`}>
                     <ExternalLink className="h-5 w-5 opacity-50 group-hover:opacity-100 transition-opacity cursor-pointer text-white" />
                   </Link>
                 </div>
@@ -218,7 +222,7 @@ export default function Help() {
                   </ul>
                 </div>
                 <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-                  <Link to={role.docUrl} className={`${role.textColor} text-sm font-bold hover:underline inline-block`}>
+                  <Link to={`/docs/${role.roleId}`} className={`${role.textColor} text-sm font-bold hover:underline inline-block`}>
                     {t('help_view_doc')}
                   </Link>
                 </div>

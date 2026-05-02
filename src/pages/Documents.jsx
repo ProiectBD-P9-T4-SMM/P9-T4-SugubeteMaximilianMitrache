@@ -141,7 +141,12 @@ export default function Documents() {
       fetchDocuments();
       setTimeout(() => setShowReuploadModal(false), 1500);
     } catch (err) {
-      setUploadStatus({ success: false, message: language === 'ro' ? 'Eroare reîncărcare.' : 'Re-upload failed.' });
+      setUploadStatus({ 
+        success: false, 
+        message: err.response?.data?.message || (language === 'ro' ? 'Eroare reîncărcare.' : 'Re-upload failed.'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      });
     }
   };
 
@@ -169,7 +174,12 @@ export default function Documents() {
       fetchDocuments();
       setTimeout(() => setShowUploadModal(false), 1500);
     } catch (err) {
-      setUploadStatus({ success: false, message: language === 'ro' ? 'Eroare încărcare. Verifică mărimea (max 10MB).' : 'Upload failed. Check file size (max 10MB).' });
+      setUploadStatus({ 
+        success: false, 
+        message: err.response?.data?.message || (language === 'ro' ? 'Eroare încărcare. Verifică mărimea (max 10MB).' : 'Upload failed. Check file size (max 10MB).'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      });
     }
   };
 
@@ -576,10 +586,16 @@ function StatusAlert({ status }) {
   return (
     <div className={`p-4 rounded-2xl flex items-start gap-3 ${status.success ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
        {status.success ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-       <div className="flex-1">
+        <div className="flex-1">
           <p className="text-[10px] font-black uppercase tracking-widest">{status.success ? t('success') : t('error')}</p>
           <p className="text-xs font-bold mt-1 leading-relaxed">{status.message}</p>
-       </div>
+          {!status.success && status.suggestion && (
+            <div className="mt-3 bg-white/50 p-3 rounded-xl border border-rose-100/50">
+              <p className="text-[9px] font-black text-rose-500 uppercase tracking-tighter mb-1">{t('suggest_title')}</p>
+              <p className="text-[11px] font-bold text-slate-700">{t(status.suggestion) || status.hint}</p>
+            </div>
+          )}
+        </div>
     </div>
   );
 }

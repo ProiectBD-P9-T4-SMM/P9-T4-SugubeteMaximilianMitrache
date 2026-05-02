@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import App from './App.jsx';
+import SystemDiagramsPage from './SystemDiagramsPage.jsx';
 import SuguDiagramsPage from './SuguDiagramsPage.jsx';
 import GlobalErrorBoundary from './components/ErrorBoundary.jsx';
 import './index.css';
@@ -11,6 +12,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 function MainRouter() {
   return (
     <Routes>
+      <Route path="/system-diagrams" element={<SystemDiagramsPage />} />
       <Route path="/sugu-diagrams" element={<SuguDiagramsPage />} />
       <Route path="/*" element={<App />} />
     </Routes>

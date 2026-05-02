@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Plus, Trash2, UserPlus, X, Edit, Save, Check } from 'lucide-react';
+import { Users, Plus, Trash2, UserPlus, X, Edit, Save, Check, AlertCircle, CheckCircle } from 'lucide-react';
 import Select from 'react-select';
 import { groupsService, adminService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -33,6 +33,7 @@ export default function UserGroups() {
   const [editForm, setEditForm] = useState({ name: '', description: '' });
 
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '', suggestion: '', hint: '' });
 
   useEffect(() => {
     loadGroups();
@@ -88,7 +89,12 @@ export default function UserGroups() {
       setNewGroupDesc('');
       loadGroups();
     } catch (err) {
-      alert(language === 'ro' ? 'Eroare la crearea grupului.' : 'Failed to create group');
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.message || (language === 'ro' ? 'Eroare la crearea grupului.' : 'Failed to create group'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      });
     }
   };
 
@@ -124,7 +130,12 @@ export default function UserGroups() {
       setSelectedUserId('');
       loadMembers(selectedGroup.id);
     } catch (err) {
-      alert(err.response?.data?.message || (language === 'ro' ? 'Eroare la adăugarea membrului.' : 'Failed to add member'));
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.message || (language === 'ro' ? 'Eroare la adăugarea membrului.' : 'Failed to add member'),
+        suggestion: err.response?.data?.suggestion,
+        hint: err.response?.data?.resolutionHint
+      });
     }
   };
 
@@ -143,6 +154,26 @@ export default function UserGroups() {
         <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
           <Users className="text-blue-600" size={32} /> {t('groups_title')}
         </h2>
+        
+        {message.text && (
+          <div className={`p-6 rounded-[2rem] border shadow-xl animate-in fade-in duration-300 ${message.type === 'error' ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
+             <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${message.type === 'error' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                  {message.type === 'error' ? <AlertCircle size={24} /> : <Check size={24} />}
+                </div>
+                <div className="flex-1">
+                  <p className={`text-xs font-black uppercase tracking-widest ${message.type === 'error' ? 'text-rose-600' : 'text-emerald-600'}`}>{message.text}</p>
+                  {message.suggestion && (
+                    <div className="mt-2 bg-white/60 p-3 rounded-xl border border-rose-100/50">
+                      <p className="text-[10px] font-black text-rose-500 uppercase tracking-tighter mb-1">{t('suggest_title')}</p>
+                      <p className="text-[11px] font-bold text-slate-700">{t(message.suggestion) || message.hint}</p>
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setMessage({type:'', text:''})} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+             </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Groups List */}

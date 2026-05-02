@@ -32,6 +32,9 @@ export const academicService = {
   updateStudent: (id, data) => api.put(`/academic/students/${id}`, data),
   deleteStudent: (id) => api.delete(`/academic/students/${id}`),
   addStudentsBulk: (students) => api.post('/academic/students/bulk', { students }),
+  importStudents: (formData) => api.post('/academic/students/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   getGrades: () => api.get('/academic/grades'),
   addGrade: (data) => api.post('/academic/grades', data),
   updateGrade: (id, data) => api.put(`/academic/grades/${id}`, data),

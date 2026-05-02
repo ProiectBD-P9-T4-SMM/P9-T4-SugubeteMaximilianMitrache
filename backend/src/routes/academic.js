@@ -5,8 +5,8 @@ const { requireAuth, requireRole } = require('../middleware/authMiddleware');
 const { auditableUpdate, auditableInsert } = require('../services/auditService');
 const importService = require('../services/importService');
 const multer = require('multer');
-const uploadDisk = multer({ dest: 'uploads/' });
-const uploadMemory = multer({ storage: multer.memoryStorage() });
+const XLSX = require('xlsx');
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(requireAuth);
 
@@ -162,84 +162,81 @@ router.post('/students', async (req, res, next) => {
   }
 });
 
-// Bulk Add Students (REQ-AFSMS-18, 19)
+// Bulk Add Students (REQ-AFSMS-18, 19) - JSON endpoint
 router.post('/students/bulk', async (req, res, next) => {
   const { students } = req.body;
-  
   if (!Array.isArray(students) || students.length === 0) {
     return res.status(400).json({ error: true, message: 'Invalid students data.' });
   }
-
   try {
-    const results = [];
-    for (const data of students) {
-      // Normalize keys (handle both exported Romanian headers and standard keys)
-      const email = data.Email || data.email;
-      const firstName = data.Prenume || data.first_name;
-      const lastName = data.Nume || data.last_name;
-      const regNum = data['Nr. Matricol'] || data.registration_number || ('MAT' + Math.floor(1000 + Math.random() * 9000));
-      const curriculumName = data['Program Academic'] || data.curriculum_name;
-      const formationName = data['Formație Specifică'] || data.formation_name;
-
-      if (!email || !firstName || !lastName) continue;
-
-      // 1. Find or Create Student
-      let studentId;
-      const statusMap = {
-        'SUSPENDAT': 'SUSPENDED',
-        'ACTIV': 'ACTIVE',
-        'INMATRICULAT': 'ENROLLED',
-        'ÎNMATRICULAT': 'ENROLLED',
-        'ABSOLVIT': 'GRADUATED'
-      };
-      
-      const rawStatus = data.Status || data.status;
-      const normalizedStatus = statusMap[rawStatus?.toUpperCase()] || rawStatus?.toUpperCase() || 'ENROLLED';
-
-      const existingStudent = await db.query('SELECT id FROM STUDENT WHERE email = $1', [email]);
-      
-      if (existingStudent.rows.length > 0) {
-        studentId = existingStudent.rows[0].id;
-        // Optionally update status for existing student
-        await db.query('UPDATE STUDENT SET status = $1 WHERE id = $2', [normalizedStatus, studentId]);
-      } else {
-        const newStudent = await db.query(`
-          INSERT INTO STUDENT (registration_number, first_name, last_name, email, enrollment_date, status)
-          VALUES ($1, $2, $3, $4, CURRENT_DATE, $5) RETURNING id
-        `, [regNum, firstName, lastName, email, normalizedStatus]);
-        studentId = newStudent.rows[0].id;
-      }
-
-      // 2. Resolve Curriculum & Formation if names provided
-      let curriculumId = data.curriculum_id;
-      let formationId = data.study_formation_id;
-
-      if (!curriculumId && curriculumName) {
-        const currRes = await db.query('SELECT id FROM CURRICULUM WHERE name = $1 LIMIT 1', [curriculumName]);
-        curriculumId = currRes.rows[0]?.id;
-      }
-
-      if (!formationId && formationName) {
-        const formRes = await db.query('SELECT id FROM STUDY_FORMATION WHERE name = $1 LIMIT 1', [formationName]);
-        formationId = formRes.rows[0]?.id;
-      }
-
-      // 3. Enroll in Curriculum if possible
-      if (studentId && curriculumId) {
-        await db.query(`
-          INSERT INTO STUDENT_CURRICULUM (student_id, curriculum_id, study_formation_id, status)
-          VALUES ($1, $2, $3, 'ACTIVE')
-          ON CONFLICT (student_id, curriculum_id) DO UPDATE SET study_formation_id = EXCLUDED.study_formation_id
-        `, [studentId, curriculumId, formationId || null]);
-      }
-
-      results.push({ email, studentId });
-    }
+    const results = await processBulkStudents(students, req.user.userId);
     res.json({ success: true, message: `Successfully processed ${results.length} records.`, data: results });
-  } catch (error) {
-    console.error("Bulk import error:", error);
-    next(error);
+  } catch (error) { next(error); }
+});
+
+// Helper for student bulk processing
+async function processBulkStudents(students, actorUserId) {
+  const results = [];
+  for (const data of students) {
+    const email = data.Email || data.email;
+    const firstName = data.Prenume || data.first_name || data['First Name'];
+    const lastName = data.Nume || data.last_name || data['Last Name'];
+    const regNum = data['Nr. Matricol'] || data.registration_number || data['Registration Number'] || ('MAT' + Math.floor(1000 + Math.random() * 9000));
+    const curriculumName = data['Program Academic'] || data.curriculum_name || data['Curriculum'];
+    const formationName = data['Formație Specifică'] || data.formation_name || data['Formation'];
+
+    if (!email || !firstName || !lastName) continue;
+
+    const statusMap = { 'SUSPENDAT': 'SUSPENDED', 'ACTIV': 'ACTIVE', 'INMATRICULAT': 'ENROLLED', 'ÎNMATRICULAT': 'ENROLLED', 'ABSOLVIT': 'GRADUATED' };
+    const rawStatus = data.Status || data.status;
+    const normalizedStatus = statusMap[rawStatus?.toUpperCase()] || rawStatus?.toUpperCase() || 'ENROLLED';
+
+    const existingStudent = await db.query('SELECT id FROM STUDENT WHERE email = $1', [email]);
+    let studentId;
+    if (existingStudent.rows.length > 0) {
+      studentId = existingStudent.rows[0].id;
+      await db.query('UPDATE STUDENT SET status = $1 WHERE id = $2', [normalizedStatus, studentId]);
+    } else {
+      const newStudent = await db.query(`
+        INSERT INTO STUDENT (registration_number, first_name, last_name, email, enrollment_date, status)
+        VALUES ($1, $2, $3, $4, CURRENT_DATE, $5) RETURNING id
+      `, [regNum, firstName, lastName, email, normalizedStatus]);
+      studentId = newStudent.rows[0].id;
+    }
+
+    let curriculumId = data.curriculum_id;
+    let formationId = data.study_formation_id;
+    if (!curriculumId && curriculumName) {
+      const currRes = await db.query('SELECT id FROM CURRICULUM WHERE name = $1 LIMIT 1', [curriculumName]);
+      curriculumId = currRes.rows[0]?.id;
+    }
+    if (!formationId && formationName) {
+      const formRes = await db.query('SELECT id FROM STUDY_FORMATION WHERE name = $1 LIMIT 1', [formationName]);
+      formationId = formRes.rows[0]?.id;
+    }
+
+    if (studentId && curriculumId) {
+      await db.query(`
+        INSERT INTO STUDENT_CURRICULUM (student_id, curriculum_id, study_formation_id, status)
+        VALUES ($1, $2, $3, 'ACTIVE')
+        ON CONFLICT (student_id, curriculum_id) DO UPDATE SET study_formation_id = EXCLUDED.study_formation_id
+      `, [studentId, curriculumId, formationId || null]);
+    }
+    results.push({ email, studentId });
   }
+  return results;
+}
+
+// POST /api/academic/students/import - Bulk Import Students from Excel/CSV (SRS REQ-AFSMS-18)
+router.post('/students/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.single('file'), async (req, res, next) => {
+  if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
+  try {
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const results = await processBulkStudents(data, req.user.userId);
+    res.json({ success: true, message: `Import complete. Processed ${results.length} students.`, count: results.length });
+  } catch (error) { next(error); }
 });
 
 // Update Student
@@ -388,26 +385,16 @@ router.get('/grades/export', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
   }
 });
 
-// --- Removed Duplicate Multer Declaration ---
-
-// POST /api/academic/grades/import - Bulk Import Grades from CSV
-router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), uploadMemory.single('file'), async (req, res, next) => {
-  if (!req.file) {
-    return res.status(400).json({ error: true, message: 'No file uploaded.' });
-  }
+// POST /api/academic/grades/import - Bulk Import Grades from Excel/CSV (SRS REQ-AFSMS-39)
+router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), upload.single('file'), async (req, res, next) => {
+  if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
 
   try {
-    const Papa = require('papaparse');
-    const csvData = req.file.buffer.toString('utf8');
-    const { data, errors } = Papa.parse(csvData, { header: true, skipEmptyLines: true });
-
-    if (errors.length > 0) {
-      return res.status(400).json({ error: true, message: 'CSV Parsing Error', details: errors });
-    }
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     const results = { success: 0, failed: 0, details: [] };
-    
-    // Active Year and Snapshot for fallback
     const academicYearRes = await db.query('SELECT id FROM ACADEMIC_YEAR WHERE is_active = TRUE LIMIT 1');
     const snapshotRes = await db.query("SELECT id FROM CURRICULUM_SNAPSHOT WHERE snapshot_status = 'ACTIVE' LIMIT 1");
     const activeYearId = academicYearRes.rows[0]?.id;
@@ -418,7 +405,9 @@ router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), uploadMemor
         const regNum = row['Registration Number'] || row['Nr. Matricol'] || row.registration_number;
         const discCode = row['Discipline Code'] || row['Cod Disciplină'] || row.discipline_code;
         const gradeValRaw = row['Grade'] || row['Notă'] || row.grade;
-        const session = row['Session'] || row['Sesiune'] || row.session || 'SUMMER';
+        const sessionMap = { 'IARNĂ': 'WINTER', 'VARĂ': 'SUMMER', 'RESTANȚĂ': 'RETAKE' };
+        const rawSession = row['Session'] || row['Sesiune'] || row.session;
+        const session = sessionMap[rawSession?.toUpperCase()] || rawSession?.toUpperCase() || 'SUMMER';
         
         if (!regNum || !discCode || gradeValRaw === undefined) {
           results.failed++;
@@ -426,7 +415,6 @@ router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), uploadMemor
           continue;
         }
 
-        // 1. Resolve Student
         const studentRes = await db.query('SELECT id FROM STUDENT WHERE registration_number = $1', [regNum]);
         if (studentRes.rows.length === 0) {
           results.failed++;
@@ -435,7 +423,6 @@ router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), uploadMemor
         }
         const studentId = studentRes.rows[0].id;
 
-        // 2. Resolve Discipline
         const discRes = await db.query('SELECT id FROM DISCIPLINE WHERE code = $1', [discCode]);
         if (discRes.rows.length === 0) {
           results.failed++;
@@ -444,31 +431,24 @@ router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), uploadMemor
         }
         const disciplineId = discRes.rows[0].id;
 
-        // 3. Parse Grade
-        let gradeValue = gradeValRaw.toLowerCase() === 'abs.' ? 0 : parseFloat(gradeValRaw);
+        let gradeValue = gradeValRaw.toString().toLowerCase() === 'abs.' ? 0 : parseFloat(gradeValRaw);
         if (isNaN(gradeValue)) {
           results.failed++;
           results.details.push({ row, error: `Invalid grade value: ${gradeValRaw}` });
           continue;
         }
 
-        // 4. Insert/Update Grade
-        await auditableInsert(
-          req.user.userId,
-          'ACADEMIC_DATA',
-          'GRADE',
-          {
-            student_id: studentId,
-            discipline_id: disciplineId,
-            academic_year_id: activeYearId,
-            curriculum_snapshot_id: activeSnapshotId,
-            graded_by_user_id: req.user.userId,
-            value: gradeValue,
-            exam_session: session,
-            grading_date: new Date().toISOString().split('T')[0],
-            validated: true
-          }
-        );
+        await auditableInsert(req.user.userId, 'ACADEMIC_DATA', 'GRADE', {
+          student_id: studentId,
+          discipline_id: disciplineId,
+          academic_year_id: activeYearId,
+          curriculum_snapshot_id: activeSnapshotId,
+          graded_by_user_id: req.user.userId,
+          value: gradeValue,
+          exam_session: session,
+          grading_date: new Date().toISOString().split('T')[0],
+          validated: true
+        });
 
         results.success++;
       } catch (rowErr) {
@@ -477,15 +457,8 @@ router.post('/grades/import', requireRole(['ADMIN', 'SECRETARIAT']), uploadMemor
       }
     }
 
-    res.json({
-      success: true,
-      message: `Import complete. Success: ${results.success}, Failed: ${results.failed}`,
-      summary: results
-    });
-
-  } catch (error) {
-    next(error);
-  }
+    res.json({ success: true, message: `Import complete. Success: ${results.success}, Failed: ${results.failed}`, summary: results });
+  } catch (error) { next(error); }
 });
 
 // Update Grade
@@ -1263,20 +1236,15 @@ router.post('/students/bulk', requireRole(['ADMIN', 'SECRETARIAT']), async (req,
 });
 
 // POST /api/academic/import/grades-csv - Bulk import grades from CSV/Excel (REQ-AFSMS-18)
-router.post('/import/grades-csv', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), uploadDisk.single('file'), async (req, res, next) => {
+router.post('/import/grades-csv', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: true, message: 'No file uploaded.' });
     
-    const xlsx = require('xlsx');
-    const workbook = xlsx.readFile(req.file.path);
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
-    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     
     const results = await importService.importGrades(data, req.user.userId);
-    
-    // Cleanup
-    const fs = require('fs');
-    fs.unlinkSync(req.file.path);
     
     res.json({ success: true, ...results });
   } catch (error) {

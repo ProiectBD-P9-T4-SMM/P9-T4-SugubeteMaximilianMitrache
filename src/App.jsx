@@ -21,16 +21,21 @@ import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
 import Help from './pages/Help';
 import Shortcuts from './pages/Shortcuts';
+import SuguDiagramsPage from './SuguDiagramsPage';
+
+import { LanguageProvider } from './context/LanguageContext';
 
 export default function App() {
   return (
-    <AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
       <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/public" element={<PublicPortal />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/sugu-diagrams" element={<SuguDiagramsPage />} />
+          <Route path="/" element={<PublicPortal />} />
+          <Route path="/public" element={<Navigate to="/" replace />} />
 
           {/* Protected Routes inside Layout */}
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -84,6 +89,7 @@ export default function App() {
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

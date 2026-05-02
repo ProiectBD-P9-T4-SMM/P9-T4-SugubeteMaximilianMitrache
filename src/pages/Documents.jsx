@@ -7,11 +7,13 @@ import {
 import Select from 'react-select';
 import { documentsService, notificationsService, lookupService, adminService, groupsService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function Documents() {
   const searchRef = useRef(null);
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -130,16 +132,16 @@ export default function Documents() {
       if (uploadFile) formData.append('file', uploadFile);
       
       await documentsService.uploadDocument(formData);
-      setUploadStatus({ success: true, message: 'Document uploaded successfully!' });
+      setUploadStatus({ success: true, message: language === 'ro' ? 'Document încărcat cu succes!' : 'Document uploaded successfully!' });
       fetchDocuments();
       setTimeout(() => setShowUploadModal(false), 1500);
     } catch (err) {
-      setUploadStatus({ success: false, message: 'Upload failed. Check file size (max 10MB).' });
+      setUploadStatus({ success: false, message: language === 'ro' ? 'Eroare încărcare. Verifică mărimea (max 10MB).' : 'Upload failed. Check file size (max 10MB).' });
     }
   };
 
   const handleDeleteDocument = async (id) => {
-    if (!window.confirm("Delete this document forever?")) return;
+    if (!window.confirm(t('confirm_delete'))) return;
     try {
       await documentsService.deleteDocument(id);
       fetchDocuments();
@@ -167,7 +169,7 @@ export default function Documents() {
       setEmailStatus({ success: true, message: res.data.message });
       setTimeout(() => setShowEmailModal(false), 2000);
     } catch (err) {
-      setEmailStatus({ success: false, message: 'Failed to send group email.' });
+      setEmailStatus({ success: false, message: language === 'ro' ? 'Trimiterea email-ului a eșuat.' : 'Failed to send group email.' });
     }
   };
 
@@ -176,10 +178,10 @@ export default function Documents() {
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
-            Documents & Workflow
+            {t('doc_title')}
           </h1>
           <p className="text-slate-500 font-bold text-sm uppercase tracking-widest flex items-center gap-2">
-            <Shield size={16} className="text-blue-600" /> Secure Academic Records Management
+            <Shield size={16} className="text-blue-600" /> {t('doc_subtitle')}
           </p>
         </div>
         
@@ -189,14 +191,14 @@ export default function Documents() {
             className="group bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all duration-300 flex items-center gap-3"
           >
             <Mail className="group-hover:scale-110 transition-transform" size={18} />
-            <span>Group Email</span>
+            <span>{t('group_email')}</span>
           </button>
           <button 
             onClick={() => setShowUploadModal(true)}
             className="group bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-3"
           >
             <Plus className="group-hover:rotate-90 transition-transform duration-500" size={18} />
-            <span>Upload New</span>
+            <span>{t('upload_new')}</span>
           </button>
         </div>
       </header>
@@ -207,22 +209,22 @@ export default function Documents() {
           <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
             <Filter size={20} />
           </div>
-          <h3 className="text-lg font-black text-slate-900">Advanced Filter Engine</h3>
+          <h3 className="text-lg font-black text-slate-900">{t('advanced_filter')}</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
-          <FilterInput label="Document Type" placeholder="e.g. Request" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})} />
-          <FilterInput label="Author Name" placeholder="e.g. Popescu" value={filters.authorKeyword} onChange={e => setFilters({...filters, authorKeyword: e.target.value})} />
-          <FilterInput label="Start Date" type="date" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} />
-          <FilterInput label="End Date" type="date" value={filters.endDate} onChange={e => setFilters({...filters, endDate: e.target.value})} />
+          <FilterInput label={t('th_doc_type')} placeholder="e.g. Request" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})} />
+          <FilterInput label={t('th_student')} placeholder="e.g. Popescu" value={filters.authorKeyword} onChange={e => setFilters({...filters, authorKeyword: e.target.value})} />
+          <FilterInput label={language === 'ro' ? 'Dată Început' : 'Start Date'} type="date" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} />
+          <FilterInput label={language === 'ro' ? 'Dată Sfârșit' : 'End Date'} type="date" value={filters.endDate} onChange={e => setFilters({...filters, endDate: e.target.value})} />
           
           <div className="space-y-2">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Keywords</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Cuvinte Cheie' : 'Keywords'}</label>
             <div className="relative group">
               <input 
                 ref={searchRef}
                 type="text" 
-                placeholder="Search content..." 
+                placeholder={t('search')} 
                 value={filters.contentKeyword} 
                 onChange={e => setFilters({...filters, contentKeyword: e.target.value})}
                 className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl p-4 text-sm font-bold transition-all outline-none"
@@ -237,7 +239,7 @@ export default function Documents() {
             onClick={fetchDocuments}
             className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-slate-200"
           >
-            Apply Filters
+            {t('apply')}
           </button>
         </div>
       </div>
@@ -248,19 +250,19 @@ export default function Documents() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50">
-                <TableHead label="Document Type" />
-                <TableHead label="Title" />
-                <TableHead label="Author / Flow" />
-                <TableHead label="Created" />
-                <TableHead label="Status" />
-                <TableHead label="Actions" />
+                <TableHead label={t('th_doc_type')} />
+                <TableHead label={t('th_title')} />
+                <TableHead label={t('th_author_flow')} />
+                <TableHead label={t('th_created')} />
+                <TableHead label={t('th_status')} />
+                <TableHead label={t('th_actions')} />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr><td colSpan="6" className="py-20 text-center"><LoadingSpinner /></td></tr>
               ) : documents.length === 0 ? (
-                <tr><td colSpan="6" className="py-20 text-center text-slate-400 font-bold italic">No records matching your search criteria.</td></tr>
+                <tr><td colSpan="6" className="py-20 text-center text-slate-400 font-bold italic">{language === 'ro' ? 'Niciun document găsit.' : 'No records matching your search criteria.'}</td></tr>
               ) : documents.map((row) => (
                 <tr key={row.id} className="group hover:bg-blue-50/30 transition-colors">
                   <td className="px-8 py-6">
@@ -286,7 +288,7 @@ export default function Documents() {
                     </div>
                   </td>
                   <td className="px-8 py-6 text-sm font-bold text-slate-500">
-                    {new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(row.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ro-RO', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td className="px-8 py-6">
                     <StatusBadge status={row.status} />
@@ -318,76 +320,76 @@ export default function Documents() {
 
       {/* Modals */}
       {showUploadModal && (
-        <Modal title="Secure Document Upload" onClose={() => setShowUploadModal(false)}>
+        <Modal title={t('modal_upload_title')} onClose={() => setShowUploadModal(false)}>
            <form onSubmit={handleUploadDocument} className="space-y-6">
               {uploadStatus && <StatusAlert status={uploadStatus} />}
-              <ModalInput label="Internal Title" placeholder="e.g. Transcript Request - 2026" value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} />
-              <ModalInput label="Classification" placeholder="e.g. REQUEST" value={uploadForm.type} onChange={e => setUploadForm({...uploadForm, type: e.target.value})} />
+              <ModalInput label={language === 'ro' ? 'Titlu Intern' : 'Internal Title'} placeholder="e.g. Transcript Request - 2026" value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} />
+              <ModalInput label={language === 'ro' ? 'Clasificare' : 'Classification'} placeholder="e.g. REQUEST" value={uploadForm.type} onChange={e => setUploadForm({...uploadForm, type: e.target.value})} />
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Select File Asset</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{language === 'ro' ? 'Selectează Fișier' : 'Select File Asset'}</label>
                 <div className="border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer relative">
                   <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setUploadFile(e.target.files[0])} />
                   <FilePlus className="mx-auto text-slate-300 mb-2" size={32} />
-                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{uploadFile ? uploadFile.name : 'Click or Drag File'}</p>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{uploadFile ? uploadFile.name : (language === 'ro' ? 'Click sau Drag Fișier' : 'Click or Drag File')}</p>
                   <p className="text-[9px] text-slate-400 mt-2">PDF, DOCX, XLSX MAX 10MB</p>
                 </div>
               </div>
               <div className="flex gap-4 pt-4">
-                 <button type="button" onClick={() => setShowUploadModal(false)} className="flex-1 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">Cancel</button>
-                 <button type="submit" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">Start Upload</button>
+                 <button type="button" onClick={() => setShowUploadModal(false)} className="flex-1 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">{t('cancel')}</button>
+                 <button type="submit" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">{language === 'ro' ? 'Începe Încărcarea' : 'Start Upload'}</button>
               </div>
            </form>
         </Modal>
       )}
 
       {showEmailModal && (
-        <Modal title="Institution Communications" onClose={() => setShowEmailModal(false)}>
+        <Modal title={t('modal_email_title')} onClose={() => setShowEmailModal(false)}>
           <form onSubmit={handleSendEmail} className="space-y-6">
             {emailStatus && <StatusAlert status={emailStatus} />}
             <div className="flex bg-slate-100 p-1 rounded-2xl">
-              <button type="button" onClick={() => setEmailForm({...emailForm, targetType: 'FORMATION', groupId: ''})} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${emailForm.targetType === 'FORMATION' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>Study Formation</button>
-              <button type="button" onClick={() => setEmailForm({...emailForm, targetType: 'GROUP', groupId: ''})} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${emailForm.targetType === 'GROUP' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>User Group</button>
+              <button type="button" onClick={() => setEmailForm({...emailForm, targetType: 'FORMATION', groupId: ''})} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${emailForm.targetType === 'FORMATION' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>{language === 'ro' ? 'Formațiune Studiu' : 'Study Formation'}</button>
+              <button type="button" onClick={() => setEmailForm({...emailForm, targetType: 'GROUP', groupId: ''})} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${emailForm.targetType === 'GROUP' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>{language === 'ro' ? 'Grup Utilizatori' : 'User Group'}</button>
             </div>
             
             <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Target Recipient</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Selectează Destinatar' : 'Select Target Recipient'}</label>
               <Select
                 options={emailForm.targetType === 'FORMATION' ? studyFormations.map(f => ({ value: f.id, label: f.name })) : customGroups.map(g => ({ value: g.id, label: g.name }))}
                 value={emailForm.groupId ? { value: emailForm.groupId, label: (emailForm.targetType === 'FORMATION' ? studyFormations : customGroups).find(x => x.id === emailForm.groupId)?.name } : null}
                 onChange={opt => setEmailForm({...emailForm, groupId: opt?.value || ''})}
                 styles={customSelectStyles}
-                placeholder="-- Select Group --"
+                placeholder={language === 'ro' ? '-- Selectează Grup --' : "-- Select Group --"}
               />
             </div>
 
-            <ModalInput label="Subject Line" placeholder="Internal communication subject" value={emailForm.subject} onChange={e => setEmailForm({...emailForm, subject: e.target.value})} />
+            <ModalInput label={language === 'ro' ? 'Subiect' : 'Subject Line'} placeholder="Internal communication subject" value={emailForm.subject} onChange={e => setEmailForm({...emailForm, subject: e.target.value})} />
             
             <div className="space-y-2">
-               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Message Body</label>
+               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Conținut Mesaj' : 'Message Body'}</label>
                <textarea rows="5" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl p-4 text-sm font-bold transition-all outline-none" value={emailForm.body} onChange={e => setEmailForm({...emailForm, body: e.target.value})} />
             </div>
 
             <button type="submit" className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-black transition-all flex items-center justify-center gap-3">
-              <Send size={16} /> Broadcast Message
+              <Send size={16} /> {language === 'ro' ? 'Trimite Mesaj' : 'Broadcast Message'}
             </button>
           </form>
         </Modal>
       )}
 
       {showForwardModal && (
-        <Modal title="Workflow Redirection" onClose={() => setShowForwardModal(false)}>
+        <Modal title={t('modal_forward_title')} onClose={() => setShowForwardModal(false)}>
            <form onSubmit={handleForwardDocument} className="space-y-8">
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assign to Agent</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Atribuie unui Agent' : 'Assign to Agent'}</label>
                 <Select
                   options={systemUsers.map(u => ({ value: u.id, label: `${u.full_name} (${u.username})` }))}
                   value={forwardUserId ? { value: forwardUserId, label: systemUsers.find(u => u.id === forwardUserId)?.full_name } : null}
                   onChange={opt => setForwardUserId(opt?.value || '')}
                   styles={customSelectStyles}
-                  placeholder="-- Search Personnel --"
+                  placeholder={language === 'ro' ? '-- Căutare Personal --' : "-- Search Personnel --"}
                 />
               </div>
-              <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">Update Assignment</button>
+              <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">{language === 'ro' ? 'Actualizează Atribuirea' : 'Update Assignment'}</button>
            </form>
         </Modal>
       )}
@@ -472,16 +474,17 @@ function ModalInput({ label, ...props }) {
 }
 
 function StatusAlert({ status }) {
+  const { t, language } = useLanguage();
   if (status.loading) return (
     <div className="bg-blue-50 text-blue-600 p-4 rounded-2xl flex items-center gap-3 animate-pulse">
-       <Clock size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">Processing request...</span>
+       <Clock size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">{language === 'ro' ? 'Se procesează cererea...' : 'Processing request...'}</span>
     </div>
   );
   return (
     <div className={`p-4 rounded-2xl flex items-start gap-3 ${status.success ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
        {status.success ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
        <div className="flex-1">
-          <p className="text-[10px] font-black uppercase tracking-widest">{status.success ? 'Success' : 'Error'}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest">{status.success ? t('success') : t('error')}</p>
           <p className="text-xs font-bold mt-1 leading-relaxed">{status.message}</p>
        </div>
     </div>
@@ -489,10 +492,11 @@ function StatusAlert({ status }) {
 }
 
 function LoadingSpinner() {
+  const { language } = useLanguage();
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full" />
-      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retrieving Academic Assets</span>
+      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{language === 'ro' ? 'Preluare Active Academice' : 'Retrieving Academic Assets'}</span>
     </div>
   );
 }

@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { Activity, Shield, Users, Mail, Database, Terminal, Plus, Trash2, Edit2, X, Check, Save } from 'lucide-react';
 import { auditService, adminService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function AuditLogs() {
+  const { t, language } = useLanguage();
   const [adminTab, setAdminTab] = useState('audit');
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -56,10 +58,10 @@ export default function AuditLogs() {
         cronExpression: backupConfig.cron_expression,
         enabled: backupConfig.enabled
       });
-      setRollbackStatus({ success: true, message: 'Backup schedule updated!' });
+      setRollbackStatus({ success: true, message: language === 'ro' ? 'Programare backup actualizată!' : 'Backup schedule updated!' });
       setTimeout(() => setRollbackStatus(null), 3000);
     } catch (err) {
-      alert('Failed to update schedule');
+      alert(language === 'ro' ? 'Eroare la actualizarea programării' : 'Failed to update schedule');
     }
   };
 
@@ -125,7 +127,7 @@ export default function AuditLogs() {
       await adminService.updateUserRole(userId, roleId);
       fetchUsers();
     } catch (err) {
-      alert('Failed to update role');
+      alert(language === 'ro' ? 'Eroare la actualizarea rolului' : 'Failed to update role');
     }
   };
 
@@ -144,8 +146,8 @@ export default function AuditLogs() {
   const handleRollback = async (log) => {
     const isInsert = log.action_type === 'INSERT';
     const msg = isInsert 
-      ? `Are you sure you want to UNDO this creation? This will DELETE record ${log.entity_id} from ${log.entity_type}.`
-      : `Are you sure you want to rollback this ${log.entity_type} UPDATE?`;
+      ? (language === 'ro' ? `Sigur doriți să ANULAȚI această creare? Aceasta va ȘTERGE înregistrarea ${log.entity_id} din ${log.entity_type}.` : `Are you sure you want to UNDO this creation? This will DELETE record ${log.entity_id} from ${log.entity_type}.`)
+      : (language === 'ro' ? `Sigur doriți să reveniți asupra acestei ACTUALIZĂRI ${log.entity_type}?` : `Are you sure you want to rollback this ${log.entity_type} UPDATE?`);
 
     if (!window.confirm(msg)) return;
     
@@ -155,7 +157,7 @@ export default function AuditLogs() {
       fetchAuditLogs(); 
       setTimeout(() => setRollbackStatus(null), 3000);
     } catch (err) {
-      setRollbackStatus({ success: false, message: err.response?.data?.message || 'Rollback failed' });
+      setRollbackStatus({ success: false, message: err.response?.data?.message || (language === 'ro' ? 'Revenirea a eșuat' : 'Rollback failed') });
       setTimeout(() => setRollbackStatus(null), 3000);
     }
   };
@@ -165,10 +167,10 @@ export default function AuditLogs() {
     try {
       await adminService.createBackup();
       fetchBackups();
-      setRollbackStatus({ success: true, message: 'Database snapshot created successfully!' });
+      setRollbackStatus({ success: true, message: language === 'ro' ? 'Instantaneu baza de date creat cu succes!' : 'Database snapshot created successfully!' });
     } catch (err) {
       console.error("Backup trigger failed:", err);
-      setRollbackStatus({ success: false, message: 'Failed to create snapshot' });
+      setRollbackStatus({ success: false, message: language === 'ro' ? 'Eroare la crearea instantaneului' : 'Failed to create snapshot' });
     } finally {
       setLoading(false);
       setTimeout(() => setRollbackStatus(null), 3000);
@@ -176,15 +178,15 @@ export default function AuditLogs() {
   };
 
   const handleRestoreBackup = async (filename) => {
-    if (!window.confirm(`⚠️ CAUTION: This will overwrite ALL current data with the contents of ${filename}. Proceed?`)) return;
+    if (!window.confirm(language === 'ro' ? `⚠️ ATENȚIE: Aceasta va suprascrie TOATE datele curente cu conținutul din ${filename}. Continuați?` : `⚠️ CAUTION: This will overwrite ALL current data with the contents of ${filename}. Proceed?`)) return;
     
     setLoading(true);
     try {
       await adminService.restoreBackup(filename);
-      setRollbackStatus({ success: true, message: 'Database RESTORED successfully!' });
+      setRollbackStatus({ success: true, message: language === 'ro' ? 'Baza de date RESTAURATĂ cu succes!' : 'Database RESTORED successfully!' });
       fetchAuditLogs();
     } catch (err) {
-      setRollbackStatus({ success: false, message: 'Restoration failed: ' + (err.response?.data?.message || err.message) });
+      setRollbackStatus({ success: false, message: (language === 'ro' ? 'Restaurarea a eșuat: ' : 'Restoration failed: ') + (err.response?.data?.message || err.message) });
     } finally {
       setLoading(false);
       setTimeout(() => setRollbackStatus(null), 5000);
@@ -202,7 +204,7 @@ export default function AuditLogs() {
       link.click();
       link.remove();
     } catch (err) {
-      alert('Failed to download backup: ' + (err.response?.data?.message || err.message));
+      alert((language === 'ro' ? 'Eroare la descărcarea backup-ului: ' : 'Failed to download backup: ') + (err.response?.data?.message || err.message));
     }
   };
 
@@ -218,17 +220,17 @@ export default function AuditLogs() {
       setShowUserModal(false);
       fetchUsers();
     } catch (err) {
-      alert('Failed to save user');
+      alert(language === 'ro' ? 'Eroare la salvarea utilizatorului' : 'Failed to save user');
     }
   };
 
   const handleDeleteUser = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this user account?')) return;
+    if (!window.confirm(language === 'ro' ? 'Sigur doriți să ștergeți acest cont de utilizator?' : 'Are you sure you want to delete this user account?')) return;
     try {
       await adminService.deleteUser(id);
       fetchUsers();
     } catch (err) {
-      alert('Failed to delete user');
+      alert(language === 'ro' ? 'Eroare la ștergerea utilizatorului' : 'Failed to delete user');
     }
   };
 
@@ -244,17 +246,17 @@ export default function AuditLogs() {
       setShowRoleModal(false);
       fetchRoles();
     } catch (err) {
-      alert('Failed to save role');
+      alert(language === 'ro' ? 'Eroare la salvarea rolului' : 'Failed to save role');
     }
   };
 
   const handleDeleteRole = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this role?')) return;
+    if (!window.confirm(language === 'ro' ? 'Sigur doriți să ștergeți acest rol?' : 'Are you sure you want to delete this role?')) return;
     try {
       await adminService.deleteRole(id);
       fetchRoles();
     } catch (err) {
-      alert('Failed to delete role');
+      alert(language === 'ro' ? 'Eroare la ștergerea rolului' : 'Failed to delete role');
     }
   };
 
@@ -264,13 +266,13 @@ export default function AuditLogs() {
         <div className="flex justify-between items-end">
             <div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    <Shield className="text-blue-600" size={32} /> Administration & Audit
+                    <Shield className="text-blue-600" size={32} /> {t('admin_title')}
                 </h2>
-                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-1">System Governance & Traceability Engine</p>
+                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-1">{t('admin_subtitle')}</p>
             </div>
             {rollbackStatus && (
                 <div className={`px-4 py-2 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 ${rollbackStatus.success ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
-                    <span className="font-black text-xs">{rollbackStatus.success ? 'SYSTEM OK:' : 'SYSTEM ALERT:'}</span>
+                    <span className="font-black text-xs">{rollbackStatus.success ? (language === 'ro' ? 'SISTEM OK:' : 'SYSTEM OK:') : (language === 'ro' ? 'ALERTA SISTEM:' : 'SYSTEM ALERT:')}</span>
                     <span className="text-xs font-bold">{rollbackStatus.message}</span>
                 </div>
             )}
@@ -279,11 +281,11 @@ export default function AuditLogs() {
         {/* Navigation Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
             {[
-                { id: 'audit', label: 'Audit Logs', icon: Activity },
-                { id: 'users', label: 'Users & Roles', icon: Users },
-                { id: 'emails', label: 'Notifications', icon: Mail },
-                { id: 'queries', label: 'DB Monitor', icon: Terminal },
-                { id: 'backups', label: 'Recovery', icon: Database },
+                { id: 'audit', label: language === 'ro' ? 'Registre Audit' : 'Audit Logs', icon: Activity },
+                { id: 'users', label: language === 'ro' ? 'Utilizatori și Roluri' : 'Users & Roles', icon: Users },
+                { id: 'emails', label: language === 'ro' ? 'Notificări' : 'Notifications', icon: Mail },
+                { id: 'queries', label: language === 'ro' ? 'Monitor DB' : 'DB Monitor', icon: Terminal },
+                { id: 'backups', label: language === 'ro' ? 'Recuperare' : 'Recovery', icon: Database },
             ].map(t => (
                 <button 
                     key={t.id}
@@ -301,20 +303,20 @@ export default function AuditLogs() {
             {adminTab === 'audit' && (
                 <div className="space-y-6">
                     <div className="flex items-center justify-between px-2">
-                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Operations Traceability Ledger</h3>
-                        <button onClick={fetchAuditLogs} className="text-blue-600 font-black text-[10px] uppercase">Refresh Logs</button>
+                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Registru Trasabilitate Operațiuni' : 'Operations Traceability Ledger'}</h3>
+                        <button onClick={fetchAuditLogs} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh Logs'}</button>
                     </div>
                     <div className="overflow-x-auto rounded-2xl border border-slate-100">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
                             <thead className="bg-slate-50/50">
-                                <tr>{['Timestamp', 'Identity', 'Operation', 'Module / Entity', 'Snapshots', 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                <tr>{[language === 'ro' ? 'Marcaj Timp' : 'Timestamp', language === 'ro' ? 'Identitate' : 'Identity', language === 'ro' ? 'Operațiune' : 'Operation', language === 'ro' ? 'Modul / Entitate' : 'Module / Entity', language === 'ro' ? 'Instantanee' : 'Snapshots', language === 'ro' ? 'Acțiune' : 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-50">
                                 {auditLogs.map((row) => (
                                     <tr key={row.id} className="hover:bg-slate-50/50 transition-all">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-black text-slate-700 text-xs">{new Date(row.occurred_at).toLocaleDateString()}</div>
-                                            <div className="text-[10px] font-bold text-slate-400">{new Date(row.occurred_at).toLocaleTimeString()}</div>
+                                            <div className="font-black text-slate-700 text-xs">{new Date(row.occurred_at).toLocaleDateString(language === 'en' ? 'en-US' : 'ro-RO')}</div>
+                                            <div className="text-[10px] font-bold text-slate-400">{new Date(row.occurred_at).toLocaleTimeString(language === 'en' ? 'en-US' : 'ro-RO')}</div>
                                         </td>
                                         <td className="px-6 py-4 font-bold text-slate-600 text-xs">{row.actor_name || 'System'}</td>
                                         <td className="px-6 py-4">
@@ -330,8 +332,8 @@ export default function AuditLogs() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2">
-                                                {row.before_snapshot_json && <span className="bg-red-50 text-red-500 p-1.5 rounded-lg font-black text-[8px] uppercase">Before</span>}
-                                                {row.after_snapshot_json && <span className="bg-emerald-50 text-emerald-500 p-1.5 rounded-lg font-black text-[8px] uppercase">After</span>}
+                                                {row.before_snapshot_json && <span className="bg-red-50 text-red-500 p-1.5 rounded-lg font-black text-[8px] uppercase">{language === 'ro' ? 'Înainte' : 'Before'}</span>}
+                                                {row.after_snapshot_json && <span className="bg-emerald-50 text-emerald-500 p-1.5 rounded-lg font-black text-[8px] uppercase">{language === 'ro' ? 'După' : 'After'}</span>}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -353,8 +355,8 @@ export default function AuditLogs() {
                         {/* Roles Section */}
                         <div className="lg:col-span-4 space-y-4">
                             <div className="flex items-center justify-between px-2">
-                                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Permission Profiles</h3>
-                                <button onClick={() => { setEditingRole(null); setRoleForm({ code: '', name: '', description: '' }); setShowRoleModal(true); }} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Plus size={14} /> Add Role</button>
+                                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Profiluri Permisiuni' : 'Permission Profiles'}</h3>
+                                <button onClick={() => { setEditingRole(null); setRoleForm({ code: '', name: '', description: '' }); setShowRoleModal(true); }} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Plus size={14} /> {language === 'ro' ? 'Adaugă Rol' : 'Add Role'}</button>
                             </div>
                             <div className="space-y-2">
                                 {roles.map(role => (
@@ -375,13 +377,13 @@ export default function AuditLogs() {
                         {/* Users Section */}
                         <div className="lg:col-span-8 space-y-4">
                              <div className="flex items-center justify-between px-2">
-                                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Active Accounts</h3>
-                                <button onClick={() => { setEditingUser(null); setUserForm({ sso_subject: '', username: '', email: '', full_name: '', account_status: 'ACTIVE' }); setShowUserModal(true); }} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Plus size={14} /> New User</button>
+                                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Conturi Active' : 'Active Accounts'}</h3>
+                                <button onClick={() => { setEditingUser(null); setUserForm({ sso_subject: '', username: '', email: '', full_name: '', account_status: 'ACTIVE' }); setShowUserModal(true); }} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Plus size={14} /> {language === 'ro' ? 'Utilizator Nou' : 'New User'}</button>
                             </div>
                             <div className="overflow-x-auto rounded-2xl border border-slate-100">
                                 <table className="min-w-full divide-y divide-slate-100 text-sm">
                                     <thead className="bg-slate-50/50">
-                                        <tr>{['User Identity', 'SSO Context', 'Status', 'Assigned Role', 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                        <tr>{[language === 'ro' ? 'Identitate Utilizator' : 'User Identity', language === 'ro' ? 'Context SSO' : 'SSO Context', 'Status', language === 'ro' ? 'Rol Atribuit' : 'Assigned Role', language === 'ro' ? 'Acțiune' : 'Action'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-slate-50">
                                         {users.map(u => (
@@ -402,7 +404,7 @@ export default function AuditLogs() {
                                                         options={roles.map(r => ({ value: r.id, label: r.name }))}
                                                         value={u.role_id ? { value: u.role_id, label: roles.find(r => r.id === u.role_id)?.name } : null}
                                                         onChange={(option) => handleRoleChange(u.id, option ? option.value : '')}
-                                                        placeholder="-- Role --"
+                                                        placeholder={language === 'ro' ? '-- Rol --' : "-- Role --"}
                                                         styles={{
                                                             control: (base) => ({
                                                                 ...base,
@@ -435,21 +437,21 @@ export default function AuditLogs() {
             {adminTab === 'emails' && (
                 <div className="space-y-6">
                     <div className="flex items-center justify-between px-2">
-                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Communication Logs</h3>
-                        <button onClick={fetchEmailLogs} className="text-blue-600 font-black text-[10px] uppercase">Refresh</button>
+                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Registre Comunicare' : 'Communication Logs'}</h3>
+                        <button onClick={fetchEmailLogs} className="text-blue-600 font-black text-[10px] uppercase">{language === 'ro' ? 'Reîmprospătare' : 'Refresh'}</button>
                     </div>
                     <div className="overflow-x-auto rounded-2xl border border-slate-100">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
                             <thead className="bg-slate-50/50">
-                                <tr>{['Sent At', 'Sender', 'Target', 'Subject', 'Status'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                <tr>{[language === 'ro' ? 'Trimis la' : 'Sent At', language === 'ro' ? 'Expeditor' : 'Sender', language === 'ro' ? 'Țintă' : 'Target', language === 'ro' ? 'Subiect' : 'Subject', 'Status'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-400 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-50">
                                 {emailLogs.map(log => (
                                     <tr key={log.id} className="hover:bg-slate-50/50 transition-all">
-                                        <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-slate-400">{new Date(log.sent_at).toLocaleString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-slate-400">{new Date(log.sent_at).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}</td>
                                         <td className="px-6 py-4 font-black text-slate-700 text-xs">{log.sent_by || 'System'}</td>
                                         <td className="px-6 py-4">
-                                            <div className="font-black text-blue-600 text-[10px] uppercase">{log.group_name || 'Academic Formation'}</div>
+                                            <div className="font-black text-blue-600 text-[10px] uppercase">{log.group_name || (language === 'ro' ? 'Formațiune Academică' : 'Academic Formation')}</div>
                                             <div className="text-[9px] font-bold text-slate-400 truncate max-w-[150px]" title={log.recipients}>{log.recipients}</div>
                                         </td>
                                         <td className="px-6 py-4 font-bold text-slate-600 text-xs">{log.subject}</td>
@@ -467,13 +469,13 @@ export default function AuditLogs() {
             {adminTab === 'queries' && (
                 <div className="space-y-6">
                     <div className="flex items-center justify-between px-2">
-                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Live Database Activity</h3>
-                        <button onClick={fetchQueries} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Activity size={14} /> Refresh Monitor</button>
+                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Activitate Live Bază de Date' : 'Live Database Activity'}</h3>
+                        <button onClick={fetchQueries} className="text-blue-600 font-black text-[10px] uppercase flex items-center gap-1"><Activity size={14} /> {language === 'ro' ? 'Reîmprospătare Monitor' : 'Refresh Monitor'}</button>
                     </div>
                     <div className="overflow-x-auto rounded-2xl border border-slate-100 bg-slate-900">
                         <table className="min-w-full divide-y divide-slate-800 text-sm">
                             <thead className="bg-slate-800/50">
-                                <tr>{['PID', 'User', 'State', 'Query Context'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-500 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
+                                <tr>{['PID', 'User', language === 'ro' ? 'Stare' : 'State', language === 'ro' ? 'Context Interogare' : 'Query Context'].map(h => <th key={h} className="px-6 py-4 text-left font-black text-slate-500 uppercase tracking-widest text-[9px]">{h}</th>)}</tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
                                 {queries.map(q => (
@@ -498,11 +500,11 @@ export default function AuditLogs() {
                         {/* Manual Backup Card */}
                         <div className="bg-slate-900 rounded-3xl p-8 flex flex-col justify-between shadow-2xl shadow-slate-200 border border-slate-800">
                             <div>
-                                <h3 className="text-xl font-black text-white mb-2">Manual Snapshot</h3>
-                                <p className="text-slate-400 text-[10px] font-black leading-relaxed uppercase tracking-widest mb-6">Immediate point-in-time recovery system. Trigger an instant encrypted database snapshot.</p>
+                                <h3 className="text-xl font-black text-white mb-2">{language === 'ro' ? 'Instantaneu Manual' : 'Manual Snapshot'}</h3>
+                                <p className="text-slate-400 text-[10px] font-black leading-relaxed uppercase tracking-widest mb-6">{language === 'ro' ? 'Sistem de recuperare imediată. Declanșați un instantaneu criptat instantaneu al bazei de date.' : 'Immediate point-in-time recovery system. Trigger an instant encrypted database snapshot.'}</p>
                             </div>
                             <button onClick={handleCreateBackup} disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition-all flex items-center justify-center gap-3">
-                                <Database size={20} /> Create Manual Snapshot
+                                <Database size={20} /> {language === 'ro' ? 'Crează Instantaneu Manual' : 'Create Manual Snapshot'}
                             </button>
                         </div>
 
@@ -511,18 +513,18 @@ export default function AuditLogs() {
                             <form onSubmit={handleUpdateBackupConfig} className="space-y-6">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <h3 className="text-xl font-black text-slate-900 mb-1">Timed Automation</h3>
-                                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Scheduled CRON-based Backup Protocol</p>
+                                        <h3 className="text-xl font-black text-slate-900 mb-1">{language === 'ro' ? 'Automatizare Temporizată' : 'Timed Automation'}</h3>
+                                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{language === 'ro' ? 'Protocol de Backup programat bazat pe CRON' : 'Scheduled CRON-based Backup Protocol'}</p>
                                     </div>
                                     <label className={`relative inline-flex items-center cursor-pointer p-1 rounded-xl transition-all ${backupConfig.enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
                                         <input type="checkbox" className="hidden" checked={backupConfig.enabled} onChange={e => setBackupConfig({...backupConfig, enabled: e.target.checked})} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest px-2">{backupConfig.enabled ? 'Enabled' : 'Disabled'}</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest px-2">{backupConfig.enabled ? (language === 'ro' ? 'Activat' : 'Enabled') : (language === 'ro' ? 'Dezactivat' : 'Disabled')}</span>
                                     </label>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">CRON Expression</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Expresie CRON' : 'CRON Expression'}</label>
                                         <div className="flex gap-2">
                                             <input 
                                                 required 
@@ -532,12 +534,12 @@ export default function AuditLogs() {
                                                 className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" 
                                                 placeholder="e.g. 0 0 * * *" 
                                             />
-                                            <button type="submit" className="bg-slate-900 text-white px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all">Update</button>
+                                            <button type="submit" className="bg-slate-900 text-white px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all">{language === 'ro' ? 'Actualizare' : 'Update'}</button>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <button type="button" onClick={() => setBackupConfig({...backupConfig, cron_expression: '0 0 * * *'})} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-100 transition-all">Midnight Daily</button>
-                                        <button type="button" onClick={() => setBackupConfig({...backupConfig, cron_expression: '0 0 * * 0'})} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-100 transition-all">Weekly (Sun)</button>
+                                        <button type="button" onClick={() => setBackupConfig({...backupConfig, cron_expression: '0 0 * * *'})} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-100 transition-all">{language === 'ro' ? 'Zilnic la Miezul Nopții' : 'Midnight Daily'}</button>
+                                        <button type="button" onClick={() => setBackupConfig({...backupConfig, cron_expression: '0 0 * * 0'})} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-100 transition-all">{language === 'ro' ? 'Săptămânal (Dum)' : 'Weekly (Sun)'}</button>
                                     </div>
                                 </div>
                             </form>
@@ -545,7 +547,7 @@ export default function AuditLogs() {
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px] px-2">Encryption-Verified Snapshots</h3>
+                        <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px] px-2">{language === 'ro' ? 'Instantanee Verificate prin Criptare' : 'Encryption-Verified Snapshots'}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {backups.map(b => (
                                 <div key={b.filename} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all group">
@@ -554,15 +556,15 @@ export default function AuditLogs() {
                                             <Database size={24} />
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-[10px] font-black text-slate-300 uppercase">Size</div>
+                                            <div className="text-[10px] font-black text-slate-300 uppercase">{language === 'ro' ? 'Mărime' : 'Size'}</div>
                                             <div className="text-xs font-black text-slate-600">{(b.size / 1024).toFixed(2)} KB</div>
                                         </div>
                                     </div>
                                     <div className="font-mono text-[10px] font-black text-slate-800 mb-1 truncate" title={b.filename}>{b.filename}</div>
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-6">{new Date(b.createdAt).toLocaleString()}</div>
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-6">{new Date(b.createdAt).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}</div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => handleDownloadBackup(b.filename)} className="flex-1 bg-slate-50 text-slate-600 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-100 transition-all">Download</button>
-                                        <button onClick={() => handleRestoreBackup(b.filename)} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">Restore</button>
+                                        <button onClick={() => handleDownloadBackup(b.filename)} className="flex-1 bg-slate-50 text-slate-600 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-100 transition-all">{language === 'ro' ? 'Descărcare' : 'Download'}</button>
+                                        <button onClick={() => handleRestoreBackup(b.filename)} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">{language === 'ro' ? 'Restaurare' : 'Restore'}</button>
                                     </div>
                                 </div>
                             ))}
@@ -579,47 +581,47 @@ export default function AuditLogs() {
               <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
                   <div className="flex justify-between items-center mb-6">
                       <div>
-                          <h3 className="text-xl font-black text-slate-900">{editingUser ? 'Account Modification' : 'New Account Provisioning'}</h3>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Identity Management Protocol</p>
+                          <h3 className="text-xl font-black text-slate-900">{editingUser ? (language === 'ro' ? 'Modificare Cont' : 'Account Modification') : (language === 'ro' ? 'Provizionare Cont Nou' : 'New Account Provisioning')}</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{language === 'ro' ? 'Protocol Management Identitate' : 'Identity Management Protocol'}</p>
                       </div>
                       <button onClick={() => setShowUserModal(false)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
                   </div>
                   <form onSubmit={handleSaveUser} className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Nume Complet' : 'Full Name'}</label>
                             <input required type="text" value={userForm.full_name} onChange={e => setUserForm({...userForm, full_name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Utilizator' : 'Username'}</label>
                             <input required type="text" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
                         </div>
                       </div>
                       <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Adresă Email' : 'Email Address'}</label>
                             <input required type="email" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
                       </div>
                       <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SSO Subject (Unique Identifier)</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Subiect SSO (Identificator Unic)' : 'SSO Subject (Unique Identifier)'}</label>
                             <input required type="text" value={userForm.sso_subject} onChange={e => setUserForm({...userForm, sso_subject: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" placeholder="e.g. auth0|..." />
                       </div>
                       <div className="space-y-1 pt-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Status</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Status Cont' : 'Account Status'}</label>
                             <div className="flex gap-4">
-                                <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl border cursor-pointer transition-all font-black text-[10px] uppercase tracking-widest ${userForm.account_status === 'ACTIVE' ? 'bg-emerald-50 border-emerald-500 text-emerald-600 shadow-lg shadow-emerald-50' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}">
+                                <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl border cursor-pointer transition-all font-black text-[10px] uppercase tracking-widest ${userForm.account_status === 'ACTIVE' ? 'bg-emerald-50 border-emerald-500 text-emerald-600 shadow-lg shadow-emerald-50' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
                                     <input type="radio" className="hidden" checked={userForm.account_status === 'ACTIVE'} onChange={() => setUserForm({...userForm, account_status: 'ACTIVE'})} />
-                                    {userForm.account_status === 'ACTIVE' && <Check size={14} />} Active
+                                    {userForm.account_status === 'ACTIVE' && <Check size={14} />} {language === 'ro' ? 'Activ' : 'Active'}
                                 </label>
-                                <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl border cursor-pointer transition-all font-black text-[10px] uppercase tracking-widest ${userForm.account_status === 'SUSPENDED' ? 'bg-red-50 border-red-500 text-red-600 shadow-lg shadow-red-50' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}">
+                                <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl border cursor-pointer transition-all font-black text-[10px] uppercase tracking-widest ${userForm.account_status === 'SUSPENDED' ? 'bg-red-50 border-red-500 text-red-600 shadow-lg shadow-red-50' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
                                     <input type="radio" className="hidden" checked={userForm.account_status === 'SUSPENDED'} onChange={() => setUserForm({...userForm, account_status: 'SUSPENDED'})} />
-                                    {userForm.account_status === 'SUSPENDED' && <Check size={14} />} Suspended
+                                    {userForm.account_status === 'SUSPENDED' && <Check size={14} />} {language === 'ro' ? 'Suspendat' : 'Suspended'}
                                 </label>
                             </div>
                       </div>
                       <div className="flex gap-3 pt-6">
-                          <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Cancel</button>
+                          <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">{t('cancel')}</button>
                           <button type="submit" className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2">
-                              <Save size={18} /> {editingUser ? 'Update Profile' : 'Create Account'}
+                              <Save size={18} /> {editingUser ? (language === 'ro' ? 'Actualizare Profil' : 'Update Profile') : (language === 'ro' ? 'Creare Cont' : 'Create Account')}
                           </button>
                       </div>
                   </form>
@@ -633,28 +635,28 @@ export default function AuditLogs() {
               <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
                   <div className="flex justify-between items-center mb-6">
                       <div>
-                          <h3 className="text-xl font-black text-slate-900">{editingRole ? 'Role Refinement' : 'New Profile Definition'}</h3>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Access Control Configuration</p>
+                          <h3 className="text-xl font-black text-slate-900">{editingRole ? (language === 'ro' ? 'Rafinare Rol' : 'Role Refinement') : (language === 'ro' ? 'Definire Profil Nou' : 'New Profile Definition')}</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{language === 'ro' ? 'Configurare Control Acces' : 'Access Control Configuration'}</p>
                       </div>
                       <button onClick={() => setShowRoleModal(false)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
                   </div>
                   <form onSubmit={handleSaveRole} className="space-y-4">
                       <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Role Label (Display Name)</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Etichetă Rol (Nume Afișat)' : 'Role Label (Display Name)'}</label>
                             <input required type="text" value={roleForm.name} onChange={e => setRoleForm({...roleForm, name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" placeholder="e.g. Dean" />
                       </div>
                       <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">System Code (Immutable Key)</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Cod Sistem (Cheie Imutabilă)' : 'System Code (Immutable Key)'}</label>
                             <input required type="text" value={roleForm.code} onChange={e => setRoleForm({...roleForm, code: e.target.value.toUpperCase()})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all" placeholder="E.G. DEAN_OFFICE" />
                       </div>
                       <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Responsibility Scope</label>
-                            <textarea rows="3" value={roleForm.description} onChange={e => setRoleForm({...roleForm, description: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all resize-none" placeholder="Describe the permissions and access level..."></textarea>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Scop Responsabilitate' : 'Responsibility Scope'}</label>
+                            <textarea rows="3" value={roleForm.description} onChange={e => setRoleForm({...roleForm, description: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all resize-none" placeholder={language === 'ro' ? 'Descrieți permisiunile și nivelul de acces...' : "Describe the permissions and access level..."}></textarea>
                       </div>
                       <div className="flex gap-3 pt-6">
-                          <button type="button" onClick={() => setShowRoleModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Cancel</button>
+                          <button type="button" onClick={() => setShowRoleModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">{t('cancel')}</button>
                           <button type="submit" className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2">
-                              <Save size={18} /> {editingRole ? 'Update Profile' : 'Initialize Role'}
+                              <Save size={18} /> {editingRole ? (language === 'ro' ? 'Actualizare Profil' : 'Update Profile') : (language === 'ro' ? 'Inițializare Rol' : 'Initialize Role')}
                           </button>
                       </div>
                   </form>

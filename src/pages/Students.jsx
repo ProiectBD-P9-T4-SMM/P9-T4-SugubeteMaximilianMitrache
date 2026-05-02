@@ -3,14 +3,19 @@ import Select from 'react-select';
 import { 
   Database, Plus, Search, Edit, Trash, BookOpen, X, Check, 
   MapPin, Calendar, Users, Save, ChevronRight, Layers, 
-  Download, Filter, AlertCircle, Shield, UserPlus, GraduationCap
+  Download, Filter, AlertCircle, Shield, UserPlus, GraduationCap,
+  FileBadge
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { academicService, lookupService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { generateFullTranscript } from '../utils/transcriptGenerator';
+import api from '../services/api';
 
 export default function Students() {
   const searchRef = useRef(null);
+  const { t, language } = useLanguage();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formations, setFormations] = useState([]);
@@ -97,7 +102,7 @@ export default function Students() {
 
   const handleEnrollStudent = async () => {
     if (!selectedCurriculumId || !editingStudent || !enrollmentFormationId) {
-      alert('Please complete all selections (Plan + Formation).');
+      alert(language === 'ro' ? 'Vă rugăm să completați toate selecțiile (Plan + Formațiune).' : 'Please complete all selections (Plan + Formation).');
       return;
     }
     try {
@@ -108,7 +113,7 @@ export default function Students() {
       });
       fetchStudentEnrollments(editingStudent.id);
       resetEnrollmentForm();
-    } catch (err) { alert('Enrollment error.'); }
+    } catch (err) { alert(language === 'ro' ? 'Eroare la înscriere.' : 'Enrollment error.'); }
   };
 
   const handleUpdateEnrollment = async (currId) => {
@@ -121,7 +126,7 @@ export default function Students() {
         });
         fetchStudentEnrollments(editingStudent.id);
         resetEnrollmentForm();
-    } catch (err) { alert('Update error.'); }
+    } catch (err) { alert(language === 'ro' ? 'Eroare la actualizare.' : 'Update error.'); }
   };
 
   const resetEnrollmentForm = () => {
@@ -152,11 +157,11 @@ export default function Students() {
   };
 
   const handleUnenrollStudent = async (currId) => {
-    if (!window.confirm("Remove this academic plan?")) return;
+    if (!window.confirm(language === 'ro' ? "Eliminați acest plan academic?" : "Remove this academic plan?")) return;
     try {
       await academicService.unenrollStudent(editingStudent.id, currId);
       fetchStudentEnrollments(editingStudent.id);
-    } catch (err) { alert('Error removing plan.'); }
+    } catch (err) { alert(language === 'ro' ? 'Eroare la eliminarea planului.' : 'Error removing plan.'); }
   };
 
   const activeSpec = specializations.find(s => s.id === selectedSpecId);
@@ -182,12 +187,12 @@ export default function Students() {
       if (editingStudent) await academicService.updateStudent(editingStudent.id, payload);
       else await academicService.addStudent(studentForm);
       setShowModal(false); fetchStudents();
-    } catch (err) { alert(err.response?.data?.message || 'Failed to save'); }
+    } catch (err) { alert(err.response?.data?.message || (language === 'ro' ? 'Eroare la salvare.' : 'Failed to save')); }
   };
 
   const handleDeleteStudent = async (id) => {
-    if (!window.confirm("Delete student?")) return;
-    try { await academicService.deleteStudent(id); fetchStudents(); } catch (err) { alert('Delete error.'); }
+    if (!window.confirm(t('confirm_delete'))) return;
+    try { await academicService.deleteStudent(id); fetchStudents(); } catch (err) { alert(language === 'ro' ? 'Eroare la ștergere.' : 'Delete error.'); }
   };
 
   const openEditModal = (student) => {
@@ -202,14 +207,25 @@ export default function Students() {
     setShowModal(true);
   };
 
-  const handleExportExcel = () => {
+  const handleGenerateOfficialTranscript = async () => {
+    if (!editingStudent) return;
+    try {
+        const res = await api.get(`/academic/transcript/${editingStudent.id}`);
+        if (res.data.success) {
+            await generateFullTranscript(res.data, language);
+        }
+    } catch (err) {
+        alert(language === 'ro' ? 'Eroare la generarea documentului.' : 'Error generating document.');
+    }
+  };
 
+  const handleExportExcel = () => {
     const exportData = filteredStudents.map(s => ({
-      'Matriculation No.': s.registration_number,
-      'Identity': `${s.last_name} ${s.first_name}`,
+      [language === 'ro' ? 'Nr. Matricol' : 'Matriculation No.']: s.registration_number,
+      [language === 'ro' ? 'Identitate' : 'Identity']: `${s.last_name} ${s.first_name}`,
       'Email': s.email,
       'Status': s.status,
-      'Programs': s.enrollments?.map(e => e.curriculum_name).join(', ') || 'Not Enrolled'
+      [language === 'ro' ? 'Programe' : 'Programs']: s.enrollments?.map(e => e.curriculum_name).join(', ') || (language === 'ro' ? 'Neînscris' : 'Not Enrolled')
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -228,36 +244,36 @@ export default function Students() {
     <div className="flex-1 bg-slate-50/50 min-h-screen p-8 lg:p-12 animate-in fade-in duration-500">
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Student Registry</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">{t('std_title')}</h1>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-            <Shield size={16} className="text-blue-600" /> Integrated Academic Management
+            <Shield size={16} className="text-blue-600" /> {t('std_subtitle')}
           </p>
         </div>
         
         <div className="flex flex-wrap gap-3">
           <label className="group bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all cursor-pointer flex items-center gap-3">
             <Database size={18} />
-            <span>Import</span>
+            <span>{t('upload')}</span>
             <input type="file" className="hidden" onChange={async (e) => {
                const file = e.target.files[0];
                if (!file) return;
                const reader = new FileReader();
                reader.onload = async (evt) => {
-                 const data = XLSX.utils.sheet_to_json(XLSX.read(evt.target.result, { type: 'binary' }).Sheets[XLSX.read(evt.target.result, { type: 'binary' }).SheetNames[0]]);
+                 const data = XLSX.utils.sheet_to_json(XLSX.read(evt.target.result, { type: 'binary' }).Sheets[XLSX.read(evt.target.result, { type: 'binary' }).Sheets[XLSX.read(evt.target.result, { type: 'binary' }).SheetNames[0]]]);
                  try {
                    const res = await academicService.addStudentsBulk(data);
                    alert(res.data.message); fetchStudents();
-                 } catch (err) { alert('Import failed.'); }
+                 } catch (err) { alert(language === 'ro' ? 'Import eșuat.' : 'Import failed.'); }
                };
                reader.readAsBinaryString(file);
                e.target.value = null;
             }} />
           </label>
           <button onClick={handleExportExcel} className="group bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3">
-            <Download size={18} /> Export
+            <Download size={18} /> {t('download')}
           </button>
           <button onClick={() => { setEditingStudent(null); setStudentForm({first_name:'', last_name:'', email:'', status:'ENROLLED'}); setShowModal(true); }} className="group bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center gap-3">
-            <UserPlus size={18} /> Add Student
+            <UserPlus size={18} /> {t('add_student')}
           </button>
         </div>
       </header>
@@ -268,7 +284,7 @@ export default function Students() {
           <input 
             ref={searchRef}
             type="text" 
-            placeholder="Search by name or registration number..." 
+            placeholder={language === 'ro' ? 'Caută după nume sau număr matricol...' : "Search by name or registration number..."} 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full bg-white border-none rounded-3xl p-6 pl-14 text-sm font-bold shadow-xl shadow-slate-200/50 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
@@ -277,7 +293,7 @@ export default function Students() {
         </div>
         <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-50 flex items-center justify-between">
            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Students</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('sec_active_students')}</p>
               <h4 className="text-3xl font-black text-slate-900">{filteredStudents.length}</h4>
            </div>
            <div className="bg-blue-50 text-blue-600 p-3 rounded-2xl"><Users size={24}/></div>
@@ -290,16 +306,16 @@ export default function Students() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50">
-                <TableHead label="Reg. ID" />
-                <TableHead label="Student Identity" />
-                <TableHead label="Academic Programs" />
-                <TableHead label="Status" />
-                <TableHead label="Actions" />
+                <TableHead label={t('th_reg_num')} />
+                <TableHead label={t('th_name')} />
+                <TableHead label={language === 'ro' ? 'Planuri Academice' : 'Academic Programs'} />
+                <TableHead label={t('th_status')} />
+                <TableHead label={t('th_actions')} />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan="5" className="py-20 text-center text-slate-300 animate-pulse font-black uppercase tracking-widest">Refreshing Registry...</td></tr>
+                <tr><td colSpan="5" className="py-20 text-center text-slate-300 animate-pulse font-black uppercase tracking-widest">{language === 'ro' ? 'Se reîmprospătează Registrul...' : 'Refreshing Registry...'}</td></tr>
               ) : filteredStudents.map((row) => (
                 <tr key={row.id} className="group hover:bg-blue-50/30 transition-all">
                   <td className="px-8 py-6">
@@ -316,9 +332,9 @@ export default function Students() {
                       </div>
                       <div>
                         <p className={`text-xs font-black truncate max-w-[240px] ${Number(row.plan_count) > 0 ? 'text-slate-800' : 'text-slate-300 italic'}`}>
-                          {row.enrollments?.map(e => e.curriculum_name).join(', ') || 'Awaiting Plan'}
+                          {row.enrollments?.map(e => e.curriculum_name).join(', ') || (language === 'ro' ? 'În așteptare plan' : 'Awaiting Plan')}
                         </p>
-                        {Number(row.plan_count) > 0 && <p className="text-[9px] text-blue-500 font-black uppercase mt-1">Active Enrollment</p>}
+                        {Number(row.plan_count) > 0 && <p className="text-[9px] text-blue-500 font-black uppercase mt-1">{language === 'ro' ? 'Înscriere Activă' : 'Active Enrollment'}</p>}
                       </div>
                     </div>
                   </td>
@@ -328,7 +344,7 @@ export default function Students() {
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
                        <button onClick={() => openEditModal(row)} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black hover:scale-105 transition-all shadow-lg flex items-center gap-2">
-                          View File <ChevronRight size={14} />
+                          {language === 'ro' ? 'Vezi Dosar' : 'View File'} <ChevronRight size={14} />
                        </button>
                        <button onClick={() => handleDeleteStudent(row.id)} className="p-2.5 bg-rose-50 text-rose-400 hover:bg-rose-600 hover:text-white rounded-xl transition-all"><Trash size={16} /></button>
                     </div>
@@ -350,8 +366,8 @@ export default function Students() {
                      <Users size={28} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-slate-900">{editingStudent ? 'Academic File' : 'Register Student'}</h3>
-                    {editingStudent && <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">File ID: {editingStudent.registration_number}</p>}
+                    <h3 className="text-2xl font-black text-slate-900">{editingStudent ? (language === 'ro' ? 'Dosar Academic' : 'Academic File') : t('add_student')}</h3>
+                    {editingStudent && <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">{language === 'ro' ? 'ID Dosar' : 'File ID'}: {editingStudent.registration_number}</p>}
                   </div>
                </div>
                <button onClick={() => setShowModal(false)} className="p-3 bg-white text-slate-400 hover:text-slate-900 rounded-2xl shadow-sm hover:shadow-md transition-all"><X size={24} /></button>
@@ -360,15 +376,15 @@ export default function Students() {
             <div className="flex-1 overflow-y-auto p-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
                {/* Left Column: Personal Info */}
                <div className="lg:col-span-4 space-y-10">
-                  <SectionHeader icon={Shield} title="Identity Data" color="text-blue-600" />
+                  <SectionHeader icon={Shield} title={language === 'ro' ? 'Date Identitate' : "Identity Data"} color="text-blue-600" />
                   <div className="bg-slate-50/50 p-8 rounded-[2rem] border border-slate-100 space-y-6">
                      <div className="grid grid-cols-2 gap-4">
-                        <ModalField label="Last Name" value={studentForm.last_name} onChange={e => setStudentForm({...studentForm, last_name: e.target.value})} />
-                        <ModalField label="First Name" value={studentForm.first_name} onChange={e => setStudentForm({...studentForm, first_name: e.target.value})} />
+                        <ModalField label={language === 'ro' ? 'Nume' : "Last Name"} value={studentForm.last_name} onChange={e => setStudentForm({...studentForm, last_name: e.target.value})} />
+                        <ModalField label={language === 'ro' ? 'Prenume' : "First Name"} value={studentForm.first_name} onChange={e => setStudentForm({...studentForm, first_name: e.target.value})} />
                      </div>
-                     <ModalField label="Institutional Email" value={studentForm.email} onChange={e => setStudentForm({...studentForm, email: e.target.value})} />
+                     <ModalField label={language === 'ro' ? 'Email Instituțional' : "Institutional Email"} value={studentForm.email} onChange={e => setStudentForm({...studentForm, email: e.target.value})} />
                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Lifecycle</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Ciclu Viață' : 'Current Lifecycle'}</label>
                         <Select
                           options={['ENROLLED', 'ACTIVE', 'SUSPENDED', 'GRADUATED'].map(s => ({ value: s, label: s }))}
                           value={{ value: studentForm.status, label: studentForm.status }}
@@ -379,10 +395,10 @@ export default function Students() {
                   </div>
                   <div className="bg-blue-600 p-8 rounded-[2rem] text-white shadow-2xl shadow-blue-200 relative overflow-hidden group">
                      <Layers className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-125 transition-transform duration-500" size={120} />
-                     <h5 className="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-4">Quick Summary</h5>
+                     <h5 className="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-4">{language === 'ro' ? 'Rezumat Rapid' : 'Quick Summary'}</h5>
                      <div className="flex items-center gap-4">
                         <div className="text-3xl font-black">{studentEnrollments.length}</div>
-                        <div className="text-[10px] font-bold text-blue-100 uppercase leading-tight">Assigned<br/>Study Plans</div>
+                        <div className="text-[10px] font-bold text-blue-100 uppercase leading-tight">{language === 'ro' ? 'Planuri de\nStudiu Alocate' : 'Assigned\nStudy Plans'}</div>
                      </div>
                   </div>
                </div>
@@ -390,10 +406,10 @@ export default function Students() {
                {/* Right Column: Academic Path */}
                <div className="lg:col-span-8 space-y-10">
                   <div className="flex items-center justify-between">
-                     <SectionHeader icon={Layers} title="Enrollment History" color="text-indigo-600" />
+                     <SectionHeader icon={Layers} title={language === 'ro' ? 'Istoric Înscrieri' : "Enrollment History"} color="text-indigo-600" />
                      {editingStudent && !isAddingPlan && !editingEnrollmentId && (
                         <button onClick={() => setIsAddingPlan(true)} className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center gap-2 transition-all">
-                           <Plus size={16} /> New Enrollment
+                           <Plus size={16} /> {language === 'ro' ? 'Înscriere Nouă' : 'New Enrollment'}
                         </button>
                      )}
                   </div>
@@ -404,28 +420,28 @@ export default function Students() {
                            <div className="bg-indigo-50/50 p-8 rounded-[2.5rem] border border-indigo-100 space-y-8 animate-in slide-in-from-top-4 duration-500">
                               <div className="flex justify-between items-start">
                                  <div>
-                                    <h5 className="text-xl font-black text-indigo-900">{isAddingPlan ? 'Plan Configuration' : 'Route Update'}</h5>
-                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-1">Specify curriculum and study formation</p>
+                                    <h5 className="text-xl font-black text-indigo-900">{isAddingPlan ? (language === 'ro' ? 'Configurare Plan' : 'Plan Configuration') : (language === 'ro' ? 'Actualizare Rută' : 'Route Update')}</h5>
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-1">{language === 'ro' ? 'Specificați curricula și formațiunea de studiu' : 'Specify curriculum and study formation'}</p>
                                  </div>
                                  <button onClick={resetEnrollmentForm} className="p-2 bg-white rounded-xl text-indigo-400 shadow-sm"><X size={18} /></button>
                               </div>
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                 <SelectField label="Specialization" options={specializations.map(s => ({ value: s.id, label: `${s.name} (${s.degree_level})` }))} value={selectedSpecId} onChange={opt => { setSelectedSpecId(opt?.value || ''); setSelectedCurriculumId(''); }} disabled={!!editingEnrollmentId} />
-                                 <SelectField label="Study Plan" options={filteredCurricula.map(c => ({ value: c.id, label: c.name }))} value={selectedCurriculumId} onChange={opt => setSelectedCurriculumId(opt?.value || '')} disabled={!selectedSpecId || !!editingEnrollmentId} />
+                                 <SelectField label={t('th_specialization')} options={specializations.map(s => ({ value: s.id, label: `${s.name} (${s.degree_level})` }))} value={selectedSpecId} onChange={opt => { setSelectedSpecId(opt?.value || ''); setSelectedCurriculumId(''); }} disabled={!!editingEnrollmentId} />
+                                 <SelectField label={language === 'ro' ? 'Plan Studiu' : "Study Plan"} options={filteredCurricula.map(c => ({ value: c.id, label: c.name }))} value={selectedCurriculumId} onChange={opt => setSelectedCurriculumId(opt?.value || '')} disabled={!selectedSpecId || !!editingEnrollmentId} />
                               </div>
 
                               <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-indigo-50 grid grid-cols-4 gap-4">
-                                 <MiniSelect label="Form" options={filteredEduForms} value={formationSel.eduForm} onChange={opt => setFormationSel({...formationSel, eduForm: opt?.value || '', year:'', group:'', sub:''})} disabled={!selectedCurriculumId} />
-                                 <MiniSelect label="Year" options={filteredYears.map(y => String(y))} value={formationSel.year} onChange={opt => setFormationSel({...formationSel, year: opt?.value || '', group:'', sub:''})} disabled={!formationSel.eduForm} />
-                                 <MiniSelect label="Group" options={filteredGroups.map(g => String(g))} value={formationSel.group} onChange={opt => setFormationSel({...formationSel, group: opt?.value || '', sub:''})} disabled={!formationSel.year} />
+                                 <MiniSelect label={language === 'ro' ? 'Formă' : "Form"} options={filteredEduForms} value={formationSel.eduForm} onChange={opt => setFormationSel({...formationSel, eduForm: opt?.value || '', year:'', group:'', sub:''})} disabled={!selectedCurriculumId} />
+                                 <MiniSelect label={language === 'ro' ? 'An' : "Year"} options={filteredYears.map(y => String(y))} value={formationSel.year} onChange={opt => setFormationSel({...formationSel, year: opt?.value || '', group:'', sub:''})} disabled={!formationSel.eduForm} />
+                                 <MiniSelect label={language === 'ro' ? 'Grupă' : "Group"} options={filteredGroups.map(g => String(g))} value={formationSel.group} onChange={opt => setFormationSel({...formationSel, group: opt?.value || '', sub:''})} disabled={!formationSel.year} />
                                  <MiniSelect label="Sub" options={filteredSubs} value={formationSel.sub} onChange={opt => setFormationSel({...formationSel, sub: opt?.value || ''})} disabled={!formationSel.group} />
                               </div>
 
                               <div className="flex gap-4">
-                                 <button onClick={resetEnrollmentForm} className="flex-1 py-4 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Cancel</button>
+                                 <button onClick={resetEnrollmentForm} className="flex-1 py-4 text-[10px] font-black text-indigo-400 uppercase tracking-widest">{t('cancel')}</button>
                                  <button onClick={() => isAddingPlan ? handleEnrollStudent() : handleUpdateEnrollment(editingEnrollmentId)} className="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">
-                                    {isAddingPlan ? 'Confirm Enrollment' : 'Save Changes'}
+                                    {isAddingPlan ? (language === 'ro' ? 'Confirmare Înscriere' : 'Confirm Enrollment') : t('save')}
                                  </button>
                               </div>
                            </div>
@@ -435,7 +451,7 @@ export default function Students() {
                            {studentEnrollments.length === 0 ? (
                               <div className="text-center py-16 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-100">
                                  <GraduationCap className="mx-auto text-slate-200 mb-4" size={56} />
-                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">No Active Academic Route</p>
+                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{language === 'ro' ? 'Nicio rută academică activă' : 'No Active Academic Route'}</p>
                               </div>
                            ) : studentEnrollments.map(enr => (
                               <div key={enr.curriculum_id} className={`p-6 rounded-[2rem] border transition-all flex flex-col md:flex-row justify-between items-center gap-6 ${editingEnrollmentId === enr.curriculum_id ? 'bg-indigo-50 border-indigo-200 ring-8 ring-indigo-50/50' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/40 hover:shadow-2xl'}`}>
@@ -448,8 +464,8 @@ export default function Students() {
                                  </div>
                                  <div className="flex items-center gap-8">
                                     <div className="text-right">
-                                       <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Formation</p>
-                                       <p className="text-sm font-black text-slate-800">Year {enr.study_year} • {enr.formation_name}</p>
+                                       <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{language === 'ro' ? 'Formațiune' : 'Formation'}</p>
+                                       <p className="text-sm font-black text-slate-800">{language === 'ro' ? 'Anul' : 'Year'} {enr.study_year} • {enr.formation_name}</p>
                                     </div>
                                     <div className="flex gap-2">
                                        <button onClick={() => startEditEnrollment(enr)} className={`p-3 rounded-xl transition-all ${editingEnrollmentId === enr.curriculum_id ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-400 hover:text-indigo-600'}`}><Edit size={16} /></button>
@@ -463,16 +479,29 @@ export default function Students() {
                   ) : (
                      <div className="py-20 text-center bg-amber-50/50 rounded-[3rem] border border-amber-100">
                         <AlertCircle className="mx-auto text-amber-400 mb-4" size={48} />
-                        <h5 className="text-lg font-black text-amber-900">Finalize Identity First</h5>
-                        <p className="text-xs font-bold text-amber-700/60 mt-1 uppercase tracking-widest">Save the profile to unlock academic enrollment</p>
+                        <h5 className="text-lg font-black text-amber-900">{language === 'ro' ? 'Finalizați Identitatea Mai Întâi' : 'Finalize Identity First'}</h5>
+                        <p className="text-xs font-bold text-amber-700/60 mt-1 uppercase tracking-widest">{language === 'ro' ? 'Salvați profilul pentru a debloca înscrierea academică' : 'Save the profile to unlock academic enrollment'}</p>
                      </div>
                   )}
                </div>
             </div>
 
-            <footer className="p-8 border-t border-slate-50 bg-white flex justify-end gap-6 items-center">
-               <button onClick={() => setShowModal(false)} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">Discard Changes</button>
-               <button onClick={handleSaveStudent} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-black shadow-2xl transition-all active:scale-95">Commit Academic Record</button>
+            <footer className="p-8 border-t border-slate-50 bg-white flex justify-between gap-6 items-center">
+               <div className="flex gap-4">
+                {editingStudent && (
+                    <button 
+                        onClick={handleGenerateOfficialTranscript}
+                        className="bg-slate-100 text-slate-700 px-6 py-4 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] hover:bg-slate-200 shadow-sm transition-all flex items-center gap-2"
+                    >
+                        <FileBadge size={18} className="text-blue-600" />
+                        {t('gen_transcript')}
+                    </button>
+                )}
+               </div>
+               <div className="flex gap-6 items-center">
+                <button onClick={() => setShowModal(false)} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">{language === 'ro' ? 'Renunță' : 'Discard Changes'}</button>
+                <button onClick={handleSaveStudent} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-black shadow-2xl transition-all active:scale-95">{language === 'ro' ? 'Salvează Dosar Academic' : 'Commit Academic Record'}</button>
+               </div>
             </footer>
           </div>
         </div>
@@ -521,6 +550,7 @@ function ModalField({ label, ...props }) {
 }
 
 function SelectField({ label, options, value, onChange, disabled }) {
+  const { language } = useLanguage();
   return (
     <div className="space-y-2">
        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
@@ -530,7 +560,7 @@ function SelectField({ label, options, value, onChange, disabled }) {
           onChange={onChange}
           isDisabled={disabled}
           styles={customSelectStyles}
-          placeholder={`-- Select ${label} --`}
+          placeholder={language === 'ro' ? `-- Selectează ${label} --` : `-- Select ${label} --`}
        />
     </div>
   );

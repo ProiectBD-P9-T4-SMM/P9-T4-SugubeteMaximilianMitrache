@@ -7,10 +7,13 @@ import {
   Database, Table
 } from 'lucide-react';
 import api from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { loadUnicodeFont, PDF_STYLES } from '../utils/pdfUtils';
 
 export default function Centralizer() {
+  const { t, language } = useLanguage();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -46,7 +49,7 @@ export default function Centralizer() {
       setCurricula(currRes.data.success ? currRes.data.curricula : []);
       setDisciplines(discRes.data.success ? discRes.data.disciplines : []);
       if (years.length > 0) setFilters(f => ({ ...f, academic_year_id: years[0].id }));
-    } catch (err) { setMessage({ type: 'error', text: 'Error loading configuration.' }); }
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Eroare la încărcarea configurației.' : 'Error loading configuration.' }); }
   };
 
   const handleGenerateReport = async () => {
@@ -55,8 +58,8 @@ export default function Centralizer() {
       const response = await api.post('/reports/e-grade-centralizer', filters);
       setCentralizedData(response.data);
       setStudents(response.data.students || []);
-      setMessage({ type: 'success', text: `Intelligence report generated: ${response.data.student_count} records.` });
-    } catch (err) { setMessage({ type: 'error', text: 'Error generating report.' }); }
+      setMessage({ type: 'success', text: language === 'ro' ? `Raport generat: ${response.data.student_count} înregistrări.` : `Intelligence report generated: ${response.data.student_count} records.` });
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Eroare la generarea raportului.' : 'Error generating report.' }); }
     finally { setLoading(false); }
   };
 
@@ -69,14 +72,19 @@ export default function Centralizer() {
       link.setAttribute('download', `Centralizer_${new Date().getTime()}.${format}`);
       document.body.appendChild(link);
       link.click();
-    } catch (err) { setMessage({ type: 'error', text: `Export to ${format} failed.` }); }
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? `Exportul în ${format} a eșuat.` : `Export to ${format} failed.` }); }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!centralizedData || students.length === 0) return;
     const doc = new jsPDF('l', 'mm', 'a4');
-    doc.setFontSize(22); doc.setTextColor(15, 23, 42); doc.text('Official Grade Centralizer', 14, 20);
-    doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text(`System Generated: ${new Date(centralizedData.generated_at).toLocaleString()}`, 14, 28);
+    
+    const fontLoaded = await loadUnicodeFont(doc);
+    const mainFont = fontLoaded ? PDF_STYLES.fonts.main : PDF_STYLES.fonts.fallback;
+    doc.setFont(mainFont);
+
+    doc.setFontSize(22); doc.setTextColor(...PDF_STYLES.colors.primary); doc.text(language === 'ro' ? 'Centralizator Note Oficial' : 'Official Grade Centralizer', 14, 20);
+    doc.setFontSize(8); doc.setTextColor(...PDF_STYLES.colors.secondary); doc.text(`${language === 'ro' ? 'Generat de sistem' : 'System Generated'}: ${new Date(centralizedData.generated_at).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}`, 14, 28);
 
     const tableRows = [];
     students.forEach((student, idx) => {
@@ -97,10 +105,10 @@ export default function Centralizer() {
     });
 
     autoTable(doc, {
-      head: [['#', 'Reg. ID', 'Student', 'Group', 'Discipline', 'Sem.', 'Grade', 'GPA', 'ECTS']],
+      head: [['#', 'Reg. ID', t('th_student'), t('th_group'), t('th_discipline'), 'Sem.', t('th_grade'), 'GPA', 'ECTS']],
       body: tableRows, startY: 35, theme: 'grid',
-      styles: { fontSize: 7, cellPadding: 3 },
-      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' }
+      styles: { fontSize: 7, cellPadding: 3, font: mainFont },
+      headStyles: { fillColor: [...PDF_STYLES.colors.primary], textColor: [255, 255, 255], fontStyle: 'bold' }
     });
     doc.save(`Centralizer_Audit_${new Date().getTime()}.pdf`);
   };
@@ -109,9 +117,9 @@ export default function Centralizer() {
     <div className="flex-1 bg-slate-50/50 min-h-screen p-8 lg:p-12 animate-in fade-in duration-500">
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Grade Centralizer</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">{t('cent_title')}</h1>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-            <Shield size={16} className="text-blue-600" /> Advanced Academic Analytics & Reporting
+            <Shield size={16} className="text-blue-600" /> {t('cent_subtitle')}
           </p>
         </div>
         
@@ -120,7 +128,7 @@ export default function Centralizer() {
             <ExportButton icon={FileCode} label="XML" onClick={() => handleExport('xml')} color="text-orange-600 bg-orange-50" />
             <ExportButton icon={Database} label="CSV" onClick={() => handleExport('csv')} color="text-emerald-600 bg-emerald-50" />
             <ExportButton icon={Table} label="Excel" onClick={() => handleExport('xlsx')} color="bg-green-600 text-white shadow-xl shadow-green-100" />
-            <ExportButton icon={Printer} label="PDF Report" onClick={handleExportPDF} color="bg-slate-900 text-white shadow-xl" />
+            <ExportButton icon={Printer} label={language === 'ro' ? 'Raport PDF' : "PDF Report"} onClick={handleExportPDF} color="bg-slate-900 text-white shadow-xl" />
           </div>
         )}
       </header>
@@ -129,36 +137,36 @@ export default function Centralizer() {
       <div className="bg-white p-8 rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-50 mb-10">
          <div className="flex items-center gap-3 mb-8">
             <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Filter size={20} /></div>
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">Intelligence Filter Matrix</h3>
+            <h3 className="text-lg font-black text-slate-900 tracking-tight">{language === 'ro' ? 'Matrice Filtrare Inteligentă' : 'Intelligence Filter Matrix'}</h3>
          </div>
          
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
-            <FilterBox label="Academic Year" icon={Calendar} options={academicYears.map(y => ({ value: y.id, label: `${y.year_start}/${y.year_end}` }))} value={filters.academic_year_id} onChange={opt => setFilters({...filters, academic_year_id: opt?.value || ''})} />
-            <FilterBox label="Specialization" icon={GraduationCap} options={specializations.map(s => ({ value: s.id, label: `${s.name} (${s.degree_level})` }))} value={filters.specialization_id} onChange={opt => setFilters({...filters, specialization_id: opt?.value || '', curriculum_id: ''})} />
-            <FilterBox label="Study Plan" icon={Layers} options={curricula.filter(c => c.specialization_id === filters.specialization_id).map(c => ({ value: c.id, label: c.name }))} value={filters.curriculum_id} onChange={opt => setFilters({...filters, curriculum_id: opt?.value || ''})} disabled={!filters.specialization_id} />
-            <FilterBox label="Discipline" icon={BookOpen} options={disciplines.filter(d => !filters.curriculum_id || d.curriculum_id === filters.curriculum_id).map(d => ({ value: d.id, label: d.name }))} value={filters.discipline_id} onChange={opt => setFilters({...filters, discipline_id: opt?.value || ''})} />
-            <FilterBox label="Degree Level" options={['Bachelor', 'Master', 'PhD'].map(l => ({value:l, label:l}))} value={filters.degree_level} onChange={opt => setFilters({...filters, degree_level: opt?.value || ''})} />
+            <FilterBox label={language === 'ro' ? 'An Academic' : "Academic Year"} icon={Calendar} options={academicYears.map(y => ({ value: y.id, label: `${y.year_start}/${y.year_end}` }))} value={filters.academic_year_id} onChange={opt => setFilters({...filters, academic_year_id: opt?.value || ''})} />
+            <FilterBox label={t('th_specialization')} icon={GraduationCap} options={specializations.map(s => ({ value: s.id, label: `${s.name} (${s.degree_level})` }))} value={filters.specialization_id} onChange={opt => setFilters({...filters, specialization_id: opt?.value || '', curriculum_id: ''})} />
+            <FilterBox label={language === 'ro' ? 'Plan de Studiu' : "Study Plan"} icon={Layers} options={curricula.filter(c => c.specialization_id === filters.specialization_id).map(c => ({ value: c.id, label: c.name }))} value={filters.curriculum_id} onChange={opt => setFilters({...filters, curriculum_id: opt?.value || ''})} disabled={!filters.specialization_id} />
+            <FilterBox label={t('th_discipline')} icon={BookOpen} options={disciplines.filter(d => !filters.curriculum_id || d.curriculum_id === filters.curriculum_id).map(d => ({ value: d.id, label: d.name }))} value={filters.discipline_id} onChange={opt => setFilters({...filters, discipline_id: opt?.value || ''})} />
+            <FilterBox label={language === 'ro' ? 'Nivel Diplomă' : "Degree Level"} options={['Bachelor', 'Master', 'PhD'].map(l => ({value:l, label:l}))} value={filters.degree_level} onChange={opt => setFilters({...filters, degree_level: opt?.value || ''})} />
             
             <div className="space-y-2">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Study Year</label>
-               <Select options={[1,2,3,4].map(y => ({value:String(y), label:`Year ${y}`}))} value={filters.study_year ? {value: filters.study_year, label: `Year ${filters.study_year}`} : null} onChange={opt => setFilters({...filters, study_year: opt?.value || ''})} styles={customSelectStyles} placeholder="All" isClearable />
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'An de Studiu' : 'Study Year'}</label>
+               <Select options={[1,2,3,4].map(y => ({value:String(y), label:language === 'ro' ? `Anul ${y}` : `Year ${y}`}))} value={filters.study_year ? {value: filters.study_year, label: language === 'ro' ? `Anul ${filters.study_year}` : `Year ${filters.study_year}`} : null} onChange={opt => setFilters({...filters, study_year: opt?.value || ''})} styles={customSelectStyles} placeholder={language === 'ro' ? 'Toate' : "All"} isClearable />
             </div>
             <div className="space-y-2">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Formation (Group)</label>
-               <input type="number" placeholder="Group #" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl p-4 text-sm font-bold transition-all outline-none" value={filters.group_index} onChange={e => setFilters({...filters, group_index: e.target.value})} />
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Formațiune (Grupă)' : 'Formation (Group)'}</label>
+               <input type="number" placeholder={language === 'ro' ? 'Nr. Grupă' : "Group #"} className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl p-4 text-sm font-bold transition-all outline-none" value={filters.group_index} onChange={e => setFilters({...filters, group_index: e.target.value})} />
             </div>
             <div className="space-y-2">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Evaluation Type</label>
-               <Select options={['EXAM', 'COLLOQUIUM', 'PROJECT'].map(e => ({value:e, label:e}))} value={filters.evaluation_type ? {value: filters.evaluation_type, label: filters.evaluation_type} : null} onChange={opt => setFilters({...filters, evaluation_type: opt?.value || ''})} styles={customSelectStyles} placeholder="All" isClearable />
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Tip Evaluare' : 'Evaluation Type'}</label>
+               <Select options={['EXAM', 'COLLOQUIUM', 'PROJECT'].map(e => ({value:e, label:e}))} value={filters.evaluation_type ? {value: filters.evaluation_type, label: filters.evaluation_type} : null} onChange={opt => setFilters({...filters, evaluation_type: opt?.value || ''})} styles={customSelectStyles} placeholder={language === 'ro' ? 'Toate' : "All"} isClearable />
             </div>
             <div className="space-y-2">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Internal Code</label>
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Cod Intern' : 'Internal Code'}</label>
                <input type="text" placeholder="Reg / Code" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl p-4 text-sm font-bold transition-all outline-none" value={filters.cod} onChange={e => setFilters({...filters, cod: e.target.value})} />
             </div>
             <div className="flex flex-col justify-end">
                <label className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl cursor-pointer hover:bg-blue-100 transition-all">
                   <input type="checkbox" checked={filters.show_only_graded} onChange={e => setFilters({...filters, show_only_graded: e.target.checked})} className="w-5 h-5 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500" />
-                  <span className="text-[10px] font-black text-blue-700 uppercase tracking-[0.2em]">Only Graded</span>
+                  <span className="text-[10px] font-black text-blue-700 uppercase tracking-[0.2em]">{language === 'ro' ? 'Doar cu Note' : 'Only Graded'}</span>
                </label>
             </div>
          </div>
@@ -166,7 +174,7 @@ export default function Centralizer() {
          <div className="mt-10 flex justify-end">
             <button onClick={handleGenerateReport} disabled={loading} className="bg-slate-900 text-white px-12 py-5 rounded-3xl font-black uppercase tracking-[0.3em] text-[10px] hover:bg-black transition-all shadow-2xl flex items-center gap-3 disabled:opacity-50">
                {loading ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <TrendingUp size={18} />}
-               Execute Analysis
+               {language === 'ro' ? 'Execută Analiza' : 'Execute Analysis'}
             </button>
          </div>
       </div>
@@ -185,10 +193,10 @@ export default function Centralizer() {
               <thead>
                 <tr className="bg-slate-50/50">
                   <TableHead label="#" />
-                  <TableHead label="Student Asset" />
-                  <TableHead label="Contextual Metadata" />
-                  <TableHead label="Academic Module" />
-                  <TableHead label="Grade" />
+                  <TableHead label={language === 'ro' ? 'Activ Student' : "Student Asset"} />
+                  <TableHead label={language === 'ro' ? 'Metadate Contextuale' : "Contextual Metadata"} />
+                  <TableHead label={language === 'ro' ? 'Modul Academic' : "Academic Module"} />
+                  <TableHead label={t('th_grade')} />
                   <TableHead label="GPA / ECTS" />
                 </tr>
               </thead>
@@ -243,8 +251,8 @@ export default function Centralizer() {
         !loading && (
           <div className="text-center py-32 bg-white rounded-[3rem] border border-slate-200 border-dashed animate-in fade-in duration-700">
              <Table className="mx-auto text-slate-100 mb-6" size={80} />
-             <h4 className="text-xl font-black text-slate-900">Intelligence Matrix Empty</h4>
-             <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Adjust filters and execute analysis to populate report</p>
+             <h4 className="text-xl font-black text-slate-900">{language === 'ro' ? 'Matrice de Inteligență Goală' : 'Intelligence Matrix Empty'}</h4>
+             <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">{language === 'ro' ? 'Ajustați filtrele și executați analiza pentru a popula raportul' : 'Adjust filters and execute analysis to populate report'}</p>
           </div>
         )
       )}
@@ -262,12 +270,13 @@ function ExportButton({ icon: Icon, label, onClick, color }) {
 }
 
 function FilterBox({ label, icon: Icon, options, value, onChange, disabled }) {
+  const { language } = useLanguage();
   return (
     <div className="space-y-2">
        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
           {Icon && <Icon size={14} className="text-blue-500" />} {label}
        </label>
-       <Select options={options} value={value ? options.find(o => o.value === value) : null} onChange={onChange} isDisabled={disabled} styles={customSelectStyles} placeholder="All" isClearable />
+       <Select options={options} value={value ? options.find(o => o.value === value) : null} onChange={onChange} isDisabled={disabled} styles={customSelectStyles} placeholder={language === 'ro' ? 'Toate' : "All"} isClearable />
     </div>
   );
 }

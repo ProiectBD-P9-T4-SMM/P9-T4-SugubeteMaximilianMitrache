@@ -1,48 +1,51 @@
 import React from 'react';
-import { Keyboard, MousePointer, Zap, Command, Move, CornerDownLeft } from 'lucide-react';
+import { Keyboard, Zap, Command, Globe } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Shortcuts() {
+  const { t, language } = useLanguage();
+
   const categories = [
     {
-      title: 'Global Navigation',
+      title: t('short_global_nav'),
       icon: Globe,
       shortcuts: [
-        { key: 'Alt + 1-9', desc: 'Jump to specific module (Dashboard, Students, etc.)' },
-        { key: 'Alt + L', desc: 'Instant Logout' },
-        { key: 'Alt + H', desc: 'Open Help Center' }
+        { key: 'Alt + 1-9', desc: t('short_jump_module') },
+        { key: 'Alt + L', desc: t('short_logout') },
+        { key: 'Alt + H', desc: t('short_open_help') }
       ]
     },
     {
-      title: 'Academic Data Entry (Add Grades)',
+      title: t('short_data_entry'),
       icon: Zap,
       shortcuts: [
-        { key: 'Alt + S', desc: 'Focus Student selection' },
-        { key: 'Alt + D', desc: 'Focus Discipline selection' },
-        { key: 'Alt + N', desc: 'Focus Grade input' },
-        { key: 'Enter', desc: 'Submit grade and reset focus to Student list' }
+        { key: 'Alt + S', desc: t('short_focus_student') },
+        { key: 'Alt + D', desc: t('short_focus_discipline') },
+        { key: 'Alt + N', desc: t('short_focus_grade') },
+        { key: 'Enter', desc: t('short_submit_grade') }
       ]
     },
     {
-      title: 'Registry & Search',
+      title: t('short_registry'),
       icon: Keyboard,
       shortcuts: [
-        { key: '/', desc: 'Focus Search Bar (Students, Documents)' },
-        { key: 'Alt + A', desc: 'Add Student (Modal)' },
-        { key: 'Alt + U', desc: 'Upload Document (Modal)' },
-        { key: 'Alt + E', desc: 'Send Group Email (Modal)' },
-        { key: 'Esc', desc: 'Close modals or cancel active editing' }
+        { key: '/', desc: t('short_focus_search') },
+        { key: 'Alt + A', desc: t('short_add_student') },
+        { key: 'Alt + U', desc: t('short_upload_doc') },
+        { key: 'Alt + E', desc: t('short_send_email') },
+        { key: 'Esc', desc: t('short_esc') }
       ]
     },
     {
-      title: 'Management Modules',
+      title: t('short_management'),
       icon: Command,
       shortcuts: [
-        { key: 'Alt + S', desc: 'Focus Specialization (Disciplines)' },
-        { key: 'Alt + P', desc: 'Focus Study Plan (Disciplines)' },
-        { key: 'Alt + F', desc: 'Toggle Filters (Grades List)' },
-        { key: 'Alt + R', desc: 'Reset Filters (Grades List)' },
-        { key: 'Alt + N', desc: 'Focus New Group Name (Groups)' },
-        { key: 'Alt + M', desc: 'Focus Enroll Member (Groups)' }
+        { key: 'Alt + S', desc: t('short_focus_spec') },
+        { key: 'Alt + P', desc: t('short_focus_plan') },
+        { key: 'Alt + F', desc: t('short_toggle_filters') },
+        { key: 'Alt + R', desc: t('short_reset_filters') },
+        { key: 'Alt + N', desc: t('short_focus_group_name') },
+        { key: 'Alt + M', desc: t('short_focus_enroll') }
       ]
     }
   ];
@@ -55,8 +58,8 @@ export default function Shortcuts() {
             <Zap size={32} />
           </div>
           <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Productivity Shortcuts</h2>
-            <p className="text-slate-500 font-medium">Master the keyboard to navigate AFSMS like a pro.</p>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">{t('short_title')}</h2>
+            <p className="text-slate-500 font-medium">{t('short_subtitle')}</p>
           </div>
         </div>
 
@@ -88,10 +91,10 @@ export default function Shortcuts() {
           <div className="absolute right-0 top-0 h-full w-1/2 bg-white opacity-5 -skew-x-12 translate-x-1/4" />
           <div className="relative z-10">
             <h4 className="text-xl font-black mb-2 flex items-center gap-2">
-               <Zap className="text-amber-400" /> Pro Tip: Mouse-Free Workflow
+               <Zap className="text-amber-400" /> {t('short_pro_tip')}
             </h4>
             <p className="text-blue-100 text-sm leading-relaxed max-w-2xl">
-              In the <strong>Add Grades</strong> section, you can enter hundreds of grades without ever touching your mouse. Type the student name, press <code>Enter</code> to select, type the grade, and press <code>Enter</code> again. The system will automatically jump back to the student field for the next entry!
+              {t('short_pro_tip_desc')}
             </p>
           </div>
         </div>
@@ -99,6 +102,3 @@ export default function Shortcuts() {
     </div>
   );
 }
-
-// Helper to avoid import issues if Globe isn't in scope (though it is in Lucide)
-import { Globe } from 'lucide-react';

@@ -7,9 +7,11 @@ import {
   TrendingUp, Calendar, User
 } from 'lucide-react';
 import api, { academicService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function GradesList() {
+  const { t, language } = useLanguage();
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -91,7 +93,7 @@ export default function GradesList() {
       setGrades(response.data.grades || []);
       setMessage({ type: '', text: '' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Error loading grades.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || (language === 'ro' ? 'Eroare la încărcarea notelor.' : 'Error loading grades.') });
     } finally { setLoading(false); }
   };
 
@@ -115,29 +117,29 @@ export default function GradesList() {
 
   const handleSaveEdit = async (gradeId) => {
     if (editForm.value === '' || editForm.value < 0 || editForm.value > 10) {
-      setMessage({ type: 'error', text: 'Grade must be 0-10.' }); return;
+      setMessage({ type: 'error', text: language === 'ro' ? 'Nota trebuie să fie între 0 și 10.' : 'Grade must be 0-10.' }); return;
     }
     try {
       await api.put(`/academic/grades/${gradeId}`, { ...editForm, value: parseFloat(editForm.value) });
-      setMessage({ type: 'success', text: 'Grade updated successfully!' });
+      setMessage({ type: 'success', text: language === 'ro' ? 'Notă actualizată cu succes!' : 'Grade updated successfully!' });
       setEditingId(null); loadGrades(filters);
-    } catch (err) { setMessage({ type: 'error', text: 'Update failed.' }); }
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Actualizare eșuată.' : 'Update failed.' }); }
   };
 
   const handleDelete = async (gradeId) => {
-    if (!confirm('Delete grade?')) return;
+    if (!confirm(t('confirm_delete'))) return;
     try {
       await api.delete(`/academic/grades/${gradeId}`);
-      setMessage({ type: 'success', text: 'Grade deleted.' });
+      setMessage({ type: 'success', text: language === 'ro' ? 'Notă ștearsă.' : 'Grade deleted.' });
       loadGrades(filters);
-    } catch (err) { setMessage({ type: 'error', text: 'Delete failed.' }); }
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Ștergere eșuată.' : 'Delete failed.' }); }
   };
 
   const handleValidate = async (gradeId, currentValidated) => {
     try {
       await api.put(`/academic/grades/${gradeId}`, { validated: !currentValidated });
       loadGrades(filters);
-    } catch (err) { setMessage({ type: 'error', text: 'Validation failed.' }); }
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Validare eșuată.' : 'Validation failed.' }); }
   };
 
   const fetchHistory = async (gradeId) => {
@@ -151,18 +153,18 @@ export default function GradesList() {
   const handleAddGradeSubmit = async (e) => {
     e.preventDefault();
     if (!addFormData.studentId || !addFormData.disciplineId || addFormData.gradeValue === '') {
-      setMessage({ type: 'error', text: 'All fields are required.' });
+      setMessage({ type: 'error', text: language === 'ro' ? 'Toate câmpurile sunt obligatorii.' : 'All fields are required.' });
       return;
     }
     setIsSubmitting(true);
     try {
       await api.post('/academic/grades', addFormData);
-      setMessage({ type: 'success', text: 'Grade committed to registry!' });
+      setMessage({ type: 'success', text: language === 'ro' ? 'Notă înregistrată în registru!' : 'Grade committed to registry!' });
       setShowAddModal(false);
       setAddFormData({ studentId: '', disciplineId: '', gradeValue: '', examSession: 'WINTER' });
       loadGrades(filters);
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Submission failed.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || (language === 'ro' ? 'Trimitere eșuată.' : 'Submission failed.') });
     } finally {
       setIsSubmitting(false);
     }
@@ -177,11 +179,11 @@ export default function GradesList() {
     try {
       const res = await api.post('/academic/import/grades-csv', formData);
       setImportResults(res.data);
-      setMessage({ type: 'success', text: 'Import task processed.' });
+      setMessage({ type: 'success', text: language === 'ro' ? 'Sarcina de import a fost procesată.' : 'Import task processed.' });
       setShowImportModal(false);
       loadGrades();
     } catch (err) {
-      setMessage({ type: 'error', text: 'Import failed.' });
+      setMessage({ type: 'error', text: language === 'ro' ? 'Import eșuat.' : 'Import failed.' });
     } finally {
       setImportLoading(false);
     }
@@ -190,7 +192,7 @@ export default function GradesList() {
   const handleGenerateTemplate = async (e) => {
     e.preventDefault();
     if (!templateForm.discipline_id || !templateForm.curriculum_id) {
-      setMessage({ type: 'error', text: 'Curriculum and Discipline are required.' });
+      setMessage({ type: 'error', text: language === 'ro' ? 'Curricula și Disciplina sunt obligatorii.' : 'Curriculum and Discipline are required.' });
       return;
     }
     try {
@@ -203,7 +205,7 @@ export default function GradesList() {
       link.click();
       setShowTemplateModal(false);
     } catch (err) { 
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Template generation failed.' }); 
+      setMessage({ type: 'error', text: err.response?.data?.message || (language === 'ro' ? 'Generarea șablonului a eșuat.' : 'Template generation failed.') }); 
     }
   };
 
@@ -214,14 +216,10 @@ export default function GradesList() {
   });
 
   const templateDisciplines = disciplines.filter(d => {
-    // Basic filter: must belong to the selected curriculum
     if (d.curriculum_id !== templateForm.curriculum_id) return false;
-    
-    // Academic Year filter: Formula StartYear + DisciplineYear = AcademicYearEnd
     if (templateForm.academic_year_id) {
       const ay = academicYears.find(y => y.id === templateForm.academic_year_id);
       const curriculum = curricula.find(c => c.id === d.curriculum_id);
-      
       if (ay && curriculum && curriculum.valid_from) {
         const startYear = new Date(curriculum.valid_from).getFullYear();
         const disciplineYear = Math.ceil(d.semester / 2);
@@ -235,46 +233,46 @@ export default function GradesList() {
     <div className="flex-1 bg-slate-50/50 min-h-screen p-8 lg:p-12 animate-in fade-in duration-500">
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Academic Grading List</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">{t('grades_title')}</h1>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-            <Shield size={16} className="text-blue-600" /> Secure Grade Management & Audit
+            <Shield size={16} className="text-blue-600" /> {t('grades_subtitle')}
           </p>
         </div>
         
         <div className="flex flex-wrap gap-3">
           <button onClick={() => setShowAddModal(true)} className="group bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center gap-3">
-            <Plus size={18} /> Add Grade
+            <Plus size={18} /> {language === 'ro' ? 'Adăugare Notă' : 'Add Grade'}
           </button>
           <button onClick={() => setShowImportModal(true)} className="group bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3">
-            <Upload size={18} /> Bulk Import
+            <Upload size={18} /> {t('import_grades')}
           </button>
           <button onClick={() => setShowTemplateModal(true)} className="group bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3">
-            <FileText size={18} /> Generate Template
+            <FileText size={18} /> {t('gen_template')}
           </button>
         </div>
       </header>
 
       {/* Stats & Filters Toggle */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-         <StatItem label="Total Records" value={grades.length} icon={Layers} color="text-blue-600 bg-blue-50" />
-         <StatItem label="Validated" value={grades.filter(g => g.validated).length} icon={CheckCircle} color="text-emerald-600 bg-emerald-50" />
-         <StatItem label="Pending" value={grades.filter(g => !g.validated).length} icon={Clock} color="text-amber-600 bg-amber-50" />
+         <StatItem label={language === 'ro' ? 'Total Înregistrări' : "Total Records"} value={grades.length} icon={Layers} color="text-blue-600 bg-blue-50" />
+         <StatItem label={language === 'ro' ? 'Validate' : "Validated"} value={grades.filter(g => g.validated).length} icon={CheckCircle} color="text-emerald-600 bg-emerald-50" />
+         <StatItem label={language === 'ro' ? 'În așteptare' : "Pending"} value={grades.filter(g => !g.validated).length} icon={Clock} color="text-amber-600 bg-amber-50" />
          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center justify-center gap-3 p-6 rounded-3xl font-black text-xs uppercase tracking-widest transition-all ${showFilters ? 'bg-slate-900 text-white shadow-xl' : 'bg-white text-slate-600 shadow-xl shadow-slate-200/50 border border-slate-50'}`}>
-            <Filter size={20} /> {showFilters ? 'Close Filters' : 'Filter Engine'}
+            <Filter size={20} /> {showFilters ? (language === 'ro' ? 'Închide Filtre' : 'Close Filters') : (language === 'ro' ? 'Motor Filtrare' : 'Filter Engine')}
          </button>
       </div>
 
       {showFilters && (
         <div className="bg-white p-8 rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-50 mb-10 animate-in slide-in-from-top-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-             <FilterSelect label="Student" options={students.map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name}` }))} value={filters.student_id} onChange={opt => setFilters({...filters, student_id: opt?.value || ''})} />
-             <FilterSelect label="Discipline" options={disciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))} value={filters.discipline_id} onChange={opt => setFilters({...filters, discipline_id: opt?.value || ''})} />
-             <FilterSelect label="Academic Year" options={academicYears.map(y => ({ value: y.id, label: `${y.year_start}/${y.year_end}` }))} value={filters.academic_year_id} onChange={opt => setFilters({...filters, academic_year_id: opt?.value || ''})} />
-             <FilterSelect label="Session" options={[{value:'WINTER', label:'Winter'}, {value:'SUMMER', label:'Summer'}, {value:'RETAKE', label:'Retake'}]} value={filters.exam_session} onChange={opt => setFilters({...filters, exam_session: opt?.value || ''})} />
+             <FilterSelect label={t('th_student')} options={students.map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name}` }))} value={filters.student_id} onChange={opt => setFilters({...filters, student_id: opt?.value || ''})} />
+             <FilterSelect label={t('th_discipline')} options={disciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))} value={filters.discipline_id} onChange={opt => setFilters({...filters, discipline_id: opt?.value || ''})} />
+             <FilterSelect label={language === 'ro' ? 'An Academic' : "Academic Year"} options={academicYears.map(y => ({ value: y.id, label: `${y.year_start}/${y.year_end}` }))} value={filters.academic_year_id} onChange={opt => setFilters({...filters, academic_year_id: opt?.value || ''})} />
+             <FilterSelect label={t('th_session')} options={[{value:'WINTER', label:language === 'ro' ? 'Iarnă' : 'Winter'}, {value:'SUMMER', label:language === 'ro' ? 'Vară' : 'Summer'}, {value:'RETAKE', label:language === 'ro' ? 'Restanță' : 'Retake'}]} value={filters.exam_session} onChange={opt => setFilters({...filters, exam_session: opt?.value || ''})} />
           </div>
           <div className="flex justify-end gap-4">
-             <button onClick={handleClearFilters} className="px-8 py-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">Reset All</button>
-             <button onClick={handleApplyFilters} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-slate-200">Execute Search</button>
+             <button onClick={handleClearFilters} className="px-8 py-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">{language === 'ro' ? 'Resetează Tot' : 'Reset All'}</button>
+             <button onClick={handleApplyFilters} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-slate-200">{language === 'ro' ? 'Execută Căutarea' : 'Execute Search'}</button>
           </div>
         </div>
       )}
@@ -291,20 +289,20 @@ export default function GradesList() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50">
-                <TableHead label="Matriculation" />
-                <TableHead label="Student / Identity" />
-                <TableHead label="Module" />
-                <TableHead label="Result" />
-                <TableHead label="Lifecycle" />
-                <TableHead label="Validation" />
-                <TableHead label="Actions" />
+                <TableHead label={t('th_reg_num')} />
+                <TableHead label={language === 'ro' ? 'Student / Identitate' : "Student / Identity"} />
+                <TableHead label={language === 'ro' ? 'Modul' : "Module"} />
+                <TableHead label={language === 'ro' ? 'Rezultat' : "Result"} />
+                <TableHead label={language === 'ro' ? 'Ciclu Viață' : "Lifecycle"} />
+                <TableHead label={language === 'ro' ? 'Validare' : "Validation"} />
+                <TableHead label={t('th_actions')} />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr><td colSpan="7" className="py-20 text-center"><LoadingPulse /></td></tr>
               ) : grades.length === 0 ? (
-                <tr><td colSpan="7" className="py-20 text-center text-slate-300 font-black italic">No records matching criteria.</td></tr>
+                <tr><td colSpan="7" className="py-20 text-center text-slate-300 font-black italic">{language === 'ro' ? 'Nicio înregistrare găsită.' : 'No records matching criteria.'}</td></tr>
               ) : grades.map((row) => (
                 <tr key={row.id} className={`group hover:bg-blue-50/30 transition-all ${editingId === row.id ? 'bg-blue-50 shadow-inner' : ''}`}>
                   <td className="px-8 py-6">
@@ -343,12 +341,12 @@ export default function GradesList() {
                   <td className="px-8 py-6">
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{row.exam_session}</span>
-                      <span className="text-[10px] font-bold text-slate-400">{new Date(row.grading_date).toLocaleDateString()}</span>
+                      <span className="text-[10px] font-bold text-slate-400">{new Date(row.grading_date).toLocaleDateString(language === 'en' ? 'en-US' : 'ro-RO')}</span>
                     </div>
                   </td>
                   <td className="px-8 py-6">
                     <button onClick={() => handleValidate(row.id, row.validated)} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${row.validated ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' : 'bg-amber-50 text-amber-600 border-amber-100 shadow-sm animate-pulse'}`}>
-                       {row.validated ? 'Validated' : 'Pending'}
+                       {row.validated ? (language === 'ro' ? 'Validat' : 'Validated') : (language === 'ro' ? 'În așteptare' : 'Pending')}
                     </button>
                   </td>
                   <td className="px-8 py-6 min-w-[140px]">
@@ -376,43 +374,43 @@ export default function GradesList() {
 
       {/* Modals */}
       {showAddModal && (
-        <Modal title="Secure Grade Entry" onClose={() => setShowAddModal(false)}>
+        <Modal title={language === 'ro' ? 'Înregistrare Securizată Notă' : "Secure Grade Entry"} onClose={() => setShowAddModal(false)}>
            <form onSubmit={handleAddGradeSubmit} className="space-y-6">
-              <SelectField label="Student" options={students.map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name}` }))} value={addFormData.studentId} onChange={opt => setAddFormData({...addFormData, studentId: opt?.value || ''})} />
-              <SelectField label="Discipline" options={disciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))} value={addFormData.disciplineId} onChange={opt => setAddFormData({...addFormData, disciplineId: opt?.value || ''})} />
+              <SelectField label={t('th_student')} options={students.map(s => ({ value: s.id, label: `${s.last_name} ${s.first_name}` }))} value={addFormData.studentId} onChange={opt => setAddFormData({...addFormData, studentId: opt?.value || ''})} />
+              <SelectField label={t('th_discipline')} options={disciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name}` }))} value={addFormData.disciplineId} onChange={opt => setAddFormData({...addFormData, disciplineId: opt?.value || ''})} />
               <div className="grid grid-cols-2 gap-4">
-                 <ModalInput label="Grade Value (0-10)" type="number" step="0.01" value={addFormData.gradeValue} onChange={e => setAddFormData({...addFormData, gradeValue: e.target.value})} />
+                 <ModalInput label={language === 'ro' ? 'Valoare Notă (0-10)' : "Grade Value (0-10)"} type="number" step="0.01" value={addFormData.gradeValue} onChange={e => setAddFormData({...addFormData, gradeValue: e.target.value})} />
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Session</label>
-                    <Select options={[{value:'WINTER', label:'Winter'}, {value:'SUMMER', label:'Summer'}, {value:'RETAKE', label:'Retake'}]} value={{value: addFormData.examSession, label: addFormData.examSession}} onChange={opt => setAddFormData({...addFormData, examSession: opt?.value})} styles={customSelectStyles} />
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('th_session')}</label>
+                    <Select options={[{value:'WINTER', label:language === 'ro' ? 'Iarnă' : 'Winter'}, {value:'SUMMER', label:language === 'ro' ? 'Vară' : 'Summer'}, {value:'RETAKE', label:language === 'ro' ? 'Restanță' : 'Retake'}]} value={{value: addFormData.examSession, label: addFormData.examSession}} onChange={opt => setAddFormData({...addFormData, examSession: opt?.value})} styles={customSelectStyles} />
                  </div>
               </div>
               <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-3">
-                 {isSubmitting ? 'Processing...' : 'Commit Grade'} <ChevronRight size={16} />
+                 {isSubmitting ? (language === 'ro' ? 'Se procesează...' : 'Processing...') : (language === 'ro' ? 'Salvează Notă' : 'Commit Grade')} <ChevronRight size={16} />
               </button>
            </form>
         </Modal>
       )}
 
       {showHistoryModal && (
-        <Modal title="Traceability Audit Trail" onClose={() => setShowHistoryModal(false)}>
+        <Modal title={language === 'ro' ? 'Istoric Trasabilitate' : "Traceability Audit Trail"} onClose={() => setShowHistoryModal(false)}>
            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
-              {historyLoading ? <LoadingPulse /> : selectedGradeHistory.length === 0 ? <p className="text-center text-slate-400 italic font-bold">No historical data available.</p> : selectedGradeHistory.map(log => (
+              {historyLoading ? <LoadingPulse /> : selectedGradeHistory.length === 0 ? <p className="text-center text-slate-400 italic font-bold">{language === 'ro' ? 'Nicio dată istorică disponibilă.' : 'No historical data available.'}</p> : selectedGradeHistory.map(log => (
                 <div key={log.id} className="relative pl-6 pb-6 border-l-2 border-slate-100 last:pb-0">
                    <div className="absolute left-[-9px] top-0 h-4 w-4 rounded-full bg-blue-500 border-4 border-white shadow-sm" />
                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                       <div className="flex justify-between items-center mb-4">
                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{log.action_type}</span>
-                         <span className="text-[10px] font-bold text-slate-400">{new Date(log.occurred_at).toLocaleString()}</span>
+                         <span className="text-[10px] font-bold text-slate-400">{new Date(log.occurred_at).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}</span>
                       </div>
                       <p className="text-xs font-bold text-slate-800 mb-4 flex items-center gap-2"><User size={14} className="text-slate-400" /> {log.actor_name}</p>
                       <div className="grid grid-cols-2 gap-3">
                          <div className="bg-white p-3 rounded-xl border border-slate-100">
-                            <p className="text-[8px] font-black text-slate-300 uppercase mb-1">Before</p>
+                            <p className="text-[8px] font-black text-slate-300 uppercase mb-1">{language === 'ro' ? 'Înainte' : 'Before'}</p>
                             <p className="text-lg font-black text-rose-500">{log.before_snapshot_json?.value === 0 ? 'Abs.' : log.before_snapshot_json?.value || 'N/A'}</p>
                          </div>
                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                            <p className="text-[8px] font-black text-slate-300 uppercase mb-1">After</p>
+                            <p className="text-[8px] font-black text-slate-300 uppercase mb-1">{language === 'ro' ? 'După' : 'After'}</p>
                             <p className="text-lg font-black text-emerald-500">{log.after_snapshot_json?.value === 0 ? 'Abs.' : log.after_snapshot_json?.value || 'N/A'}</p>
                          </div>
                       </div>
@@ -424,42 +422,42 @@ export default function GradesList() {
       )}
 
       {showImportModal && (
-        <Modal title="Bulk Intelligence Import" onClose={() => setShowImportModal(false)}>
+        <Modal title={language === 'ro' ? 'Import Inteligent Bulk' : "Bulk Intelligence Import"} onClose={() => setShowImportModal(false)}>
            <form onSubmit={handleImport} className="space-y-8">
               <div className="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl shadow-indigo-100 relative overflow-hidden group">
                  <Shield className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-125 transition-transform" size={100} />
-                 <h5 className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-4">CSV Requirements</h5>
-                 <code className="block bg-black/20 p-4 rounded-xl text-[10px] font-mono mb-2">Registration Number, Discipline Code, Grade, Session</code>
-                 <p className="text-[9px] text-indigo-200 italic font-bold">* Registration Number must match student registry exactly.</p>
+                 <h5 className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-4">{language === 'ro' ? 'Cerințe CSV' : 'CSV Requirements'}</h5>
+                 <code className="block bg-black/20 p-4 rounded-xl text-[10px] font-mono mb-2">{language === 'ro' ? 'Nr. Matricol, Cod Disciplină, Notă, Sesiune' : 'Registration Number, Discipline Code, Grade, Session'}</code>
+                 <p className="text-[9px] text-indigo-200 italic font-bold">{language === 'ro' ? '* Numărul matricol trebuie să corespundă exact cu registrul studenților.' : '* Registration Number must match student registry exactly.'}</p>
               </div>
               <div className="border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center hover:border-indigo-400 transition-all cursor-pointer relative group">
                  <input type="file" accept=".csv" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setImportFile(e.target.files[0])} />
                  <Upload size={40} className="mx-auto text-slate-300 mb-4 group-hover:text-indigo-400 group-hover:scale-110 transition-all" />
-                 <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{importFile ? importFile.name : 'Drop CSV Asset Here'}</p>
+                 <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{importFile ? importFile.name : (language === 'ro' ? 'Plasați activul CSV aici' : 'Drop CSV Asset Here')}</p>
               </div>
               <button type="submit" disabled={importLoading} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black shadow-xl transition-all">
-                 {importLoading ? 'Processing Dataset...' : 'Execute Import'}
+                 {importLoading ? (language === 'ro' ? 'Se procesează setul de date...' : 'Processing Dataset...') : (language === 'ro' ? 'Execută Importul' : 'Execute Import')}
               </button>
            </form>
         </Modal>
       )}
 
       {showTemplateModal && (
-        <Modal title="Generate Intelligence Template" onClose={() => setShowTemplateModal(false)}>
+        <Modal title={language === 'ro' ? 'Generare Șablon Inteligent' : "Generate Intelligence Template"} onClose={() => setShowTemplateModal(false)}>
            <form onSubmit={handleGenerateTemplate} className="space-y-6">
               <div className="bg-slate-900 p-8 rounded-3xl text-white shadow-xl shadow-slate-200 relative overflow-hidden group">
                  <FileText className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-125 transition-transform" size={100} />
-                 <h5 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4">Template Engine</h5>
-                 <p className="text-xs text-slate-300 font-bold leading-relaxed">Cascading filters for targeted CSV generation. Select Year and Plan to lock in disciplines.</p>
+                 <h5 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4">{language === 'ro' ? 'Motor Șabloane' : 'Template Engine'}</h5>
+                 <p className="text-xs text-slate-300 font-bold leading-relaxed">{language === 'ro' ? 'Filtre cascadate pentru generarea CSV țintită. Selectați Anul și Planul pentru a bloca disciplinele.' : 'Cascading filters for targeted CSV generation. Select Year and Plan to lock in disciplines.'}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <SelectField label="Academic Year" options={academicYears.map(y => ({ value: y.id, label: `${y.year_start}/${y.year_end}` }))} value={templateForm.academic_year_id} onChange={opt => setTemplateForm({ ...templateForm, academic_year_id: opt?.value || '', specialization_id: '', curriculum_id: '', discipline_id: '' })} />
-                <SelectField label="Specialization" options={specializations.map(s => ({ value: s.id, label: s.name }))} value={templateForm.specialization_id} onChange={opt => setTemplateForm({ ...templateForm, specialization_id: opt?.value || '', curriculum_id: '', discipline_id: '' })} />
+                <SelectField label={language === 'ro' ? 'An Academic' : "Academic Year"} options={academicYears.map(y => ({ value: y.id, label: `${y.year_start}/${y.year_end}` }))} value={templateForm.academic_year_id} onChange={opt => setTemplateForm({ ...templateForm, academic_year_id: opt?.value || '', specialization_id: '', curriculum_id: '', discipline_id: '' })} />
+                <SelectField label={t('th_specialization')} options={specializations.map(s => ({ value: s.id, label: s.name }))} value={templateForm.specialization_id} onChange={opt => setTemplateForm({ ...templateForm, specialization_id: opt?.value || '', curriculum_id: '', discipline_id: '' })} />
               </div>
 
               <SelectField 
-                label="Study Plan (Curriculum)" 
+                label={language === 'ro' ? 'Plan de Studiu (Curricula)' : "Study Plan (Curriculum)"} 
                 options={templateCurricula.map(c => ({ value: c.id, label: c.name }))} 
                 value={templateForm.curriculum_id} 
                 onChange={opt => setTemplateForm({ ...templateForm, curriculum_id: opt?.value || '', discipline_id: '' })} 
@@ -467,7 +465,7 @@ export default function GradesList() {
               />
 
               <SelectField 
-                label="Target Discipline" 
+                label={language === 'ro' ? 'Disciplină Țintă' : "Target Discipline"} 
                 options={templateDisciplines.map(d => ({ value: d.id, label: `${d.code} - ${d.name} (Sem ${d.semester})` }))} 
                 value={templateForm.discipline_id} 
                 onChange={opt => setTemplateForm({ ...templateForm, discipline_id: opt?.value || '' })} 
@@ -475,7 +473,7 @@ export default function GradesList() {
               />
 
               <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-3">
-                 Generate CSV Template <ChevronRight size={16} />
+                 {language === 'ro' ? 'Generează Șablon CSV' : 'Generate CSV Template'} <ChevronRight size={16} />
               </button>
            </form>
         </Modal>
@@ -535,28 +533,31 @@ function ModalInput({ label, ...props }) {
 }
 
 function SelectField({ label, options, value, onChange, isDisabled }) {
+  const { language } = useLanguage();
   return (
     <div className="space-y-2">
        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
-       <Select options={options} value={value ? options.find(o => o.value === value) : null} onChange={onChange} styles={customSelectStyles} placeholder={`-- Select ${label} --`} isDisabled={isDisabled} />
+       <Select options={options} value={value ? options.find(o => o.value === value) : null} onChange={onChange} styles={customSelectStyles} placeholder={language === 'ro' ? `-- Selectează ${label} --` : `-- Select ${label} --`} isDisabled={isDisabled} />
     </div>
   );
 }
 
 function FilterSelect({ label, options, value, onChange }) {
+  const { language } = useLanguage();
   return (
     <div className="space-y-2">
        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
-       <Select options={options} value={value ? options.find(o => o.value === value) : null} onChange={onChange} styles={customSelectStyles} isClearable placeholder="All" />
+       <Select options={options} value={value ? options.find(o => o.value === value) : null} onChange={onChange} styles={customSelectStyles} isClearable placeholder={language === 'ro' ? 'Toate' : "All"} />
     </div>
   );
 }
 
 function LoadingPulse() {
+  const { language } = useLanguage();
   return (
     <div className="flex flex-col items-center gap-4 py-12">
        <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full" />
-       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Processing Academic Records</span>
+       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{language === 'ro' ? 'Se procesează înregistrările academice' : 'Processing Academic Records'}</span>
     </div>
   );
 }

@@ -376,9 +376,9 @@ router.get('/grades/export', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
     const Papa = require('papaparse');
     const csv = Papa.unparse(rows);
     
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename=grades-export.csv');
-    res.status(200).send(csv);
+    res.status(200).send('\uFEFF' + csv);
   } catch (error) {
     next(error);
   }
@@ -627,6 +627,85 @@ router.get('/my-grades', requireRole(['STUDENT']), async (req, res, next) => {
   }
 });
 
+// GET /api/academic/transcript/:studentId (Accessible for SECRETARIAT, ADMIN)
+router.get('/transcript/:studentId', requireRole(['SECRETARIAT', 'ADMIN']), async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+
+    // 1. Fetch student info
+    const studentQuery = `
+      SELECT 
+        s.id, s.first_name, s.last_name, s.registration_number, s.email, s.status, s.enrollment_date,
+        sf.name as formation_name, sf.education_form, sf.study_year as current_study_year,
+        spec.name as specialization_name, spec.degree_level, spec.code as specialization_code
+      FROM STUDENT s
+      LEFT JOIN STUDY_FORMATION sf ON s.study_formation_id = sf.id
+      LEFT JOIN SPECIALIZATION spec ON sf.specialization_id = spec.id
+      WHERE s.id = $1
+      LIMIT 1
+    `;
+    const studentRes = await db.query(studentQuery, [studentId]);
+    
+    if (studentRes.rows.length === 0) {
+      return res.status(404).json({ error: true, message: 'Student not found.' });
+    }
+    const student = studentRes.rows[0];
+
+    // 2. Extract ALL study plans
+    const curriculaQuery = `
+      SELECT 
+        c.id as curriculum_id, c.name as curriculum_name, c.code as curriculum_code,
+        spec.name as specialization_name, spec.degree_level, spec.code as specialization_code
+      FROM STUDENT_CURRICULUM sc
+      JOIN CURRICULUM c ON sc.curriculum_id = c.id
+      JOIN SPECIALIZATION spec ON c.specialization_id = spec.id
+      WHERE sc.student_id = $1 AND sc.status = 'ACTIVE'
+    `;
+    const curriculaRes = await db.query(curriculaQuery, [studentId]);
+    const studentCurricula = curriculaRes.rows;
+
+    // 3. Extract ALL disciplines and grades
+    const gradesQuery = `
+      SELECT 
+        c.id as curriculum_id,
+        d.id as discipline_id,
+        d.name AS discipline_name,
+        d.code AS discipline_code,
+        d.semester,
+        d.evaluation_type,
+        d.ects_credits,
+        g.value AS grade_value,
+        g.grading_date,
+        g.exam_session
+      FROM STUDENT_CURRICULUM sc
+      JOIN CURRICULUM c ON sc.curriculum_id = c.id
+      JOIN DISCIPLINE d ON c.id = d.curriculum_id
+      LEFT JOIN GRADE g ON sc.student_id = g.student_id AND d.id = g.discipline_id
+      WHERE sc.student_id = $1 AND sc.status = 'ACTIVE'
+      ORDER BY c.id, d.semester ASC, d.name ASC;
+    `;
+    const { rows } = await db.query(gradesQuery, [studentId]);
+
+    const academicPlans = studentCurricula.map(plan => ({
+      ...plan,
+      records: rows.filter(r => r.curriculum_id === plan.curriculum_id)
+    }));
+
+    res.json({
+      success: true,
+      studentInfo: {
+        ...student,
+        institution: "University of Craiova",
+        faculty: "Faculty of Automation, Computers and Electronics",
+        domain: "Computer Science and Information Technology"
+      },
+      academicPlans
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/academic/grades/template - Generate Import Template
 router.get('/grades/template', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']), async (req, res, next) => {
   try {
@@ -672,9 +751,9 @@ router.get('/grades/template', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']
     const Papa = require('papaparse');
     const csv = Papa.unparse(rows);
     
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename=grade-template-${disciplineCode}.csv`);
-    res.status(200).send(csv);
+    res.status(200).send('\uFEFF' + csv);
   } catch (error) {
     next(error);
   }

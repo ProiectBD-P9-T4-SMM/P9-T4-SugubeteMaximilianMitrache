@@ -135,7 +135,7 @@ router.post('/e-grade-centralizer/export/csv', requireRole(['SECRETARIAT', 'ADMI
         const csv = Papa.unparse(result.rows);
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="Centralizer_${new Date().getTime()}.csv"`);
-        res.send(csv);
+        res.send('\uFEFF' + csv);
     } catch (error) { next(error); }
 });
 
@@ -209,7 +209,7 @@ router.get('/template/grades-csv', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARI
         const csv = Papa.unparse(rows);
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="Grade_Template_${disciplineCode}.csv"`);
-        res.send(csv);
+        res.send('\uFEFF' + csv);
     } catch (error) {
         console.error('[TEMPLATE ERROR]', error);
         next(error);

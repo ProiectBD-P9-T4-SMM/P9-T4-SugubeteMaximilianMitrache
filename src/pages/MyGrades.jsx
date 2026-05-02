@@ -16,8 +16,10 @@ import {
   Award,
   BookOpen
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function MyGrades() {
+  const { t, language } = useLanguage();
   const [plans, setPlans] = useState([]);
   const [studentInfo, setStudentInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ export default function MyGrades() {
         setExpandedYears(initialExpanded);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Eroare la preluarea datelor academice.');
+      setError(err.response?.data?.message || (language === 'ro' ? 'Eroare la preluarea datelor academice.' : 'Error fetching academic data.'));
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,6 @@ export default function MyGrades() {
     }));
   };
 
-  // Helper to group data by Year and Semester for a specific record set
   const getStructuredData = (records) => {
     const years = {};
     records.forEach(discipline => {
@@ -112,13 +113,11 @@ export default function MyGrades() {
 
     try {
       const doc = new jsPDF();
-      doc.setFont('helvetica'); // Use standard font
+      doc.setFont('helvetica');
       
-      // Header Background
       doc.setFillColor(41, 128, 185);
       doc.rect(0, 0, 210, 45, 'F');
       
-      // Institution Header
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(22);
       doc.text(sanitize("Universitatea din Craiova"), 14, 22);
@@ -126,30 +125,28 @@ export default function MyGrades() {
       doc.text(sanitize("Facultatea de Automatica, Calculatoare si Electronica"), 14, 30);
       doc.text(sanitize("Sistem Integrat de Gestiune Academica (AFSMS Core)"), 14, 35);
       
-      // Title
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(16);
-      doc.text(sanitize("FOAIE MATRICOLA PARTIALA"), 14, 60);
+      doc.text(sanitize(t('myg_partial_transcript')), 14, 60);
       doc.setDrawColor(41, 128, 185);
       doc.setLineWidth(0.5);
       doc.line(14, 62, 200, 62);
       
-      // Student Details
       doc.setFontSize(10);
-      doc.text(sanitize(`Nume Student:`), 14, 72);
+      doc.text(sanitize(`${t('myg_student')}:`), 14, 72);
       doc.setFont('helvetica', 'bold');
       doc.text(sanitize(`${studentInfo.last_name} ${studentInfo.first_name}`), 45, 72);
       doc.setFont('helvetica', 'normal');
       
-      doc.text(sanitize(`Nr. Matricol:`), 14, 77);
+      doc.text(sanitize(`${t('myg_reg_num')}:`), 14, 77);
       doc.setFont('helvetica', 'bold');
       doc.text(sanitize(`${studentInfo.registration_number}`), 45, 77);
       doc.setFont('helvetica', 'normal');
 
-      doc.text(sanitize(`Specializare:`), 14, 82);
+      doc.text(sanitize(`${language === 'ro' ? 'Specializare' : 'Specialization'}:`), 14, 82);
       doc.text(sanitize(`${plan.specialization_name} (${plan.specialization_code})`), 45, 82);
       
-      doc.text(sanitize(`Plan de inv.:`), 14, 87);
+      doc.text(sanitize(`${t('myg_plan')}:`), 14, 87);
       doc.text(sanitize(`${plan.curriculum_name}`), 45, 87);
 
       const structured = getStructuredData(plan.records);
@@ -164,7 +161,7 @@ export default function MyGrades() {
         doc.setFontSize(12);
         doc.setTextColor(41, 128, 185);
         doc.setFont('helvetica', 'bold');
-        doc.text(sanitize(`ANUL UNIVERSITAR ${year}`), 14, currentY);
+        doc.text(sanitize(`${t('myg_academic_year')} ${year}`), 14, currentY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
         currentY += 5;
@@ -174,13 +171,13 @@ export default function MyGrades() {
           d.semester,
           sanitize(d.discipline_name),
           d.ects_credits,
-          d.grade_value || 'Neex.',
+          d.grade_value || t('myg_not_examined'),
           sanitize(d.exam_session || '-'),
-          d.grading_date ? new Date(d.grading_date).toLocaleDateString('ro-RO') : '-'
+          d.grading_date ? new Date(d.grading_date).toLocaleDateString(language === 'ro' ? 'ro-RO' : 'en-US') : '-'
         ]);
 
         autoTable(doc, {
-          head: [['Sem', 'Disciplina', 'ECTS', 'Nota', 'Sesiune', 'Data']],
+          head: [[t('unit_sem'), t('myg_th_discipline'), t('myg_th_credits'), t('myg_th_grade'), language === 'ro' ? 'Sesiune' : 'Session', language === 'ro' ? 'Data' : 'Date']],
           body: tableRows,
           startY: currentY,
           theme: 'striped',
@@ -199,7 +196,6 @@ export default function MyGrades() {
         currentY = doc.lastAutoTable.finalY + 15;
       });
 
-      // Stats Summary
       const stats = calculateStats(plan.records);
       if (currentY > 240) {
         doc.addPage();
@@ -210,28 +206,26 @@ export default function MyGrades() {
       doc.rect(14, currentY, 186, 25, 'F');
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text(sanitize(`Sumar Progres:`), 20, currentY + 10);
+      doc.text(sanitize(`${t('myg_progress_summary')}:`), 20, currentY + 10);
       doc.setFont('helvetica', 'normal');
-      doc.text(sanitize(`Total Credite Acumulate: ${stats.earnedCredits} / ${stats.totalCredits} PC`), 20, currentY + 18);
-      doc.text(sanitize(`Media Multiannuala: ${stats.average}`), 120, currentY + 18);
+      doc.text(sanitize(`${t('myg_total_credits')}: ${stats.earnedCredits} / ${stats.totalCredits} PC`), 20, currentY + 18);
+      doc.text(sanitize(`${t('myg_multiyear_average')}: ${stats.average}`), 120, currentY + 18);
 
-      // Final Footer
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
-        doc.text(sanitize(`Pagina ${i} din ${pageCount}`), 100, 285, { align: 'center' });
-        doc.text(sanitize(`Document generat automat de platforma AFSMS Core la data de ${new Date().toLocaleString('ro-RO')}`), 14, 290);
+        doc.text(sanitize(`${t('myg_page')} ${i} ${t('myg_of')} ${pageCount}`), 100, 285, { align: 'center' });
+        doc.text(sanitize(`${t('myg_auto_gen')} ${new Date().toLocaleString(language === 'ro' ? 'ro-RO' : 'en-US')}`), 14, 290);
       }
 
       doc.save(`Foaie_Matricola_${studentInfo.registration_number}_${plan.curriculum_code}.pdf`);
     } catch (err) {
       console.error('PDF Export Error:', err);
-      alert('A aparut o eroare la generarea PDF-ului: ' + err.message);
+      alert((language === 'ro' ? 'A aparut o eroare la generarea PDF-ului: ' : 'An error occurred while generating the PDF: ') + err.message);
     }
   };
-
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -255,25 +249,31 @@ export default function MyGrades() {
           <div>
             <div className="flex items-center gap-3 mb-2 text-blue-600">
               <GraduationCap size={28} />
-              <h1 className="text-3xl font-bold tracking-tight">Portofoliu Academic</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{t('myg_title')}</h1>
             </div>
             <p className="text-slate-500 text-lg">
-              <strong>{studentInfo.last_name} {studentInfo.first_name}</strong> | Matricol: {studentInfo.registration_number}
+              <strong>{studentInfo.last_name} {studentInfo.first_name}</strong> | {t('myg_reg_num')}: {studentInfo.registration_number}
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 border-t border-slate-100 pt-8">
           <div className="space-y-1">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Status General</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('myg_general_status')}</p>
             <div className="flex items-center gap-2">
               <span className={`h-2.5 w-2.5 rounded-full ${studentInfo.status === 'ENROLLED' || studentInfo.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-              <p className="text-slate-700 font-semibold">{studentInfo.status === 'ACTIVE' ? '🟢 Student Activ' : studentInfo.status === 'ENROLLED' ? '🔴 În așteptare' : 'Inactiv'}</p>
+              <p className="text-slate-700 font-semibold">
+                {studentInfo.status === 'ACTIVE' 
+                  ? t('myg_active_student') 
+                  : studentInfo.status === 'ENROLLED' 
+                    ? t('myg_pending') 
+                    : t('myg_inactive')}
+              </p>
             </div>
           </div>
           <div className="space-y-1 text-right">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Planuri Active</p>
-            <p className="text-slate-700 font-bold text-xl">{plans.length} Programe de Studii</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('myg_active_plans')}</p>
+            <p className="text-slate-700 font-bold text-xl">{plans.length} {t('myg_study_programs')}</p>
           </div>
         </div>
       </div>
@@ -290,14 +290,14 @@ export default function MyGrades() {
               <div className="flex items-center gap-4 mb-6">
                 <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
                   <BookOpen className="text-blue-600" size={20} />
-                  <span className="font-bold text-slate-800 uppercase tracking-wide">Plan: {plan.curriculum_name}</span>
+                  <span className="font-bold text-slate-800 uppercase tracking-wide">{t('myg_plan')}: {plan.curriculum_name}</span>
                 </div>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <button 
                   onClick={() => handleExportPDF(plan)}
                   className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-200 shadow-sm hover:border-blue-400 hover:text-blue-600"
                 >
-                  <Download size={14} /> PDF Plan {planIdx + 1}
+                  <Download size={14} /> {t('myg_export_pdf')} {planIdx + 1}
                 </button>
               </div>
 
@@ -305,17 +305,17 @@ export default function MyGrades() {
                 <div className="bg-slate-50 px-8 py-6 border-b border-slate-200 flex flex-col md:flex-row justify-between gap-6">
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">{plan.specialization_name} ({plan.specialization_code})</p>
-                    <p className="text-sm text-slate-500 font-medium">Ciclu: {plan.degree_level} | Status: {plan.records.length > 0 ? 'În curs' : 'Fără activitate'}</p>
+                    <p className="text-sm text-slate-500 font-medium">{t('myg_degree_cycle')}: {plan.degree_level} | Status: {plan.records.length > 0 ? t('myg_in_progress') : t('myg_no_activity')}</p>
                   </div>
                   
                   <div className="flex gap-8">
                     <div className="text-center">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Media Plan</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('myg_plan_average')}</p>
                       <p className="text-xl font-black text-blue-700">{stats.average}</p>
                     </div>
                     <div className="min-w-[150px]">
                       <div className="flex justify-between items-end mb-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Progres Credite</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">{t('myg_credit_progress')}</p>
                         <p className="text-[10px] font-bold text-slate-700">{stats.earnedCredits} / {stats.totalCredits} PC</p>
                       </div>
                       <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
@@ -337,10 +337,10 @@ export default function MyGrades() {
                         >
                           <div className="flex items-center gap-3">
                             {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
-                            <h3 className="text-base font-bold text-slate-800">Anul {year}</h3>
+                            <h3 className="text-base font-bold text-slate-800">{t('unit_year')} {year}</h3>
                           </div>
                           <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                            {semesters[1].length + semesters[2].length} Materii
+                            {semesters[1].length + semesters[2].length} {t('myg_disciplines')}
                           </span>
                         </button>
 
@@ -351,17 +351,17 @@ export default function MyGrades() {
                                 {semesters[sem].length > 0 && (
                                   <>
                                     <div className="flex items-center gap-2 mb-3 px-2">
-                                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Semestrul {sem}</span>
+                                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('myg_semester')} {sem}</span>
                                       <div className="h-px flex-1 bg-slate-100"></div>
                                     </div>
                                     <div className="overflow-hidden rounded-xl border border-slate-100 shadow-sm bg-white">
                                       <table className="w-full text-xs text-left">
                                         <thead>
                                           <tr className="bg-slate-50/50 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100">
-                                            <th className="px-4 py-3">Disciplina</th>
-                                            <th className="px-4 py-3 text-center">Credite</th>
-                                            <th className="px-4 py-3 text-center">Nota</th>
-                                            <th className="px-4 py-3 text-center">Status</th>
+                                            <th className="px-4 py-3">{t('myg_th_discipline')}</th>
+                                            <th className="px-4 py-3 text-center">{t('myg_th_credits')}</th>
+                                            <th className="px-4 py-3 text-center">{t('myg_th_grade')}</th>
+                                            <th className="px-4 py-3 text-center">{t('myg_th_status')}</th>
                                           </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
@@ -380,7 +380,7 @@ export default function MyGrades() {
                                                       {d.grade_value}
                                                     </span>
                                                   ) : (
-                                                    <span className="text-slate-300 italic">Neex.</span>
+                                                    <span className="text-slate-300 italic">{t('myg_not_examined')}</span>
                                                   )}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
@@ -415,13 +415,13 @@ export default function MyGrades() {
       </div>
 
       <footer className="mt-24 text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest space-y-2 pb-12">
-        <p>Powered by AFSMS Core | Registru Matricol Unificat</p>
-        <p>© 2026 Universitatea din Craiova. Toate drepturile rezervate.</p>
-        <p>© 2026 AFSMS University System. All rights reserved.</p>
+        <p>Powered by AFSMS Core | {t('myg_footer_rmu')}</p>
+        <p>© 2026 Universitatea din Craiova. {t('myg_footer_rights')}</p>
+        <p>© 2026 AFSMS University System. {t('myg_footer_rights')}</p>
         <div className="flex justify-center gap-4 pt-2">
-            <span className="hover:text-slate-600 cursor-pointer">Privacy / GDPR</span>
-            <span className="hover:text-slate-600 cursor-pointer">Contact</span>
-            <span className="hover:text-slate-600 cursor-pointer">Help</span>
+            <span className="hover:text-slate-600 cursor-pointer">{t('nav_privacy')} / GDPR</span>
+            <span className="hover:text-slate-600 cursor-pointer">{t('nav_contact')}</span>
+            <span className="hover:text-slate-600 cursor-pointer">{t('nav_help')}</span>
         </div>
       </footer>
     </div>

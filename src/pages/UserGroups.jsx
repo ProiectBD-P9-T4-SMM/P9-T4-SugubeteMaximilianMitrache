@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Users, Plus, Trash2, UserPlus, X, Edit, Save, Check } from 'lucide-react';
 import Select from 'react-select';
 import { groupsService, adminService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function UserGroups() {
   const nameRef = useRef(null);
   const memberRef = useRef(null);
+  const { t, language } = useLanguage();
   
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
@@ -86,7 +88,7 @@ export default function UserGroups() {
       setNewGroupDesc('');
       loadGroups();
     } catch (err) {
-      alert('Failed to create group');
+      alert(language === 'ro' ? 'Eroare la crearea grupului.' : 'Failed to create group');
     }
   };
 
@@ -99,18 +101,18 @@ export default function UserGroups() {
       setIsEditing(false);
       loadGroups();
     } catch (err) {
-      alert('Failed to update group');
+      alert(language === 'ro' ? 'Eroare la actualizarea grupului.' : 'Failed to update group');
     }
   };
 
   const handleDeleteGroup = async (id) => {
-    if (!window.confirm('Delete this group?')) return;
+    if (!window.confirm(t('confirm_delete'))) return;
     try {
       await groupsService.deleteGroup(id);
       if (selectedGroup?.id === id) setSelectedGroup(null);
       loadGroups();
     } catch (err) {
-      alert('Failed to delete group');
+      alert(language === 'ro' ? 'Eroare la ștergerea grupului.' : 'Failed to delete group');
     }
   };
 
@@ -122,7 +124,7 @@ export default function UserGroups() {
       setSelectedUserId('');
       loadMembers(selectedGroup.id);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add member');
+      alert(err.response?.data?.message || (language === 'ro' ? 'Eroare la adăugarea membrului.' : 'Failed to add member'));
     }
   };
 
@@ -131,7 +133,7 @@ export default function UserGroups() {
       await groupsService.removeMember(selectedGroup.id, userId);
       loadMembers(selectedGroup.id);
     } catch (err) {
-      alert('Failed to remove member');
+      alert(language === 'ro' ? 'Eroare la eliminarea membrului.' : 'Failed to remove member');
     }
   };
 
@@ -139,22 +141,22 @@ export default function UserGroups() {
     <div className="flex-1 w-full bg-slate-50 min-h-screen p-6">
       <div className="w-full space-y-6">
         <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-          <Users className="text-blue-600" size={32} /> User Groups
+          <Users className="text-blue-600" size={32} /> {t('groups_title')}
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Groups List */}
           <div className="lg:col-span-4 bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Registry Groups</h3>
-                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[10px] font-black">{groups.length} Groups</span>
+                <h3 className="font-black text-slate-400 uppercase tracking-widest text-[10px]">{language === 'ro' ? 'Registru Grupuri' : 'Registry Groups'}</h3>
+                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[10px] font-black">{groups.length} {language === 'ro' ? 'Grupuri' : 'Groups'}</span>
             </div>
             
             <form onSubmit={handleCreateGroup} className="mb-6 space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <input required ref={nameRef} type="text" placeholder="New Group Name" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
-              <input type="text" placeholder="Group Description" value={newGroupDesc} onChange={e => setNewGroupDesc(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+              <input required ref={nameRef} type="text" placeholder={language === 'ro' ? 'Nume Grup Nou' : "New Group Name"} value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+              <input type="text" placeholder={language === 'ro' ? 'Descriere Grup' : "Group Description"} value={newGroupDesc} onChange={e => setNewGroupDesc(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
               <button type="submit" className="w-full bg-slate-900 text-white rounded-xl py-3 text-xs font-black flex justify-center items-center gap-2 hover:bg-black shadow-lg transition-all">
-                <Plus size={16} /> Create Group
+                <Plus size={16} /> {language === 'ro' ? 'Crează Grup' : 'Create Group'}
               </button>
             </form>
 
@@ -169,7 +171,7 @@ export default function UserGroups() {
                      onClick={() => setSelectedGroup(g)}>
                   <div className="flex-1 min-w-0">
                     <div className={`font-black text-sm truncate ${selectedGroup?.id === g.id ? 'text-white' : 'text-slate-800'}`}>{g.name}</div>
-                    <div className={`text-[10px] font-bold truncate ${selectedGroup?.id === g.id ? 'text-blue-100' : 'text-slate-400'}`}>{g.description || 'No description provided'}</div>
+                    <div className={`text-[10px] font-bold truncate ${selectedGroup?.id === g.id ? 'text-blue-100' : 'text-slate-400'}`}>{g.description || (language === 'ro' ? 'Fără descriere' : 'No description provided')}</div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <button onClick={(e) => { e.stopPropagation(); handleDeleteGroup(g.id); }} className={`p-2 rounded-xl transition-all ${selectedGroup?.id === g.id ? 'text-white/50 hover:text-white hover:bg-white/10' : 'text-slate-300 hover:text-red-600 hover:bg-red-50'}`}>
@@ -190,16 +192,16 @@ export default function UserGroups() {
                         {isEditing ? (
                             <form onSubmit={handleUpdateGroup} className="space-y-3 bg-blue-50 p-6 rounded-2xl border border-blue-100 animate-in zoom-in-95 duration-200">
                                 <div className="flex justify-between items-center mb-2">
-                                    <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Editing Group Identity</h4>
+                                    <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{language === 'ro' ? 'Editare Identitate Grup' : 'Editing Group Identity'}</h4>
                                     <button type="button" onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input required type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-100 transition-all" placeholder="Group Name" />
-                                    <input type="text" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-100 transition-all" placeholder="Description" />
+                                    <input required type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-black outline-none focus:ring-4 focus:ring-blue-100 transition-all" placeholder={language === 'ro' ? 'Nume Grup' : "Group Name"} />
+                                    <input type="text" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-100 transition-all" placeholder={language === 'ro' ? 'Descriere' : "Description"} />
                                 </div>
                                 <div className="flex justify-end gap-3 pt-2">
                                     <button type="submit" className="bg-blue-600 text-white rounded-xl px-6 py-2.5 text-xs font-black flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all">
-                                        <Check size={16} /> Save Changes
+                                        <Check size={16} /> {t('save')}
                                     </button>
                                 </div>
                             </form>
@@ -212,7 +214,7 @@ export default function UserGroups() {
                                             <Edit size={18} />
                                         </button>
                                     </div>
-                                    <p className="text-sm font-bold text-slate-400 mt-1">{selectedGroup.description || 'This group has no description yet.'}</p>
+                                    <p className="text-sm font-bold text-slate-400 mt-1">{selectedGroup.description || (language === 'ro' ? 'Acest grup nu are încă o descriere.' : 'This group has no description yet.')}</p>
                                 </div>
                             </div>
                         )}
@@ -221,8 +223,8 @@ export default function UserGroups() {
 
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
-                         <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Member Enrollment</h4>
-                         <span className="text-[10px] font-black text-slate-400 uppercase">{members.length} Active Members</span>
+                         <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">{language === 'ro' ? 'Înrolare Membri' : 'Member Enrollment'}</h4>
+                         <span className="text-[10px] font-black text-slate-400 uppercase">{members.length} {language === 'ro' ? 'Membri Activi' : 'Active Members'}</span>
                     </div>
 
                     <form onSubmit={handleAddMember} className="flex flex-col md:flex-row gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -233,7 +235,7 @@ export default function UserGroups() {
                                 options={systemUsers.filter(u => !members.find(m => m.user_account_id === u.id)).map(u => ({ value: u.id, label: `${u.full_name} (${u.email})` }))}
                                 value={selectedUserId ? { value: selectedUserId, label: systemUsers.find(u => u.id === selectedUserId)?.full_name } : null}
                                 onChange={option => setSelectedUserId(option ? option.value : '')}
-                                placeholder="-- Search Global User Directory --"
+                                placeholder={language === 'ro' ? '-- Caută în Directorul Global al Utilizatorilor --' : "-- Search Global User Directory --"}
                                 isClearable
                                 styles={{
                                     control: (base) => ({
@@ -248,7 +250,7 @@ export default function UserGroups() {
                             />
                         </div>
                         <button type="submit" className="bg-emerald-600 text-white rounded-xl px-6 py-3 text-xs font-black flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">
-                            <UserPlus size={16} /> Enroll User
+                            <UserPlus size={16} /> {language === 'ro' ? 'Înrolează Utilizator' : 'Enroll User'}
                         </button>
                     </form>
 
@@ -256,15 +258,15 @@ export default function UserGroups() {
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-widest">
                                 <tr>
-                                    <th className="px-6 py-4">Identity</th>
-                                    <th className="px-6 py-4">Credentials</th>
-                                    <th className="px-6 py-4">Contact</th>
-                                    <th className="px-6 py-4 text-right">Access</th>
+                                    <th className="px-6 py-4">{language === 'ro' ? 'Identitate' : 'Identity'}</th>
+                                    <th className="px-6 py-4">{language === 'ro' ? 'Credentiale' : 'Credentials'}</th>
+                                    <th className="px-6 py-4">{language === 'ro' ? 'Contact' : 'Contact'}</th>
+                                    <th className="px-6 py-4 text-right">{language === 'ro' ? 'Acces' : 'Access'}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 bg-white">
                                 {members.length === 0 ? (
-                                    <tr><td colSpan="4" className="px-6 py-12 text-center text-slate-300 italic font-bold">No members are currently enrolled in this group.</td></tr>
+                                    <tr><td colSpan="4" className="px-6 py-12 text-center text-slate-300 italic font-bold">{language === 'ro' ? 'Niciun membru nu este înrolat în acest grup.' : 'No members are currently enrolled in this group.'}</td></tr>
                                 ) : members.map(m => (
                                     <tr key={m.user_account_id} className="hover:bg-slate-50/50 transition-all group">
                                         <td className="px-6 py-4">
@@ -288,8 +290,8 @@ export default function UserGroups() {
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-slate-300 bg-slate-50/30 rounded-3xl border border-dashed border-slate-200">
                 <Users size={80} className="mb-6 opacity-20" strokeWidth={1} />
-                <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Governance & Membership</h4>
-                <p className="text-xs font-bold text-slate-300 mt-2">Select a group from the registry to manage members and settings.</p>
+                <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">{language === 'ro' ? 'Guvernanță și Apartenență' : 'Governance & Membership'}</h4>
+                <p className="text-xs font-bold text-slate-300 mt-2">{language === 'ro' ? 'Selectați un grup din registru pentru a gestiona membrii și setările.' : 'Select a group from the registry to manage members and settings.'}</p>
               </div>
             )}
           </div>

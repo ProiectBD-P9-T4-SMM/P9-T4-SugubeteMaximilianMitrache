@@ -7,10 +7,12 @@ import {
 } from 'lucide-react';
 import api, { auditService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [recentActivity, setRecentActivity] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,10 +50,10 @@ export default function Dashboard() {
   const renderAdminDashboard = () => (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard title="Total Users" value={stats?.totalUsers} icon={Users} color="bg-blue-600" trend="+4% this week" />
-        <StatCard title="Registered Students" value={stats?.totalStudents} icon={GraduationCap} color="bg-indigo-600" trend="+12 New" />
-        <StatCard title="Active Curricula" value={stats?.activeCurricula} icon={BookOpen} color="bg-emerald-600" />
-        <StatCard title="System Actions" value={stats?.recentActions} icon={Shield} color="bg-rose-600" trend="Last 24h" />
+        <StatCard title={t('admin_total_users')} value={stats?.totalUsers} icon={Users} color="bg-blue-600" trend="+4% this week" />
+        <StatCard title={t('admin_students')} value={stats?.totalStudents} icon={GraduationCap} color="bg-indigo-600" trend="+12 New" />
+        <StatCard title={t('admin_curricula')} value={stats?.activeCurricula} icon={BookOpen} color="bg-emerald-600" />
+        <StatCard title={t('admin_actions')} value={stats?.recentActions} icon={Shield} color="bg-rose-600" trend="Last 24h" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -59,10 +61,10 @@ export default function Dashboard() {
           <ActivityFeed activities={recentActivity} />
         </div>
         <div className="space-y-6">
-          <QuickActions title="Admin Shortcuts" actions={[
-            { label: 'Audit Trail', icon: Settings, path: '/audit', color: 'text-rose-600 bg-rose-50' },
-            { label: 'User Groups', icon: Users, path: '/groups', color: 'text-blue-600 bg-blue-50' },
-            { label: 'System Setup', icon: List, path: '/disciplines', color: 'text-emerald-600 bg-emerald-50' },
+          <QuickActions title={t('admin_shortcuts')} actions={[
+            { label: t('audit_trail'), icon: Settings, path: '/audit', color: 'text-rose-600 bg-rose-50' },
+            { label: t('nav_groups'), icon: Users, path: '/groups', color: 'text-blue-600 bg-blue-50' },
+            { label: t('system_setup'), icon: List, path: '/disciplines', color: 'text-emerald-600 bg-emerald-50' },
           ]} />
           <SystemStatusCard />
         </div>
@@ -73,9 +75,9 @@ export default function Dashboard() {
   const renderProfessorDashboard = () => (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Grades Added (Month)" value={stats?.gradesThisMonth} icon={TrendingUp} color="bg-emerald-600" />
-        <StatCard title="Assigned Modules" value={stats?.totalDisciplines} icon={BookOpen} color="bg-blue-600" />
-        <StatCard title="Upcoming Sessions" value={stats?.upcomingExams} icon={Clock} color="bg-amber-600" />
+        <StatCard title={t('stats_grades_month')} value={stats?.gradesThisMonth} icon={TrendingUp} color="bg-emerald-600" />
+        <StatCard title={t('stats_disciplines')} value={stats?.totalDisciplines} icon={BookOpen} color="bg-blue-600" />
+        <StatCard title={t('stats_upcoming_exams')} value={stats?.upcomingExams} icon={Clock} color="bg-amber-600" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -83,25 +85,25 @@ export default function Dashboard() {
           <div className="flex flex-col gap-8">
             <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
               <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
-                <TrendingUp className="text-emerald-500" /> Grading Velocity Trend
+                <TrendingUp className="text-emerald-500" /> {t('grading_velocity')}
               </h3>
               <div className="flex items-end justify-between h-48 gap-2 px-4">
-                {stats?.performanceTrend?.length > 0 ? stats.performanceTrend.map((t, i) => (
+                {stats?.performanceTrend?.length > 0 ? stats.performanceTrend.map((trendItem, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                      <div className="w-full bg-slate-50 rounded-t-lg relative h-full flex items-end">
                         <div 
                           className="w-full bg-blue-500 rounded-t-lg transition-all duration-1000 group-hover:bg-blue-600" 
-                          style={{ height: `${Math.min(100, (t.count / (Math.max(...stats.performanceTrend.map(x => x.count)) || 1)) * 100)}%` }}
+                          style={{ height: `${Math.min(100, (trendItem.count / (Math.max(...stats.performanceTrend.map(x => x.count)) || 1)) * 100)}%` }}
                         >
                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                              {t.count} grades
+                              {trendItem.count} {t('grades_unit')}
                            </div>
                         </div>
                      </div>
-                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.month}</span>
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{trendItem.month}</span>
                   </div>
                 )) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 italic font-bold">No grading data found for this period.</div>
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 italic font-bold">{t('no_grading_data')}</div>
                 )}
               </div>
             </div>
@@ -109,10 +111,10 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="space-y-6">
-          <QuickActions title="Faculty Portal" actions={[
-            { label: 'Add Official Grade', icon: Plus, path: '/grades/list', color: 'text-blue-600 bg-blue-50' },
-            { label: 'Student Files', icon: Users, path: '/students', color: 'text-indigo-600 bg-indigo-50' },
-            { label: 'Official Requests', icon: FileSignature, path: '/documents', color: 'text-purple-600 bg-purple-50' },
+          <QuickActions title={t('prof_subtitle')} actions={[
+            { label: t('nav_grades'), icon: Plus, path: '/grades/list', color: 'text-blue-600 bg-blue-50' },
+            { label: t('nav_students'), icon: Users, path: '/students', color: 'text-indigo-600 bg-indigo-50' },
+            { label: t('nav_documents'), icon: FileSignature, path: '/documents', color: 'text-purple-600 bg-purple-50' },
           ]} />
           <SystemStatusCard />
         </div>
@@ -123,10 +125,10 @@ export default function Dashboard() {
   const renderSecretariatDashboard = () => (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard title="Active Students" value={stats?.activeStudents} icon={UserCheck} color="bg-emerald-600" />
-        <StatCard title="Unassigned Paths" value={stats?.unassignedStudents} icon={AlertCircle} color="bg-amber-600" trend="Needs Action" />
-        <StatCard title="Pending Docs" value={stats?.recentDocuments} icon={FileText} color="bg-indigo-600" trend="Last 7 days" />
-        <StatCard title="Study Groups" value={stats?.totalGroups} icon={Users} color="bg-blue-600" />
+        <StatCard title={t('sec_active_students')} value={stats?.activeStudents} icon={UserCheck} color="bg-emerald-600" />
+        <StatCard title={t('sec_unassigned')} value={stats?.unassignedStudents} icon={AlertCircle} color="bg-amber-600" trend="Needs Action" />
+        <StatCard title={t('sec_pending_docs')} value={stats?.recentDocuments} icon={FileText} color="bg-indigo-600" trend="Last 7 days" />
+        <StatCard title={t('sec_study_groups')} value={stats?.totalGroups} icon={Users} color="bg-blue-600" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -134,11 +136,11 @@ export default function Dashboard() {
           <ActivityFeed activities={recentActivity} />
         </div>
         <div className="space-y-6">
-          <QuickActions title="Secretariat Desk" actions={[
-            { label: 'Student Registry', icon: Users, path: '/students', color: 'text-blue-600 bg-blue-50' },
-            { label: 'Export Centralizer', icon: Download, path: '/centralizer', color: 'text-emerald-600 bg-emerald-50' },
-            { label: 'Module Config', icon: List, path: '/disciplines', color: 'text-indigo-600 bg-indigo-50' },
-            { label: 'Workflow Mgr', icon: FileSignature, path: '/documents', color: 'text-purple-600 bg-purple-50' },
+          <QuickActions title={t('sec_desk')} actions={[
+            { label: t('sec_registry'), icon: Users, path: '/students', color: 'text-blue-600 bg-blue-50' },
+            { label: t('sec_export'), icon: Download, path: '/centralizer', color: 'text-emerald-600 bg-emerald-50' },
+            { label: t('sec_module_config'), icon: List, path: '/disciplines', color: 'text-indigo-600 bg-indigo-50' },
+            { label: t('sec_workflow'), icon: FileSignature, path: '/documents', color: 'text-purple-600 bg-purple-50' },
           ]} />
           <SystemStatusCard />
         </div>
@@ -151,20 +153,20 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-8 rounded-3xl shadow-xl shadow-blue-200 text-white relative overflow-hidden group">
           <GraduationCap size={120} className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-500" />
-          <p className="text-blue-100 font-black uppercase tracking-widest text-xs mb-2">Current GPA</p>
+          <p className="text-blue-100 font-black uppercase tracking-widest text-xs mb-2">{t('stu_gpa')}</p>
           <h3 className="text-5xl font-black mb-1 tracking-tighter">{stats?.gpa || '0.00'}</h3>
-          <p className="text-blue-200 text-sm font-bold flex items-center gap-1"><TrendingUp size={14}/> Top {100 - (stats?.percentile || 0)}% of class</p>
+          <p className="text-blue-200 text-sm font-bold flex items-center gap-1"><TrendingUp size={14}/> {t('stu_top_percent').replace('{percent}', 100 - (stats?.percentile || 0))}</p>
         </div>
         
-        <StatCard title="ECTS Credits" value={stats?.totalCredits} icon={BookOpen} color="bg-emerald-600" trend="Validated" />
-        <StatCard title="Active Enrollments" value={stats?.activePlans} icon={Layers} color="bg-slate-900" />
+        <StatCard title={t('stu_ects')} value={stats?.totalCredits} icon={BookOpen} color="bg-emerald-600" trend="Validated" />
+        <StatCard title={t('stu_enrollments')} value={stats?.activePlans} icon={Layers} color="bg-slate-900" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
            <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 h-full">
             <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
-              <History className="text-blue-500" /> Academic Timeline
+              <History className="text-blue-500" /> {t('stu_timeline')}
             </h3>
             <div className="space-y-8">
                {stats?.timeline?.length > 0 ? stats.timeline.map((item, i) => (
@@ -176,10 +178,10 @@ export default function Dashboard() {
            </div>
         </div>
         <div className="space-y-6">
-          <QuickActions title="Student Services" actions={[
-            { label: 'View Grades', icon: List, path: '/my-grades', color: 'text-blue-600 bg-blue-50' },
-            { label: 'Official Documents', icon: FileSignature, path: '/documents', color: 'text-indigo-600 bg-indigo-50' },
-            { label: 'Support & Help', icon: AlertCircle, path: '/help', color: 'text-rose-600 bg-rose-50' },
+          <QuickActions title={t('stu_services')} actions={[
+            { label: t('stu_view_grades'), icon: List, path: '/my-grades', color: 'text-blue-600 bg-blue-50' },
+            { label: t('stu_docs'), icon: FileSignature, path: '/documents', color: 'text-indigo-600 bg-indigo-50' },
+            { label: t('stu_support'), icon: AlertCircle, path: '/help', color: 'text-rose-600 bg-rose-50' },
           ]} />
         </div>
       </div>
@@ -194,18 +196,18 @@ export default function Dashboard() {
             Hello, {user?.fullName?.split(' ')[0]}!
           </h1>
           <div className="flex items-center gap-3">
-            <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{user?.role}</span>
+            <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{t(`role_${user?.role?.toLowerCase()}`)}</span>
             <span className="text-slate-400 font-bold text-xs uppercase tracking-widest flex items-center gap-1">
-              <Clock size={12} /> {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              <Clock size={12} /> {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'ro-RO', { weekday: 'long', month: 'long', day: 'numeric' })}
             </span>
           </div>
         </div>
         
         <div className="flex gap-3">
           <div className="text-right hidden md:block">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Academic Status</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{t('academic_status')}</p>
             <p className="text-emerald-500 font-black text-sm flex items-center justify-end gap-1">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> SYSTEM ONLINE
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> {t('system_online')}
             </p>
           </div>
         </div>
@@ -238,10 +240,11 @@ function StatCard({ title, value, icon: Icon, color, trend }) {
 }
 
 function ActivityFeed({ activities }) {
+  const { t } = useLanguage();
   return (
     <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 h-full">
       <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
-        <Clock className="text-blue-500" /> Recent System Activity
+        <Clock className="text-blue-500" /> {t('recent_activity')}
       </h3>
       <div className="space-y-6">
         {activities.length > 0 ? activities.map((act) => (
@@ -310,23 +313,24 @@ function TimelineItem({ title, date, status }) {
 }
 
 function SystemStatusCard() {
+  const { t } = useLanguage();
   return (
     <div className="bg-slate-900 p-8 rounded-3xl text-white shadow-xl shadow-slate-300 relative overflow-hidden group">
       <div className="relative z-10">
-        <h5 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-4">Security Overview</h5>
+        <h5 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-4">{t('security_overview')}</h5>
         <div className="flex items-center gap-3 mb-6">
           <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
             <Shield className="text-blue-400" size={20} />
           </div>
           <div>
-            <p className="text-lg font-black leading-none tracking-tight">System Secure</p>
-            <p className="text-[10px] text-blue-300/60 font-bold uppercase mt-1">End-to-End Encrypted</p>
+            <p className="text-lg font-black leading-none tracking-tight">{t('system_secure')}</p>
+            <p className="text-[10px] text-blue-300/60 font-bold uppercase mt-1">{t('encrypted')}</p>
           </div>
         </div>
         <div className="space-y-3">
            <div className="flex justify-between text-[10px] font-bold">
-              <span className="text-white/40">DATABASE SYNC</span>
-              <span className="text-emerald-400">OPTIMAL</span>
+              <span className="text-white/40">{t('db_sync')}</span>
+              <span className="text-emerald-400">{t('optimal')}</span>
            </div>
            <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
               <div className="bg-emerald-500 h-full w-[94%] shadow-[0_0_8px_#10b981]" />

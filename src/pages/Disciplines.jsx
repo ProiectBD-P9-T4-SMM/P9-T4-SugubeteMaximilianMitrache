@@ -6,11 +6,13 @@ import {
   Layers, GraduationCap, Shield, ChevronRight, Settings, 
   Search, Filter, Clock, Archive
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export default function Disciplines() {
   const specRef = useRef(null);
   const planRef = useRef(null);
+  const { t, language } = useLanguage();
   
   const [specializations, setSpecializations] = useState([]);
   const [curricula, setCurricula] = useState([]);
@@ -91,10 +93,10 @@ export default function Disciplines() {
     e.preventDefault();
     try {
       await api.post('/academic/specializations', specFormData);
-      setMessage({ type: 'success', text: 'Domain registered successfully.' });
+      setMessage({ type: 'success', text: language === 'ro' ? 'Domeniu înregistrat cu succes.' : 'Domain registered successfully.' });
       setShowSpecForm(false); setSpecFormData({ code:'', name:'', degree_level:'BACHELOR'});
       loadSpecializations();
-    } catch (err) { setMessage({ type: 'error', text: 'Registration failed.' }); }
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Înregistrare eșuată.' : 'Registration failed.' }); }
   };
 
   const handleCreateCurriculum = async (e) => {
@@ -106,10 +108,10 @@ export default function Disciplines() {
         name: curriculumFormData.name,
         valid_from: `${curriculumFormData.startYear}-09-01`
       });
-      setMessage({ type: 'success', text: 'Study plan deployed.' });
+      setMessage({ type: 'success', text: language === 'ro' ? 'Plan de studiu implementat.' : 'Study plan deployed.' });
       setShowCurriculumForm(false);
       loadCurriculaForSpecialization(selectedSpecialization);
-    } catch (err) { setMessage({ type: 'error', text: 'Plan creation failed.' }); }
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Crearea planului a eșuat.' : 'Plan creation failed.' }); }
   };
 
   const resetDisciplineForm = () => {
@@ -144,14 +146,14 @@ export default function Disciplines() {
     try {
       if (isEditingDiscipline) await api.put(`/academic/disciplines/${editingDisciplineId}`, payload);
       else await api.post('/academic/disciplines', payload);
-      setMessage({ type: 'success', text: 'Module saved successfully.' });
+      setMessage({ type: 'success', text: language === 'ro' ? 'Modul salvat cu succes.' : 'Module saved successfully.' });
       resetDisciplineForm(); setShowDisciplineForm(false);
       fetchDisciplines(selectedCurriculum);
-    } catch (err) { setMessage({ type: 'error', text: 'Save failed.' }); }
+    } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? 'Salvare eșuată.' : 'Save failed.' }); }
   };
 
   const handleDeleteDiscipline = async (id) => {
-    if (!confirm('Delete module?')) return;
+    if (!confirm(t('confirm_delete'))) return;
     try {
       await api.delete(`/academic/disciplines/${id}`);
       fetchDisciplines(selectedCurriculum);
@@ -162,9 +164,9 @@ export default function Disciplines() {
     <div className="flex-1 bg-slate-50/50 min-h-screen p-8 lg:p-12 animate-in fade-in duration-500">
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Curricula & Disciplines</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">{t('curr_title')}</h1>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-            <Shield size={16} className="text-blue-600" /> Strategic Academic Architecture Management
+            <Shield size={16} className="text-blue-600" /> {t('curr_subtitle')}
           </p>
         </div>
       </header>
@@ -180,23 +182,23 @@ export default function Disciplines() {
         <div className="flex items-center justify-between mb-8 relative z-10">
           <div className="flex items-center gap-4">
              <div className="h-10 w-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black">1</div>
-             <h3 className="text-lg font-black text-slate-900 tracking-tight">Institutional Domains</h3>
+             <h3 className="text-lg font-black text-slate-900 tracking-tight">{language === 'ro' ? 'Domenii Instituționale' : 'Institutional Domains'}</h3>
           </div>
           <button onClick={() => setShowSpecForm(!showSpecForm)} className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 transition-all">
-            {showSpecForm ? 'Cancel' : 'Register Domain'}
+            {showSpecForm ? t('cancel') : (language === 'ro' ? 'Înregistrare Domeniu' : 'Register Domain')}
           </button>
         </div>
 
         {showSpecForm ? (
           <form onSubmit={handleCreateSpecialization} className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-3xl animate-in slide-in-from-top-4 duration-300">
-             <FormInput label="Domain Code" placeholder="e.g. CTI" value={specFormData.code} onChange={e => setSpecFormData({...specFormData, code: e.target.value})} />
-             <FormInput label="Full Designation" placeholder="e.g. Computer Engineering" value={specFormData.name} onChange={e => setSpecFormData({...specFormData, name: e.target.value})} />
+             <FormInput label={language === 'ro' ? 'Cod Domeniu' : "Domain Code"} placeholder="e.g. CTI" value={specFormData.code} onChange={e => setSpecFormData({...specFormData, code: e.target.value})} />
+             <FormInput label={language === 'ro' ? 'Denumire Completă' : "Full Designation"} placeholder="e.g. Computer Engineering" value={specFormData.name} onChange={e => setSpecFormData({...specFormData, name: e.target.value})} />
              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Academic Degree</label>
-                <Select options={['BACHELOR', 'MASTER', 'PHD'].map(l => ({value:l, label:l}))} value={{value:specFormData.degree_level, label:specFormData.degree_level}} onChange={opt => setSpecFormData({...specFormData, degree_level: opt?.value})} styles={customSelectStyles} />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Nivel Diplomă' : 'Academic Degree'}</label>
+                <Select options={['BACHELOR', 'MASTER', 'PHD'].map(l => ({value:l, label:l}))} value={{value:specFormData.degree_level, label:specFormData.degree_level}} onChange={opt => setSpecFormData({...specFormData, degree_level: opt?.value})} styles={customSelectStyles} menuPortalTarget={document.body} />
              </div>
              <div className="md:col-span-3 flex justify-end">
-                <button type="submit" className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl">Commit Specialization</button>
+                <button type="submit" className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl">{language === 'ro' ? 'Salvează Specializarea' : 'Commit Specialization'}</button>
              </div>
           </form>
         ) : (
@@ -206,8 +208,9 @@ export default function Disciplines() {
             value={selectedSpecialization ? { value: selectedSpecialization, label: specializations.find(s => s.id === selectedSpecialization)?.name } : null}
             onChange={opt => setSelectedSpecialization(opt?.value || '')}
             styles={customSelectStyles}
-            placeholder="-- Select Institutional Domain --"
+            placeholder={language === 'ro' ? '-- Selectează Domeniul Instituțional --' : "-- Select Institutional Domain --"}
             isClearable
+            menuPortalTarget={document.body}
           />
         )}
       </div>
@@ -217,22 +220,22 @@ export default function Disciplines() {
         <div className="flex items-center justify-between mb-8">
            <div className="flex items-center gap-4">
               <div className="h-10 w-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black">2</div>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Active Study Plans</h3>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">{language === 'ro' ? 'Planuri de Studiu Active' : 'Active Study Plans'}</h3>
            </div>
            {selectedSpecialization && (
              <button onClick={() => setShowCurriculumForm(!showCurriculumForm)} className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-100 transition-all">
-                {showCurriculumForm ? 'Cancel' : 'Deploy New Plan'}
+                {showCurriculumForm ? t('cancel') : (language === 'ro' ? 'Implementează Plan Nou' : 'Deploy New Plan')}
              </button>
            )}
         </div>
 
         {showCurriculumForm ? (
           <form onSubmit={handleCreateCurriculum} className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-3xl animate-in slide-in-from-top-4 duration-300">
-             <FormInput label="Plan Identifier" placeholder="e.g. CURR-2026-V1" value={curriculumFormData.code} onChange={e => setCurriculumFormData({...curriculumFormData, code: e.target.value})} />
-             <FormInput label="Official Name" placeholder="e.g. Curriculum v1.0" value={curriculumFormData.name} onChange={e => setCurriculumFormData({...curriculumFormData, name: e.target.value})} />
-             <FormInput label="Deployment Year" type="number" value={curriculumFormData.startYear} onChange={e => setCurriculumFormData({...curriculumFormData, startYear: e.target.value})} />
+             <FormInput label={language === 'ro' ? 'Identificator Plan' : "Plan Identifier"} placeholder="e.g. CURR-2026-V1" value={curriculumFormData.code} onChange={e => setCurriculumFormData({...curriculumFormData, code: e.target.value})} />
+             <FormInput label={language === 'ro' ? 'Denumire Oficială' : "Official Name"} placeholder="e.g. Curriculum v1.0" value={curriculumFormData.name} onChange={e => setCurriculumFormData({...curriculumFormData, name: e.target.value})} />
+             <FormInput label={language === 'ro' ? 'An Implementare' : "Deployment Year"} type="number" value={curriculumFormData.startYear} onChange={e => setCurriculumFormData({...curriculumFormData, startYear: e.target.value})} />
              <div className="md:col-span-3 flex justify-end">
-                <button type="submit" className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl">Activate Curriculum</button>
+                <button type="submit" className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl">{language === 'ro' ? 'Activează Curricula' : 'Activate Curriculum'}</button>
              </div>
           </form>
         ) : (
@@ -242,8 +245,9 @@ export default function Disciplines() {
             value={selectedCurriculum ? { value: selectedCurriculum, label: curricula.find(c => c.id === selectedCurriculum)?.name } : null}
             onChange={opt => setSelectedCurriculum(opt?.value || '')}
             styles={customSelectStyles}
-            placeholder="-- Search Available Curricula --"
+            placeholder={language === 'ro' ? '-- Caută Planuri de Studiu Disponibile --' : "-- Search Available Curricula --"}
             isClearable
+            menuPortalTarget={document.body}
           />
         )}
       </div>
@@ -254,39 +258,39 @@ export default function Disciplines() {
            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                  <div className="h-10 w-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black">3</div>
-                 <h3 className="text-lg font-black text-slate-900 tracking-tight">Academic Module Inventory</h3>
+                 <h3 className="text-lg font-black text-slate-900 tracking-tight">{language === 'ro' ? 'Inventar Module Academice' : 'Academic Module Inventory'}</h3>
               </div>
               <button onClick={() => { resetDisciplineForm(); setShowDisciplineForm(!showDisciplineForm); }} className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-100 hover:bg-emerald-700 flex items-center gap-3 transition-all">
                  {showDisciplineForm ? <X size={18} /> : <Plus size={18} />}
-                 {showDisciplineForm ? 'Cancel Engineering' : 'Add New Module'}
+                 {showDisciplineForm ? (language === 'ro' ? 'Anulează Configurarea' : 'Cancel Engineering') : (language === 'ro' ? 'Adaugă Modul Nou' : 'Add New Module')}
               </button>
            </div>
 
            {showDisciplineForm && (
              <div className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-slate-200 border border-slate-50 mb-10 animate-in zoom-in-95 duration-500">
                 <h4 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
-                   <Settings className="text-emerald-500" size={24} /> Module Configuration Specification
+                   <Settings className="text-emerald-500" size={24} /> {language === 'ro' ? 'Specificații Configurare Modul' : 'Module Configuration Specification'}
                 </h4>
                 <form onSubmit={handleDisciplineSubmit} className="space-y-8">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormInput label="Module Code" placeholder="e.g. CS-201" value={disciplineFormData.code} onChange={e => setDisciplineFormData({...disciplineFormData, code: e.target.value})} />
-                      <FormInput label="Module Full Designation" placeholder="e.g. Applied Cryptography" value={disciplineFormData.name} onChange={e => setDisciplineFormData({...disciplineFormData, name: e.target.value})} />
+                      <FormInput label={language === 'ro' ? 'Cod Modul' : "Module Code"} placeholder="e.g. CS-201" value={disciplineFormData.code} onChange={e => setDisciplineFormData({...disciplineFormData, code: e.target.value})} />
+                      <FormInput label={language === 'ro' ? 'Denumire Completă Modul' : "Module Full Designation"} placeholder="e.g. Applied Cryptography" value={disciplineFormData.name} onChange={e => setDisciplineFormData({...disciplineFormData, name: e.target.value})} />
                    </div>
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Study Year</label>
-                        <Select options={[1,2,3,4].map(y => ({value:String(y), label:`Year ${y}`}))} value={{value: disciplineFormData.year, label:`Year ${disciplineFormData.year}`}} onChange={opt => setDisciplineFormData({...disciplineFormData, year: opt?.value})} styles={customSelectStyles} />
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'An Studiu' : 'Study Year'}</label>
+                        <Select options={[1,2,3,4].map(y => ({value:String(y), label:language === 'ro' ? `Anul ${y}` : `Year ${y}`}))} value={{value: disciplineFormData.year, label:language === 'ro' ? `Anul ${disciplineFormData.year}` : `Year ${disciplineFormData.year}`}} onChange={opt => setDisciplineFormData({...disciplineFormData, year: opt?.value})} styles={customSelectStyles} menuPortalTarget={document.body} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Semester</label>
-                        <Select options={[{value:'1', label:'Sem 1'}, {value:'2', label:'Sem 2'}]} value={{value: disciplineFormData.semester_in_year, label:`Sem ${disciplineFormData.semester_in_year}`}} onChange={opt => setDisciplineFormData({...disciplineFormData, semester_in_year: opt?.value})} styles={customSelectStyles} />
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Semestru' : 'Semester'}</label>
+                        <Select options={[{value:'1', label:'Sem 1'}, {value:'2', label:'Sem 2'}]} value={{value: disciplineFormData.semester_in_year, label:`Sem ${disciplineFormData.semester_in_year}`}} onChange={opt => setDisciplineFormData({...disciplineFormData, semester_in_year: opt?.value})} styles={customSelectStyles} menuPortalTarget={document.body} />
                       </div>
-                      <FormInput label="ECTS Credits" type="number" value={disciplineFormData.ects_credits} onChange={e => setDisciplineFormData({...disciplineFormData, ects_credits: e.target.value})} />
-                      <FormInput label="Contact Hours" type="number" value={disciplineFormData.contact_hours} onChange={e => setDisciplineFormData({...disciplineFormData, contact_hours: e.target.value})} />
+                      <FormInput label={t('th_ects')} type="number" value={disciplineFormData.ects_credits} onChange={e => setDisciplineFormData({...disciplineFormData, ects_credits: e.target.value})} />
+                      <FormInput label={language === 'ro' ? 'Ore Contact' : "Contact Hours"} type="number" value={disciplineFormData.contact_hours} onChange={e => setDisciplineFormData({...disciplineFormData, contact_hours: e.target.value})} />
                    </div>
                    <div className="flex justify-end gap-4 pt-4 border-t border-slate-50">
-                      <button type="button" onClick={() => setShowDisciplineForm(false)} className="px-8 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">Discard</button>
-                      <button type="submit" className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all">Save Academic Module</button>
+                      <button type="button" onClick={() => setShowDisciplineForm(false)} className="px-8 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">{language === 'ro' ? 'Renunță' : 'Discard'}</button>
+                      <button type="submit" className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all">{language === 'ro' ? 'Salvează Modul Academic' : 'Save Academic Module'}</button>
                    </div>
                 </form>
              </div>
@@ -297,16 +301,16 @@ export default function Disciplines() {
                  <thead>
                     <tr className="bg-slate-50/50">
                        <TableHead label="Code" />
-                       <TableHead label="Module Designation" />
-                       <TableHead label="Timeline" />
-                       <TableHead label="Evaluation" />
+                       <TableHead label={language === 'ro' ? 'Denumire Modul' : "Module Designation"} />
+                       <TableHead label={language === 'ro' ? 'Cronologie' : "Timeline"} />
+                       <TableHead label={language === 'ro' ? 'Evaluare' : "Evaluation"} />
                        <TableHead label="ECTS" />
-                       <TableHead label="Actions" />
+                       <TableHead label={t('th_actions')} />
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-100">
                     {disciplines.length === 0 ? (
-                      <tr><td colSpan="6" className="py-20 text-center text-slate-300 font-black italic">No modules registered in this plan.</td></tr>
+                      <tr><td colSpan="6" className="py-20 text-center text-slate-300 font-black italic">{language === 'ro' ? 'Niciun modul înregistrat în acest plan.' : 'No modules registered in this plan.'}</td></tr>
                     ) : disciplines.map(d => (
                       <tr key={d.id} className="group hover:bg-blue-50/30 transition-all">
                          <td className="px-8 py-6">
@@ -314,10 +318,10 @@ export default function Disciplines() {
                          </td>
                          <td className="px-8 py-6">
                             <p className="font-black text-slate-900 text-sm leading-tight">{d.name}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 flex items-center gap-2"><Clock size={10} /> {d.contact_hours} Lab/Course Hours</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 flex items-center gap-2"><Clock size={10} /> {d.contact_hours} {language === 'ro' ? 'Ore Lab/Curs' : 'Lab/Course Hours'}</p>
                          </td>
                          <td className="px-8 py-6">
-                            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">Year {Math.ceil(d.semester / 2)} • Sem {d.semester % 2 === 0 ? 2 : 1}</span>
+                            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">{language === 'ro' ? 'An' : 'Year'} {Math.ceil(d.semester / 2)} • Sem {d.semester % 2 === 0 ? 2 : 1}</span>
                          </td>
                          <td className="px-8 py-6">
                             <span className="bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">{d.evaluation_type}</span>
@@ -340,8 +344,8 @@ export default function Disciplines() {
       {!selectedSpecialization && (
         <div className="py-32 text-center animate-in fade-in duration-1000">
            <Archive className="mx-auto text-slate-100 mb-6" size={100} strokeWidth={1} />
-           <h4 className="text-xl font-black text-slate-300 uppercase tracking-[0.3em]">Institutional Repository</h4>
-           <p className="text-xs font-bold text-slate-300 mt-4 uppercase tracking-[0.2em]">Select a domain above to initialize structural view</p>
+           <h4 className="text-xl font-black text-slate-300 uppercase tracking-[0.3em]">{language === 'ro' ? 'Depozit Instituțional' : 'Institutional Repository'}</h4>
+           <p className="text-xs font-bold text-slate-300 mt-4 uppercase tracking-[0.2em]">{language === 'ro' ? 'Selectați un domeniu de mai sus pentru a inițializa vizualizarea structurală' : 'Select a domain above to initialize structural view'}</p>
         </div>
       )}
     </div>
@@ -376,10 +380,7 @@ const customSelectStyles = {
     boxShadow: 'none',
     '&:hover': { border: '2px solid transparent' },
   }),
-  menu: (base) => ({
-    ...base,
-    zIndex: 9999,
-  }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
   option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#eff6ff' : 'white',

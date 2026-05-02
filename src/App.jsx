@@ -22,9 +22,12 @@ import Contact from './pages/Contact';
 import Help from './pages/Help';
 import Shortcuts from './pages/Shortcuts';
 
+import { LanguageProvider } from './context/LanguageContext';
+
 export default function App() {
   return (
-    <AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
       <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
@@ -84,6 +87,7 @@ export default function App() {
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

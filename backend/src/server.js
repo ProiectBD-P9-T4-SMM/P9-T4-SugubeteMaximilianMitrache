@@ -21,7 +21,7 @@ const configRoutes = require('./routes/config');
 const groupsRoutes = require('./routes/groups');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // ── Security Headers (lightweight, no extra dependency) ─────────────────────
 app.use((_req, res, next) => {

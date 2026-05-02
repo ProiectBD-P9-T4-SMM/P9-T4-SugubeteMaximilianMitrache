@@ -98,6 +98,8 @@ export const translations = {
     confirm_delete: "Are you sure you want to delete this?",
     success: "Success",
     error: "Error",
+    gen_transcript: "Generate Official e-Transcript",
+    gen_transcript_desc: "Compiles full academic history into a secure document",
     close: "Close",
     apply: "Apply",
     
@@ -475,6 +477,8 @@ export const translations = {
     confirm_delete: "Ești sigur că vrei să ștergi?",
     success: "Succes",
     error: "Eroare",
+    gen_transcript: "Generare e-Transcript Oficial",
+    gen_transcript_desc: "Compilează istoricul academic complet într-un document securizat",
     close: "Închide",
     apply: "Aplică",
     

@@ -3,12 +3,15 @@ import Select from 'react-select';
 import { 
   Database, Plus, Search, Edit, Trash, BookOpen, X, Check, 
   MapPin, Calendar, Users, Save, ChevronRight, Layers, 
-  Download, Filter, AlertCircle, Shield, UserPlus, GraduationCap
+  Download, Filter, AlertCircle, Shield, UserPlus, GraduationCap,
+  FileBadge
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { academicService, lookupService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { generateFullTranscript } from '../utils/transcriptGenerator';
+import api from '../services/api';
 
 export default function Students() {
   const searchRef = useRef(null);
@@ -202,6 +205,18 @@ export default function Students() {
     });
     fetchStudentEnrollments(student.id);
     setShowModal(true);
+  };
+
+  const handleGenerateOfficialTranscript = async () => {
+    if (!editingStudent) return;
+    try {
+        const res = await api.get(`/academic/transcript/${editingStudent.id}`);
+        if (res.data.success) {
+            generateFullTranscript(res.data, language);
+        }
+    } catch (err) {
+        alert(language === 'ro' ? 'Eroare la generarea documentului.' : 'Error generating document.');
+    }
   };
 
   const handleExportExcel = () => {
@@ -471,9 +486,22 @@ export default function Students() {
                </div>
             </div>
 
-            <footer className="p-8 border-t border-slate-50 bg-white flex justify-end gap-6 items-center">
-               <button onClick={() => setShowModal(false)} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">{language === 'ro' ? 'Renunță' : 'Discard Changes'}</button>
-               <button onClick={handleSaveStudent} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-black shadow-2xl transition-all active:scale-95">{language === 'ro' ? 'Salvează Dosar Academic' : 'Commit Academic Record'}</button>
+            <footer className="p-8 border-t border-slate-50 bg-white flex justify-between gap-6 items-center">
+               <div className="flex gap-4">
+                {editingStudent && (
+                    <button 
+                        onClick={handleGenerateOfficialTranscript}
+                        className="bg-slate-100 text-slate-700 px-6 py-4 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] hover:bg-slate-200 shadow-sm transition-all flex items-center gap-2"
+                    >
+                        <FileBadge size={18} className="text-blue-600" />
+                        {t('gen_transcript')}
+                    </button>
+                )}
+               </div>
+               <div className="flex gap-6 items-center">
+                <button onClick={() => setShowModal(false)} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">{language === 'ro' ? 'Renunță' : 'Discard Changes'}</button>
+                <button onClick={handleSaveStudent} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-black shadow-2xl transition-all active:scale-95">{language === 'ro' ? 'Salvează Dosar Academic' : 'Commit Academic Record'}</button>
+               </div>
             </footer>
           </div>
         </div>

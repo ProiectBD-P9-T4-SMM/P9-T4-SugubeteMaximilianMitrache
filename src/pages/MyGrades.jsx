@@ -14,9 +14,11 @@ import {
   FileText,
   Download,
   Award,
-  BookOpen
+  BookOpen,
+  FileBadge
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { generateFullTranscript } from '../utils/transcriptGenerator';
 
 export default function MyGrades() {
   const { t, language } = useLanguage();
@@ -108,124 +110,19 @@ export default function MyGrades() {
       .replace(/â/g, 'a').replace(/Â/g, 'A');
   };
 
-  const handleExportPDF = (plan) => {
-    if (!studentInfo || !plan) return;
-
+  const handleExportFormalTranscript = () => {
+    if (!studentInfo || plans.length === 0) return;
     try {
-      const doc = new jsPDF();
-      doc.setFont('helvetica');
-      
-      doc.setFillColor(41, 128, 185);
-      doc.rect(0, 0, 210, 45, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
-      doc.text(sanitize("Universitatea din Craiova"), 14, 22);
-      doc.setFontSize(10);
-      doc.text(sanitize("Facultatea de Automatica, Calculatoare si Electronica"), 14, 30);
-      doc.text(sanitize("Sistem Integrat de Gestiune Academica (AFSMS Core)"), 14, 35);
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(16);
-      doc.text(sanitize(t('myg_partial_transcript')), 14, 60);
-      doc.setDrawColor(41, 128, 185);
-      doc.setLineWidth(0.5);
-      doc.line(14, 62, 200, 62);
-      
-      doc.setFontSize(10);
-      doc.text(sanitize(`${t('myg_student')}:`), 14, 72);
-      doc.setFont('helvetica', 'bold');
-      doc.text(sanitize(`${studentInfo.last_name} ${studentInfo.first_name}`), 45, 72);
-      doc.setFont('helvetica', 'normal');
-      
-      doc.text(sanitize(`${t('myg_reg_num')}:`), 14, 77);
-      doc.setFont('helvetica', 'bold');
-      doc.text(sanitize(`${studentInfo.registration_number}`), 45, 77);
-      doc.setFont('helvetica', 'normal');
-
-      doc.text(sanitize(`${language === 'ro' ? 'Specializare' : 'Specialization'}:`), 14, 82);
-      doc.text(sanitize(`${plan.specialization_name} (${plan.specialization_code})`), 45, 82);
-      
-      doc.text(sanitize(`${t('myg_plan')}:`), 14, 87);
-      doc.text(sanitize(`${plan.curriculum_name}`), 45, 87);
-
-      const structured = getStructuredData(plan.records);
-      let currentY = 100;
-
-      Object.entries(structured).forEach(([year, semesters]) => {
-        if (currentY > 250) {
-          doc.addPage();
-          currentY = 20;
-        }
-
-        doc.setFontSize(12);
-        doc.setTextColor(41, 128, 185);
-        doc.setFont('helvetica', 'bold');
-        doc.text(sanitize(`${t('myg_academic_year')} ${year}`), 14, currentY);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
-        currentY += 5;
-
-        const yearDisciplines = [...semesters[1], ...semesters[2]];
-        const tableRows = yearDisciplines.map(d => [
-          d.semester,
-          sanitize(d.discipline_name),
-          d.ects_credits,
-          d.grade_value || t('myg_not_examined'),
-          sanitize(d.exam_session || '-'),
-          d.grading_date ? new Date(d.grading_date).toLocaleDateString(language === 'ro' ? 'ro-RO' : 'en-US') : '-'
-        ]);
-
-        autoTable(doc, {
-          head: [[t('unit_sem'), t('myg_th_discipline'), t('myg_th_credits'), t('myg_th_grade'), language === 'ro' ? 'Sesiune' : 'Session', language === 'ro' ? 'Data' : 'Date']],
-          body: tableRows,
-          startY: currentY,
-          theme: 'striped',
-          headStyles: { fillColor: [41, 128, 185], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-          styles: { fontSize: 8, cellPadding: 2, halign: 'left', font: 'helvetica' },
-          columnStyles: {
-            0: { halign: 'center', cellWidth: 10 },
-            2: { halign: 'center', cellWidth: 15 },
-            3: { halign: 'center', cellWidth: 15 },
-            4: { halign: 'center', cellWidth: 20 },
-            5: { halign: 'center', cellWidth: 25 },
-          },
-          margin: { left: 14, right: 14 }
-        });
-
-        currentY = doc.lastAutoTable.finalY + 15;
-      });
-
-      const stats = calculateStats(plan.records);
-      if (currentY > 240) {
-        doc.addPage();
-        currentY = 20;
-      }
-      
-      doc.setFillColor(245, 247, 250);
-      doc.rect(14, currentY, 186, 25, 'F');
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(sanitize(`${t('myg_progress_summary')}:`), 20, currentY + 10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(sanitize(`${t('myg_total_credits')}: ${stats.earnedCredits} / ${stats.totalCredits} PC`), 20, currentY + 18);
-      doc.text(sanitize(`${t('myg_multiyear_average')}: ${stats.average}`), 120, currentY + 18);
-
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
-        doc.text(sanitize(`${t('myg_page')} ${i} ${t('myg_of')} ${pageCount}`), 100, 285, { align: 'center' });
-        doc.text(sanitize(`${t('myg_auto_gen')} ${new Date().toLocaleString(language === 'ro' ? 'ro-RO' : 'en-US')}`), 14, 290);
-      }
-
-      doc.save(`Foaie_Matricola_${studentInfo.registration_number}_${plan.curriculum_code}.pdf`);
+      generateFullTranscript({
+        studentInfo,
+        academicPlans: plans
+      }, language);
     } catch (err) {
-      console.error('PDF Export Error:', err);
-      alert((language === 'ro' ? 'A aparut o eroare la generarea PDF-ului: ' : 'An error occurred while generating the PDF: ') + err.message);
+      console.error('Formal Transcript Error:', err);
+      alert((language === 'ro' ? 'Eroare la generarea documentului oficial: ' : 'Error generating official document: ') + err.message);
     }
   };
+
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -255,6 +152,13 @@ export default function MyGrades() {
               <strong>{studentInfo.last_name} {studentInfo.first_name}</strong> | {t('myg_reg_num')}: {studentInfo.registration_number}
             </p>
           </div>
+          <button 
+            onClick={handleExportFormalTranscript}
+            className="group bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-black transition-all flex items-center gap-3 active:scale-95"
+          >
+            <FileBadge size={20} className="text-blue-400" />
+            {t('gen_transcript')}
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 border-t border-slate-100 pt-8">
@@ -293,12 +197,6 @@ export default function MyGrades() {
                   <span className="font-bold text-slate-800 uppercase tracking-wide">{t('myg_plan')}: {plan.curriculum_name}</span>
                 </div>
                 <div className="h-px flex-1 bg-slate-200"></div>
-                <button 
-                  onClick={() => handleExportPDF(plan)}
-                  className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-200 shadow-sm hover:border-blue-400 hover:text-blue-600"
-                >
-                  <Download size={14} /> {t('myg_export_pdf')} {planIdx + 1}
-                </button>
               </div>
 
               <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">

@@ -212,7 +212,7 @@ export default function Students() {
     try {
         const res = await api.get(`/academic/transcript/${editingStudent.id}`);
         if (res.data.success) {
-            generateFullTranscript(res.data, language);
+            await generateFullTranscript(res.data, language);
         }
     } catch (err) {
         alert(language === 'ro' ? 'Eroare la generarea documentului.' : 'Error generating document.');

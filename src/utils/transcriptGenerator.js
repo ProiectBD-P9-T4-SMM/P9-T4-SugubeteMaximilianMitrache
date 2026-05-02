@@ -1,17 +1,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { loadUnicodeFont, PDF_STYLES } from './pdfUtils';
 
-const sanitize = (text) => {
-  if (!text) return '';
-  return text.toString()
-    .replace(/ș/g, 's').replace(/Ș/g, 'S')
-    .replace(/ț/g, 't').replace(/Ț/g, 'T')
-    .replace(/ă/g, 'a').replace(/Ă/g, 'A')
-    .replace(/î/g, 'i').replace(/Î/g, 'I')
-    .replace(/â/g, 'a').replace(/Â/g, 'A');
-};
-
-export const generateFullTranscript = (data, language = 'ro') => {
+export const generateFullTranscript = async (data, language = 'ro') => {
   const { studentInfo, academicPlans } = data;
   const t = (key) => {
     const ro = {
@@ -78,58 +69,51 @@ export const generateFullTranscript = (data, language = 'ro') => {
   };
 
   const doc = new jsPDF();
+  const fontLoaded = await loadUnicodeFont(doc);
+  const mainFont = fontLoaded ? PDF_STYLES.fonts.main : PDF_STYLES.fonts.fallback;
+  
+  doc.setFont(mainFont);
   const pageWidth = doc.internal.pageSize.getWidth();
   
   // 1. Formal Header
-  doc.setFillColor(15, 23, 42); // Slate 900
+  doc.setFillColor(...PDF_STYLES.colors.primary);
   doc.rect(0, 0, 210, 50, 'F');
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.text(sanitize(t('institution')), 14, 22);
+  doc.text(t('institution'), 14, 22);
   
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(sanitize(t('faculty')), 14, 30);
-  doc.text(sanitize(t('system')), 14, 36);
+  doc.text(t('faculty'), 14, 30);
+  doc.text(t('system'), 14, 36);
   
   // Security ID (Mock)
   const securityId = `SEC-${studentInfo.registration_number}-${Date.now().toString().slice(-6)}`;
   doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(...PDF_STYLES.colors.secondary);
   doc.text(`SECURITY ID: ${securityId}`, 140, 45);
 
   // 2. Document Title
-  doc.setTextColor(15, 23, 42);
+  doc.setTextColor(...PDF_STYLES.colors.primary);
   doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text(sanitize(t('title')), 14, 65);
-  doc.setDrawColor(15, 23, 42);
+  doc.text(t('title'), 14, 65);
+  doc.setDrawColor(...PDF_STYLES.colors.primary);
   doc.setLineWidth(0.8);
   doc.line(14, 68, 200, 68);
 
   // 3. Student Identity Section
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(sanitize(`${t('student')}:`), 14, 80);
-  doc.setFont('helvetica', 'normal');
-  doc.text(sanitize(`${studentInfo.last_name} ${studentInfo.first_name}`), 55, 80);
+  doc.text(`${t('student')}:`, 14, 80);
+  doc.text(`${studentInfo.last_name} ${studentInfo.first_name}`, 55, 80);
   
-  doc.setFont('helvetica', 'bold');
-  doc.text(sanitize(`${t('reg_num')}:`), 14, 86);
-  doc.setFont('helvetica', 'normal');
-  doc.text(sanitize(studentInfo.registration_number), 55, 86);
+  doc.text(`${t('reg_num')}:`, 14, 86);
+  doc.text(studentInfo.registration_number, 55, 86);
   
-  doc.setFont('helvetica', 'bold');
-  doc.text(sanitize(`${t('specialization')}:`), 14, 92);
-  doc.setFont('helvetica', 'normal');
-  doc.text(sanitize(`${studentInfo.specialization_name || '-'} (${studentInfo.specialization_code || '-'})`), 55, 92);
+  doc.text(`${t('specialization')}:`, 14, 92);
+  doc.text(`${studentInfo.specialization_name || '-'} (${studentInfo.specialization_code || '-'})`, 55, 92);
 
-  doc.setFont('helvetica', 'bold');
-  doc.text(sanitize(`${t('status')}:`), 140, 80);
-  doc.setFont('helvetica', 'normal');
-  doc.text(sanitize(studentInfo.status), 170, 80);
+  doc.text(`${t('status')}:`, 140, 80);
+  doc.text(studentInfo.status, 170, 80);
 
   let currentY = 105;
 
@@ -140,12 +124,11 @@ export const generateFullTranscript = (data, language = 'ro') => {
       currentY = 20;
     }
 
-    doc.setFillColor(248, 250, 252); // Slate 50
+    doc.setFillColor(...PDF_STYLES.colors.background);
     doc.rect(14, currentY, 182, 10, 'F');
-    doc.setTextColor(15, 23, 42);
+    doc.setTextColor(...PDF_STYLES.colors.primary);
     doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(sanitize(`${t('plan')}: ${plan.curriculum_name}`), 18, currentY + 7);
+    doc.text(`${t('plan')}: ${plan.curriculum_name}`, 18, currentY + 7);
     currentY += 15;
 
     // Group disciplines by Year
@@ -164,15 +147,15 @@ export const generateFullTranscript = (data, language = 'ro') => {
 
         doc.setFontSize(9);
         doc.setTextColor(51, 65, 85);
-        doc.text(sanitize(`${t('year')} ${year}`), 14, currentY);
+        doc.text(`${t('year')} ${year}`, 14, currentY);
         currentY += 4;
 
         const tableRows = disciplines.map(d => [
             d.semester,
-            sanitize(d.discipline_name),
+            d.discipline_name,
             d.ects_credits,
             d.grade_value || t('not_examined'),
-            sanitize(d.exam_session || '-'),
+            d.exam_session || '-',
             d.grading_date ? new Date(d.grading_date).toLocaleDateString(language === 'ro' ? 'ro-RO' : 'en-US') : '-'
         ]);
 
@@ -181,8 +164,8 @@ export const generateFullTranscript = (data, language = 'ro') => {
             body: tableRows,
             startY: currentY,
             theme: 'striped',
-            headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-            styles: { fontSize: 8, cellPadding: 2, font: 'helvetica' },
+            headStyles: { fillColor: [...PDF_STYLES.colors.primary], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+            styles: { fontSize: 8, cellPadding: 2, font: mainFont },
             columnStyles: {
                 0: { halign: 'center', cellWidth: 10 },
                 2: { halign: 'center', cellWidth: 15 },
@@ -204,14 +187,13 @@ export const generateFullTranscript = (data, language = 'ro') => {
   }
 
   doc.setDrawColor(226, 232, 240); // Slate 200
-  doc.setFillColor(248, 250, 252);
+  doc.setFillColor(...PDF_STYLES.colors.background);
   doc.rect(14, currentY, 182, 35, 'F');
   doc.rect(14, currentY, 182, 35, 'D');
 
-  doc.setTextColor(15, 23, 42);
+  doc.setTextColor(...PDF_STYLES.colors.primary);
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text(sanitize(t('summary')), 20, currentY + 10);
+  doc.text(t('summary'), 20, currentY + 10);
 
   // Stats calculation
   let totalCredits = 0;
@@ -226,9 +208,8 @@ export const generateFullTranscript = (data, language = 'ro') => {
   }));
 
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(sanitize(`${t('total_credits')}: ${totalCredits} ECTS`), 20, currentY + 20);
-  doc.text(sanitize(`${t('gpa')}: ${gradedCount > 0 ? (gradeSum / gradedCount).toFixed(2) : '-'}`), 20, currentY + 28);
+  doc.text(`${t('total_credits')}: ${totalCredits} ECTS`, 20, currentY + 20);
+  doc.text(`${t('gpa')}: ${gradedCount > 0 ? (gradeSum / gradedCount).toFixed(2) : '-'}`, 20, currentY + 28);
 
   // 6. Security & Verification Section (QR Mock)
   currentY += 50;
@@ -237,36 +218,33 @@ export const generateFullTranscript = (data, language = 'ro') => {
     currentY = 20;
   }
 
-  doc.setDrawColor(203, 213, 225);
+  doc.setDrawColor(...PDF_STYLES.colors.secondary);
   doc.line(14, currentY, 200, currentY);
   currentY += 8;
 
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(sanitize(t('verification')), 14, currentY);
+  doc.text(t('verification'), 14, currentY);
   
   // Draw a QR Code placeholder
-  doc.setDrawColor(15, 23, 42);
+  doc.setDrawColor(...PDF_STYLES.colors.primary);
   doc.rect(170, currentY - 5, 25, 25);
   doc.setFontSize(6);
   doc.text("AFSMS", 178, currentY + 7);
   doc.text("VALID", 179, currentY + 13);
 
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 116, 139);
-  const splitText = doc.splitTextToSize(sanitize(t('verification_desc')), 140);
+  doc.setTextColor(...PDF_STYLES.colors.secondary);
+  const splitText = doc.splitTextToSize(t('verification_desc'), 140);
   doc.text(splitText, 14, currentY + 8);
-  doc.setFont('helvetica', 'bold');
   doc.text(securityId, 14, currentY + 18);
 
   // 7. Signatures
   currentY += 40;
-  doc.setTextColor(15, 23, 42);
+  doc.setTextColor(...PDF_STYLES.colors.primary);
   doc.setFontSize(9);
-  doc.text(sanitize(t('signature_sec')), 14, currentY);
-  doc.text(sanitize(t('signature_dean')), 80, currentY);
-  doc.text(sanitize(t('seal')), 150, currentY);
+  doc.text(t('signature_sec'), 14, currentY);
+  doc.text(t('signature_dean'), 80, currentY);
+  doc.text(t('seal'), 150, currentY);
   
   doc.setDrawColor(226, 232, 240);
   doc.line(14, currentY + 15, 50, currentY + 15);
@@ -279,8 +257,8 @@ export const generateFullTranscript = (data, language = 'ro') => {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
-    doc.text(sanitize(`${t('page')} ${i} ${t('of')} ${pageCount}`), pageWidth / 2, 285, { align: 'center' });
-    doc.text(sanitize(`${t('generated_at')} ${new Date().toLocaleString(language === 'ro' ? 'ro-RO' : 'en-US')}`), 14, 290);
+    doc.text(`${t('page')} ${i} ${t('of')} ${pageCount}`, pageWidth / 2, 285, { align: 'center' });
+    doc.text(`${t('generated_at')} ${new Date().toLocaleString(language === 'ro' ? 'ro-RO' : 'en-US')}`, 14, 290);
   }
 
   doc.save(`E-Transcript_${studentInfo.registration_number}.pdf`);

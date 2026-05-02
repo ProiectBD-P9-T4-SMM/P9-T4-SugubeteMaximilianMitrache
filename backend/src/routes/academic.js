@@ -376,9 +376,9 @@ router.get('/grades/export', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']),
     const Papa = require('papaparse');
     const csv = Papa.unparse(rows);
     
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename=grades-export.csv');
-    res.status(200).send(csv);
+    res.status(200).send('\uFEFF' + csv);
   } catch (error) {
     next(error);
   }
@@ -751,9 +751,9 @@ router.get('/grades/template', requireRole(['PROFESSOR', 'ADMIN', 'SECRETARIAT']
     const Papa = require('papaparse');
     const csv = Papa.unparse(rows);
     
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename=grade-template-${disciplineCode}.csv`);
-    res.status(200).send(csv);
+    res.status(200).send('\uFEFF' + csv);
   } catch (error) {
     next(error);
   }

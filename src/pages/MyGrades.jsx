@@ -110,10 +110,11 @@ export default function MyGrades() {
       .replace(/â/g, 'a').replace(/Â/g, 'A');
   };
 
-  const handleExportFormalTranscript = () => {
+  const handleExportFormalTranscript = async () => {
     if (!studentInfo || plans.length === 0) return;
     try {
-      generateFullTranscript({
+      // Adding a simple loading indicator in console or UI if needed
+      await generateFullTranscript({
         studentInfo,
         academicPlans: plans
       }, language);

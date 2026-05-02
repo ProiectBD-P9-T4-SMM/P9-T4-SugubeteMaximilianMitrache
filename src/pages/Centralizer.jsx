@@ -10,6 +10,7 @@ import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { loadUnicodeFont, PDF_STYLES } from '../utils/pdfUtils';
 
 export default function Centralizer() {
   const { t, language } = useLanguage();
@@ -74,11 +75,16 @@ export default function Centralizer() {
     } catch (err) { setMessage({ type: 'error', text: language === 'ro' ? `Exportul în ${format} a eșuat.` : `Export to ${format} failed.` }); }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!centralizedData || students.length === 0) return;
     const doc = new jsPDF('l', 'mm', 'a4');
-    doc.setFontSize(22); doc.setTextColor(15, 23, 42); doc.text(language === 'ro' ? 'Centralizator Note Oficial' : 'Official Grade Centralizer', 14, 20);
-    doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text(`${language === 'ro' ? 'Generat de sistem' : 'System Generated'}: ${new Date(centralizedData.generated_at).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}`, 14, 28);
+    
+    const fontLoaded = await loadUnicodeFont(doc);
+    const mainFont = fontLoaded ? PDF_STYLES.fonts.main : PDF_STYLES.fonts.fallback;
+    doc.setFont(mainFont);
+
+    doc.setFontSize(22); doc.setTextColor(...PDF_STYLES.colors.primary); doc.text(language === 'ro' ? 'Centralizator Note Oficial' : 'Official Grade Centralizer', 14, 20);
+    doc.setFontSize(8); doc.setTextColor(...PDF_STYLES.colors.secondary); doc.text(`${language === 'ro' ? 'Generat de sistem' : 'System Generated'}: ${new Date(centralizedData.generated_at).toLocaleString(language === 'en' ? 'en-US' : 'ro-RO')}`, 14, 28);
 
     const tableRows = [];
     students.forEach((student, idx) => {
@@ -101,8 +107,8 @@ export default function Centralizer() {
     autoTable(doc, {
       head: [['#', 'Reg. ID', t('th_student'), t('th_group'), t('th_discipline'), 'Sem.', t('th_grade'), 'GPA', 'ECTS']],
       body: tableRows, startY: 35, theme: 'grid',
-      styles: { fontSize: 7, cellPadding: 3 },
-      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' }
+      styles: { fontSize: 7, cellPadding: 3, font: mainFont },
+      headStyles: { fillColor: [...PDF_STYLES.colors.primary], textColor: [255, 255, 255], fontStyle: 'bold' }
     });
     doc.save(`Centralizer_Audit_${new Date().getTime()}.pdf`);
   };

@@ -24,6 +24,8 @@ export default function Documents() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
+  const [showModificationModal, setShowModificationModal] = useState(false);
+  const [showReuploadModal, setShowReuploadModal] = useState(false);
 
   // Forms state
   const [emailForm, setEmailForm] = useState({ targetType: 'FORMATION', groupId: '', subject: '', body: '' });
@@ -31,6 +33,9 @@ export default function Documents() {
   const [uploadFile, setUploadFile] = useState(null);
   const [forwardDocId, setForwardDocId] = useState(null);
   const [forwardUserId, setForwardUserId] = useState('');
+  const [modificationDocId, setModificationDocId] = useState(null);
+  const [modificationNote, setModificationNote] = useState('');
+  const [reuploadDocId, setReuploadDocId] = useState(null);
 
   // Status/Data state
   const [emailStatus, setEmailStatus] = useState(null);
@@ -60,6 +65,8 @@ export default function Documents() {
       setShowUploadModal(false);
       setShowEmailModal(false);
       setShowForwardModal(false);
+      setShowModificationModal(false);
+      setShowReuploadModal(false);
     }
   });
 
@@ -110,6 +117,32 @@ export default function Documents() {
       await documentsService.updateStatus(id, newStatus);
       fetchDocuments();
     } catch (err) { console.error(err); }
+  };
+
+  const handleRequestModification = async (e) => {
+    e.preventDefault();
+    if (!modificationNote.trim()) return;
+    try {
+      await documentsService.updateStatus(modificationDocId, 'MODIFICATION', modificationNote);
+      setShowModificationModal(false);
+      fetchDocuments();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleReuploadDocument = async (e) => {
+    e.preventDefault();
+    setUploadStatus({ loading: true });
+    try {
+      const formData = new FormData();
+      if (uploadFile) formData.append('file', uploadFile);
+      
+      await documentsService.reuploadDocument(reuploadDocId, formData);
+      setUploadStatus({ success: true, message: language === 'ro' ? 'Document reîncărcat!' : 'Document re-uploaded!' });
+      fetchDocuments();
+      setTimeout(() => setShowReuploadModal(false), 1500);
+    } catch (err) {
+      setUploadStatus({ success: false, message: language === 'ro' ? 'Eroare reîncărcare.' : 'Re-upload failed.' });
+    }
   };
 
   const handleForwardDocument = async (e) => {
@@ -271,6 +304,12 @@ export default function Documents() {
                   <td className="px-8 py-6">
                     <p className="font-black text-slate-900 text-sm">{row.title}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 truncate max-w-[200px]">{row.original_filename || 'Metadata Record'}</p>
+                    {row.status === 'MODIFICATION' && row.revision_notes && (
+                      <div className="mt-3 p-3 bg-orange-50/50 border border-orange-100 rounded-xl">
+                        <p className="text-[10px] text-orange-600 font-black tracking-widest uppercase mb-1 flex items-center gap-1"><AlertCircle size={10} /> {language === 'ro' ? 'Motiv Întoarcere' : 'Return Reason'}</p>
+                        <p className="text-xs font-bold text-orange-800">{row.revision_notes}</p>
+                      </div>
+                    )}
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-3">
@@ -301,14 +340,26 @@ export default function Documents() {
                         onClick={() => handleDownloadDocument(row.id, row.original_filename)}
                         disabled={!row.file_path}
                       />
-                      {row.status !== 'APPROVED' && (
-                        <ActionButton icon={CheckCircle} color="text-emerald-600 bg-emerald-50" onClick={() => handleUpdateStatus(row.id, 'APPROVED')} />
+                      
+                      {row.status === 'MODIFICATION' && (user.role === 'STUDENT' || user.id === row.author_id) && (
+                        <ActionButton icon={Plus} color="text-orange-600 bg-orange-50 border border-orange-100" onClick={() => { setReuploadDocId(row.id); setShowReuploadModal(true); }} />
                       )}
-                      {row.status !== 'REJECTED' && (
-                        <ActionButton icon={XCircle} color="text-rose-600 bg-rose-50" onClick={() => handleUpdateStatus(row.id, 'REJECTED')} />
+
+                      {['SECRETARIAT', 'ADMIN', 'PROFESSOR'].includes(user?.role) && (
+                        <>
+                          {['PENDING', 'DRAFT'].includes(row.status) && (
+                            <ActionButton icon={AlertCircle} color="text-orange-600 bg-orange-50" onClick={() => { setModificationDocId(row.id); setShowModificationModal(true); }} />
+                          )}
+                          {row.status !== 'APPROVED' && (
+                            <ActionButton icon={CheckCircle} color="text-emerald-600 bg-emerald-50" onClick={() => handleUpdateStatus(row.id, 'APPROVED')} />
+                          )}
+                          {row.status !== 'REJECTED' && (
+                            <ActionButton icon={XCircle} color="text-rose-600 bg-rose-50" onClick={() => handleUpdateStatus(row.id, 'REJECTED')} />
+                          )}
+                          <ActionButton icon={ArrowRight} color="text-indigo-600 bg-indigo-50" onClick={() => { setForwardDocId(row.id); setForwardUserId(''); setShowForwardModal(true); }} />
+                          <ActionButton icon={Trash} color="text-slate-400 hover:text-rose-600 bg-slate-50" onClick={() => handleDeleteDocument(row.id)} />
+                        </>
                       )}
-                      <ActionButton icon={ArrowRight} color="text-indigo-600 bg-indigo-50" onClick={() => { setForwardDocId(row.id); setForwardUserId(''); setShowForwardModal(true); }} />
-                      <ActionButton icon={Trash} color="text-slate-400 hover:text-rose-600 bg-slate-50" onClick={() => handleDeleteDocument(row.id)} />
                     </div>
                   </td>
                 </tr>
@@ -393,6 +444,47 @@ export default function Documents() {
            </form>
         </Modal>
       )}
+
+      {showModificationModal && (
+        <Modal title={language === 'ro' ? 'Întoarcere pentru Modificare' : 'Return for Modification'} onClose={() => setShowModificationModal(false)}>
+           <form onSubmit={handleRequestModification} className="space-y-6">
+              <div className="bg-orange-50 p-6 rounded-3xl border border-orange-100">
+                 <p className="text-xs font-bold text-orange-800 leading-relaxed">
+                   {language === 'ro' ? 'Specifică motivul exact pentru care documentul este returnat. Studentul va vedea acest mesaj și va putea reîncărca o versiune corectată.' : 'Specify the exact reason for returning this document. The author will see this note and can upload a corrected version.'}
+                 </p>
+              </div>
+              <div className="space-y-2">
+                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{language === 'ro' ? 'Motiv (Obligatoriu)' : 'Reason (Required)'}</label>
+                 <textarea required rows="4" className="w-full bg-slate-50 border-2 border-transparent focus:border-orange-500 focus:bg-white rounded-2xl p-4 text-sm font-bold transition-all outline-none" value={modificationNote} onChange={e => setModificationNote(e.target.value)} placeholder={language === 'ro' ? 'Ex: Te rog să semnezi pe ultima pagină...' : 'Ex: Please sign the last page...'} />
+              </div>
+              <button type="submit" disabled={!modificationNote.trim()} className="w-full py-4 bg-orange-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-100 hover:bg-orange-700 transition-all disabled:opacity-50">{language === 'ro' ? 'Trimite înapoi' : 'Return Document'}</button>
+           </form>
+        </Modal>
+      )}
+
+      {showReuploadModal && (
+        <Modal title={language === 'ro' ? 'Reîncarcă Document Corectat' : 'Re-upload Corrected Document'} onClose={() => setShowReuploadModal(false)}>
+           <form onSubmit={handleReuploadDocument} className="space-y-6">
+              {uploadStatus && <StatusAlert status={uploadStatus} />}
+              <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 mb-6">
+                 <p className="text-xs font-bold text-blue-800 leading-relaxed">
+                   {language === 'ro' ? 'Încărcarea unui fișier nou va suprascrie varianta veche, iar documentul va reintra în procesul de aprobare (PENDING).' : 'Uploading a new file will replace the old one, and the document will re-enter the approval queue (PENDING).'}
+                 </p>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{language === 'ro' ? 'Selectează Noul Fișier' : 'Select New File Asset'}</label>
+                <div className="border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer relative bg-white">
+                  <input required type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setUploadFile(e.target.files[0])} />
+                  <FilePlus className="mx-auto text-slate-300 mb-2" size={32} />
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{uploadFile ? uploadFile.name : (language === 'ro' ? 'Click sau Drag Fișier' : 'Click or Drag File')}</p>
+                </div>
+              </div>
+              <button type="submit" disabled={!uploadFile} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all disabled:opacity-50">
+                 {language === 'ro' ? 'Trimite Spre Re-Evaluare' : 'Submit for Re-Evaluation'}
+              </button>
+           </form>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -422,7 +514,8 @@ function StatusBadge({ status }) {
     APPROVED: "bg-emerald-50 text-emerald-600 border-emerald-100",
     REJECTED: "bg-rose-50 text-rose-600 border-rose-100",
     PENDING: "bg-amber-50 text-amber-600 border-amber-100",
-    DRAFT: "bg-slate-50 text-slate-400 border-slate-100"
+    DRAFT: "bg-slate-50 text-slate-400 border-slate-100",
+    MODIFICATION: "bg-orange-50 text-orange-600 border-orange-100"
   };
   return (
     <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${config[status] || config.PENDING}`}>

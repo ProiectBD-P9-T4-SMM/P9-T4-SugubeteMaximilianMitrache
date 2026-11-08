@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:demo": "node scripts/build-demo-backend.mjs && vite build --mode demo"
   },
   "keywords": [],
   "author": "",
@@ -24,8 +25,11 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
     "@tailwindcss/vite": "^4.2.1",
     "@vitejs/plugin-react": "^5.1.4",
+    "esbuild": "^0.28.2",
+    "js-sha256": "^1.0.0",
     "tailwindcss": "^4.2.1",
     "vite": "^7.3.1"
   }

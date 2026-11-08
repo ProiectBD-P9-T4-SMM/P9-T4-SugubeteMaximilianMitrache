@@ -190,6 +190,24 @@ The latest `main` branch is automatically deployed via GitHub Actions to GitHub 
 
 🔗 **https://ProiectBD-P9-T4-SMM.github.io/P9-T4-SugubeteMaximilianMitrache/**
 
+### Zero-server demo (the backend runs in the browser)
+
+🔗 **https://ProiectBD-P9-T4-SMM.github.io/P9-T4-SugubeteMaximilianMitrache/demo/**
+
+This build has **no API server at all**. The same Express route files (101 handlers),
+the same middleware, and a real PostgreSQL 17 compiled to WebAssembly (PGlite) run
+inside the visitor's tab, seeded from `demo/afsms-demo-browser.sql`. Login, reads,
+writes, role checks and the audit log all work against the real SQL.
+
+Trade-offs, on purpose:
+
+* Data lives in the tab and resets on reload (each visitor gets a private copy).
+* Uploads, email delivery and backup files are disabled — a browser tab has no
+  filesystem or SMTP. The sample documents bundled with the demo still download.
+* First load is heavier (~10 MB) because it ships PostgreSQL itself.
+
+Build it with `npm run build:demo` (output: `dist/demo`).
+
 ---
 
 ## 🐳 Run the full demo locally (one command)

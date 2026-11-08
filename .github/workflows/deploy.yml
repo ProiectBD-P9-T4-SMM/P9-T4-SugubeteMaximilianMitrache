@@ -31,6 +31,9 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
 
+      - name: Build the static demo (backend runs in the browser)
+        run: npm run build:demo
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

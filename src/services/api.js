@@ -132,8 +132,8 @@ export const configService = {
 };
 
 export const publicService = {
-  getCurricula: () => axios.get(`${API_URL}/public/curricula`),
-  getSettings: () => axios.get(`${API_URL}/public/settings`),
+  getCurricula: () => api.get('/public/curricula'),
+  getSettings: () => api.get('/public/settings'),
 };
 
 export default api;

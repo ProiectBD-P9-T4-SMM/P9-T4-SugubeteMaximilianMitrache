@@ -4,3 +4,4 @@ backend/.env
 uploads/
 !demo/uploads/
 backend/backups/
+src/demo/.generated/

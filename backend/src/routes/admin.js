@@ -169,6 +169,17 @@ router.get('/emails', requireRole(['ADMIN', 'SECRETARIAT', 'PROFESSOR']), async 
 
 const { createBackup, BACKUP_DIR, TABLES_TO_BACKUP } = require('../services/backupService');
 
+const BACKUP_FILENAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*\.json$/;
+
+// Backups are addressed by file name only. Never let a caller-supplied value
+// (a "../" sequence, an encoded separator or an absolute path) escape BACKUP_DIR.
+function resolveBackupPath(name) {
+  if (typeof name !== 'string' || !BACKUP_FILENAME_PATTERN.test(name)) return null;
+  const base = path.resolve(BACKUP_DIR);
+  const resolved = path.resolve(base, name);
+  return resolved.startsWith(base + path.sep) ? resolved : null;
+}
+
 // GET /api/admin/backups - List all backups
 router.get('/backups', requireRole(['ADMIN']), async (req, res, next) => {
   try {
@@ -225,7 +236,8 @@ router.post('/backups/restore', requireRole(['ADMIN']), async (req, res, next) =
   if (!filename) return res.status(400).json({ message: 'Filename required' });
 
   try {
-    const filePath = path.join(BACKUP_DIR, filename);
+    const filePath = resolveBackupPath(filename);
+    if (!filePath) return res.status(400).json({ message: 'Invalid backup filename' });
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'Backup not found' });
 
     const snapshot = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -266,7 +278,8 @@ router.post('/backups/restore', requireRole(['ADMIN']), async (req, res, next) =
 
 // GET /api/admin/backups/download/:filename - Download backup file
 router.get('/backups/download/:filename', requireRole(['ADMIN']), async (req, res) => {
-  const filePath = path.join(BACKUP_DIR, req.params.filename);
+  const filePath = resolveBackupPath(req.params.filename);
+  if (!filePath) return res.status(400).json({ message: 'Invalid backup filename' });
   if (fs.existsSync(filePath)) {
     res.download(filePath);
   } else {

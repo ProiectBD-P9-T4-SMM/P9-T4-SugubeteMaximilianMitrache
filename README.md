@@ -186,9 +186,10 @@ The project adheres to strict coding standards (**CODE-01 to CODE-10**):
 
 ### Live Demo
 
-The latest `main` branch is automatically deployed via GitHub Actions to GitHub Pages:
+The latest `main` branch is automatically built and published to GitHub Pages.
+The site root redirects to the zero-server demo:
 
-🔗 **https://ProiectBD-P9-T4-SMM.github.io/P9-T4-SugubeteMaximilianMitrache/**
+🔗 **https://ProiectBD-P9-T4-SMM.github.io/P9-T4-SugubeteMaximilianMitrache/demo/**
 
 ### Zero-server demo (the backend runs in the browser)
 

@@ -11,7 +11,7 @@ const verifyToken = (req, res, next) => {
     return res.status(403).json({ error: true, code: 'AUTH_MALFORMED', message: 'Malformed authorization header' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'super_secret_key_change_in_production', (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'cheie_secreta_afsms_2026', (err, decoded) => {
     if (err) {
       return res.status(401).json({ error: true, code: 'AUTH_INVALID', message: 'Failed to authenticate token' });
     }

@@ -1,0 +1,71 @@
+name: afsms-demo
+
+# Self-contained AFSMS demo: PostgreSQL + the Express API + the built React app.
+# Nothing here talks to the production server or to any external database.
+#
+#   docker compose up --build      (or: podman-compose up --build)
+#   open http://localhost:8080
+#
+# The first start imports demo/afsms-demo.sql (schema + mock data + uploads).
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: afsms
+      POSTGRES_USER: afsms
+      # Demo-only credential. The database is not published on the host.
+      POSTGRES_PASSWORD: afsms
+    # Tuned down on purpose: a 12 MB demo database does not need the defaults.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - max_connections=20
+      - -c
+      - jit=off
+    volumes:
+      - afsms-pgdata:/var/lib/postgresql/data
+      - ./demo/afsms-demo.sql:/docker-entrypoint-initdb.d/01-afsms-demo.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U afsms -d afsms"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      args:
+        VITE_BASE: /
+        VITE_API_URL: ""
+    image: afsms-demo:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: afsms
+      DB_USER: afsms
+      DB_PASS: afsms
+      PORT: "8080"
+      # Signing keys for this throwaway demo instance only.
+      JWT_SECRET: afsms-demo-jwt-secret
+      SSO_MOCK_SECRET: afsms-demo-sso-secret
+      ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+    ports:
+      - "${DEMO_PORT:-8080}:8080"
+    volumes:
+      # Keep backups created through the admin UI across restarts.
+      - afsms-backups:/app/backend/backups
+    restart: unless-stopped
+
+volumes:
+  afsms-pgdata:
+  afsms-backups:

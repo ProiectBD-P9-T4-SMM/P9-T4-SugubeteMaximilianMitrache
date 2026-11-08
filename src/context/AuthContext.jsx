@@ -9,7 +9,11 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Configurăm Axios să trimită token-ul automat la fiecare request
-  axios.defaults.baseURL = 'http://localhost:3000/api';
+  // (aceeași bază ca instanța din services/api.js; gol = același origin)
+  const apiBase = import.meta.env.VITE_API_URL === undefined
+    ? 'http://localhost:3000'
+    : import.meta.env.VITE_API_URL;
+  axios.defaults.baseURL = `${apiBase}/api`;
   if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   } else {

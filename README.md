@@ -190,6 +190,26 @@ The latest `main` branch is automatically deployed via GitHub Actions to GitHub 
 
 🔗 **https://ProiectBD-P9-T4-SMM.github.io/P9-T4-SugubeteMaximilianMitrache/**
 
+---
+
+## 🐳 Run the full demo locally (one command)
+
+Everything — PostgreSQL, the Express API, and the built React app — runs from the compose file in this repository. No accounts, no external services, and no credentials to fill in.
+
+```bash
+docker compose up --build          # Docker
+sudo podman compose up --build     # podman with a compose provider
+./demo/run-podman.sh up            # plain podman, no compose provider
+```
+
+Open **http://localhost:8080** (port busy? `DEMO_PORT=9090 docker compose up --build`).
+
+Notes:
+
+* The login screen deliberately accepts any role: `/api/mock-sso` stands in for the university identity provider. Being able to enter as ADMIN is the point of the demo, not a missing check.
+* The database is created from `demo/afsms-demo.sql` (schema + mock data), is reachable only inside the compose network, and uses throwaway credentials.
+* `./demo/run-podman.sh down` stops it; `./demo/run-podman.sh reset` also deletes the database volume.
+
 ## 📚 Documentation
 
 Comprehensive documentation mapping directly to the IEEE 830-1998 Software Requirements Specification (SRS) standards is available for this project.

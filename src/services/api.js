@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// An empty VITE_API_URL means "same origin as the page", which is how the
+// single-container demo serves the SPA and the API together.
+const API_BASE_URL = import.meta.env.VITE_API_URL === undefined
+  ? 'http://localhost:3000'
+  : import.meta.env.VITE_API_URL;
 const API_URL = `${API_BASE_URL}/api`;
 
 const api = axios.create({

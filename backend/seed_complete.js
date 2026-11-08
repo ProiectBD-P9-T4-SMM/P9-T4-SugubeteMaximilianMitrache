@@ -1,9 +1,10 @@
+require('dotenv').config();
 /**
  * Complete seed: Specializations (Licență + Masterat), Study Formations (IF + IFR), Students, Documents
  * Hierarchy: Ciclu → Specializare → Tip frecvență → An → Grupă → Subgrupă
  */
 const { Client } = require('pg');
-const client = new Client({ host: '79.76.96.223', user: 'afsms_app', password: '88u9GqwGEsAJ', database: 'afsms_db' });
+const client = new Client({ connectionString: process.env.DATABASE_URL });
 
 const specializations = [
   // Licență

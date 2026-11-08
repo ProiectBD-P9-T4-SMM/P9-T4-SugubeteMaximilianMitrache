@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+backend/node_modules
+backend/coverage
+backend/backups
+backend/scratch
+backend/.env
+backend/.env.local
+docs
+scratch
+dist
+demo/uploads/.DS_Store
+**/*.log

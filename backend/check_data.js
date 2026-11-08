@@ -1,12 +1,8 @@
+require('dotenv').config();
 const { Client } = require('pg');
 
 async function check() {
-  const client = new Client({
-    host: "79.76.96.223",
-    user: "afsms_app",
-    password: "88u9GqwGEsAJ",
-    database: "afsms_db"
-  });
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
 
   try {
     await client.connect();

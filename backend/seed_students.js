@@ -1,14 +1,10 @@
+require('dotenv').config();
 /**
  * Seed students - assigns existing students to real formations and adds more demo students
  * properly distributed across specializations, years, groups and subgroups.
  */
 const { Client } = require('pg');
-const client = new Client({
-  host: '79.76.96.223',
-  user: 'afsms_app',
-  password: '88u9GqwGEsAJ',
-  database: 'afsms_db'
-});
+const client = new Client({ connectionString: process.env.DATABASE_URL });
 
 async function seed() {
   await client.connect();

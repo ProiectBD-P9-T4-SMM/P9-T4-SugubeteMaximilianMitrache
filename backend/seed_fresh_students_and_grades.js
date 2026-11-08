@@ -1,14 +1,10 @@
+require('dotenv').config();
 /**
  * Complete fresh seed: new students + grades
  * Clears existing students and creates new ones with realistic data and grades
  */
 const { Client } = require('pg');
-const client = new Client({
-  host: '79.76.96.223',
-  user: 'afsms_app',
-  password: '88u9GqwGEsAJ',
-  database: 'afsms_db'
-});
+const client = new Client({ connectionString: process.env.DATABASE_URL });
 
 // Diverse Romanian names for realistic data
 const firstNames = [

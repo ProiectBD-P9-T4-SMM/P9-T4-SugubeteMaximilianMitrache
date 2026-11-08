@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
 const { initScheduler } = require('./services/schedulerService');
@@ -23,16 +24,38 @@ const groupsRoutes = require('./routes/groups');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Optional: serve the built Vite frontend from this same Express process. The
+// containerised demo sets both variables; the API-only deployment leaves them
+// unset and behaves exactly as before.
+const SERVE_FRONTEND = process.env.SERVE_FRONTEND === '1';
+const FRONTEND_DIR = process.env.FRONTEND_DIR ? path.resolve(process.env.FRONTEND_DIR) : null;
+
 // ── Security Headers (lightweight, no extra dependency) ─────────────────────
-app.use((_req, res, next) => {
+const API_CSP = "default-src 'none'; frame-ancestors 'none'";
+// The SPA loads only its own bundled assets, so it can stay strict as well.
+const UI_CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
+app.use((req, res, next) => {
   // Prevent MIME-sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
   // Deny iframe embedding (clickjacking protection)
   res.setHeader('X-Frame-Options', 'DENY');
   // Restrict Referrer information
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // Minimal CSP for an API server (block all non-API browser access)
-  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+  // Lock the API down; allow the bundled SPA to load its own assets.
+  const servingUi = SERVE_FRONTEND && FRONTEND_DIR && !req.path.startsWith('/api');
+  res.setHeader('Content-Security-Policy', servingUi ? UI_CSP : API_CSP);
   // Remove powered-by fingerprint
   res.removeHeader('X-Powered-By');
   next();
@@ -92,8 +115,22 @@ app.use('/api/public', publicRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/groups', groupsRoutes);
 
+// Static frontend (only when the container image ships a Vite build)
+if (SERVE_FRONTEND && FRONTEND_DIR) {
+  app.use(express.static(FRONTEND_DIR, {
+    index: false,
+    maxAge: '1h',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html')) res.setHeader('Cache-Control', 'no-cache');
+    },
+  }));
+}
+
 // Root route
 app.get('/', (req, res) => {
+  if (SERVE_FRONTEND && FRONTEND_DIR) {
+    return res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+  }
   res.json({ message: 'AFSMS Backend API is running' });
 });
 
